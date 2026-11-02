@@ -414,13 +414,7 @@ func (e *Engine) idleResponse(tier int, agentSince time.Time) WaitResponse {
 	}
 	if e.planning.Active {
 		if e.planning.Expected != nil && e.reach(tier) == 0 {
-			want := 0
-			for t, n := range e.planning.Expected {
-				if t <= tier {
-					want += n
-				}
-			}
-			if want == 0 {
+			if expectedUpTo(e.planning.Expected, tier) == 0 {
 				return WaitResponse{Action: ActionExit, Reason: ReasonNoneExpect, Planning: view}
 			}
 		}
@@ -491,6 +485,18 @@ func (e *Engine) PlanUpdate(ctx context.Context, planner string, epoch uint64, t
 		}
 		p := e.planning
 		now := e.now()
+		if expected == nil {
+			expected = p.Expected // A phase-only update keeps the earlier promise.
+		}
+		// A hint is a promise: agents may already have left because of it. Found by
+		// the Planner.tla model, whose NoExitBeforeWork fails without this rule.
+		if p.Expected != nil {
+			for tier := 1; tier <= e.cfg.Policy.MaxTier; tier++ {
+				if expectedUpTo(p.Expected, tier) == 0 && expectedUpTo(expected, tier) > 0 {
+					return struct{}{}, fmt.Errorf("%w: hints already promised no work up to tier %d", ErrInvalid, tier)
+				}
+			}
+		}
 		p.Phase, p.Expected, p.ETAMs, p.Deadline, p.UpdatedAt = phase, expected, etaMs, now.Add(ttl), now
 		return struct{}{}, e.savePlanning(p)
 	})
@@ -508,8 +514,22 @@ func (e *Engine) PlanAdd(ctx context.Context, planner string, epoch uint64, s Ta
 		if err != nil {
 			return t, err
 		}
+		if e.planning.Expected != nil && expectedUpTo(e.planning.Expected, t.Tier) == 0 {
+			return t, fmt.Errorf("%w: hints promised no work up to tier %d", ErrInvalid, t.Tier)
+		}
 		return e.create(t)
 	})
+}
+
+// expectedUpTo counts hinted tasks that could reach an agent of this tier.
+func expectedUpTo(expected map[int]int, tier int) int {
+	n := 0
+	for t, c := range expected {
+		if t <= tier {
+			n += c
+		}
+	}
+	return n
 }
 
 // PlanCommit makes the whole plan visible with a single write to the planning

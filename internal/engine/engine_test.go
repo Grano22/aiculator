@@ -302,6 +302,35 @@ func TestPlannerCrashBumpsEpochAndCleansUp(t *testing.T) {
 	}
 }
 
+// Regression test for the counterexample TLC found in spec/tla/Planner.tla: tier 1
+// agents exit on a hint of no work, then the planner adds tier 1 work anyway.
+func TestHintsArePromises(t *testing.T) {
+	e, _ := setup(t, Config{Clock: newClock(), ExitGrace: time.Hour})
+	ep, _ := e.PlanBegin(bg, "p", time.Minute)
+	if err := e.PlanUpdate(bg, "p", ep, time.Minute, "x", map[int]int{2: 1}, 0); err != nil {
+		t.Fatal(err)
+	}
+	if r, _ := e.Wait(bg, a1, 0); r.Action != ActionExit {
+		t.Fatalf("tier 1 should exit: %+v", r)
+	}
+	if _, err := e.PlanAdd(bg, "p", ep, TaskSpec{ID: "late", Title: "x", Tier: 1}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("added work the exited agent would have taken: %v", err)
+	}
+	if err := e.PlanUpdate(bg, "p", ep, time.Minute, "x", map[int]int{1: 1, 2: 1}, 0); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("raised a hint agents already acted on: %v", err)
+	}
+	// What was promised still works, and a phase-only update keeps the promise.
+	if err := e.PlanUpdate(bg, "p", ep, time.Minute, "later", nil, 0); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.PlanAdd(bg, "p", ep, TaskSpec{ID: "ok", Title: "x", Tier: 2}); err != nil {
+		t.Fatal(err)
+	}
+	if r, _ := e.Wait(bg, a1, 0); r.Action != ActionExit {
+		t.Fatalf("tier 1 should still exit: %+v", r)
+	}
+}
+
 func TestSecondPlannerIsRefused(t *testing.T) {
 	e, _ := setup(t, Config{Clock: newClock()})
 	if _, err := e.PlanBegin(bg, "a", time.Minute); err != nil {
