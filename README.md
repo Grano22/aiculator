@@ -7,6 +7,7 @@ An agent saying "done" counts for nothing: the swarm runs the acceptance checks.
 ## Quick start
 
 ```sh
+# Static on Linux. macOS does not allow static binaries, so there it links system libraries.
 CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o bin/swarm ./cmd/swarm
 
 # Start the server against a repository.
@@ -63,6 +64,23 @@ go test ./internal/engine -run=^$ -bench=GrantCycle
 ./scripts/gate2_claude.sh                           # Uses your Claude account
 ./scripts/gate3_real.sh claude 3                    # Also gemini or codex; uses that account
 ```
+
+## Formal verification
+
+```sh
+./scripts/formal.sh   # Downloads pinned tools into .tools; needs Java
+```
+
+| Model | What it covers |
+|---|---|
+| `spec/tla/Swarm.tla` | Lifecycle with crashes, lost replies and zombies: unique leases, fencing, done means independently verified |
+| `spec/tla/SwarmLiveness.tla` | A task always ends done or parked, even with hostile agents |
+| `spec/tla/Planner.tla` | An agent told to exit never misses work from that plan |
+| `spec/alloy/swarm.als` | Tier and tag eligibility, plan deadlocks, file lease conflicts |
+
+Models named `Bug` break a rule on purpose and must fail, which shows the checker can catch that defect. `TestSpecMatchesCode` fails the build if the TLA+ transition table and `core.Apply` disagree.
+
+These results are bounded: they hold for the model and the sizes in each `.cfg` file and `check` command. Only the transition table is tied to the code mechanically. The other rules in the models were written by hand from the code, and the tests have to cover that gap.
 
 ## Licenses
 
