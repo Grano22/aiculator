@@ -297,12 +297,19 @@ func TestZombieIsStoppedAndTaskRecovers(t *testing.T) {
 
 // Slow but changing files must NOT count as a zombie.
 func TestSlowAgentIsNotAZombie(t *testing.T) {
-	r := newRig(t, engine.Config{LeaseTTL: 2 * time.Second, ProgressTTL: 400 * time.Millisecond})
+	// The whole run outlasts the timeout, so the test means something, while each
+	// gap between changes stays far inside it, so machine load cannot fail it.
+	const progressTTL = 3 * time.Second
+	r := newRig(t, engine.Config{LeaseTTL: 10 * time.Second, ProgressTTL: progressTTL})
 	r.add(engine.TaskSpec{ID: "sl", Title: "x", Spec: "FILE: s.txt", Checks: checkPath("s.txt")})
-	d := r.driver("slow", 1, "slow")
+	d := r.driver("slow", 1, "slow", "FAKE_STEPS=20")
 	d.o.MaxTasks = 1
+	start := time.Now()
 	if _, err := d.Run(context.Background()); err != nil {
 		t.Fatal(err)
+	}
+	if took := time.Since(start); took <= progressTTL {
+		t.Fatalf("ran only %v, which proves nothing against a %v timeout", took, progressTTL)
 	}
 	x := r.await("sl", core.Done)
 	if x.Failures != 0 || x.Attempt != 1 {

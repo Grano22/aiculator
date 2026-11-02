@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -131,7 +132,11 @@ func (a *agent) Prompt(ctx context.Context, r acp.PromptRequest) (acp.PromptResp
 		return endTurn, nil
 	case "slow":
 		// Keeps changing files, so it is slow but clearly not a zombie.
-		for i := range 6 {
+		steps := 6
+		if n, err := strconv.Atoi(os.Getenv("FAKE_STEPS")); err == nil {
+			steps = n
+		}
+		for i := range steps {
 			_ = os.WriteFile(filepath.Join(a.cwd, "slow.txt"), fmt.Appendf(nil, "%d", i), 0o644)
 			select {
 			case <-time.After(200 * time.Millisecond):
