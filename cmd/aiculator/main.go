@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -31,10 +32,41 @@ import (
 
 var dataDir string
 
+const version = "0.1.0"
+
+// findDataDir walks up from the working directory, so that commands work from a
+// subdirectory and from inside a task's worktree, which lives under the data dir.
+func findDataDir() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		return ".swarm"
+	}
+	for {
+		candidate := filepath.Join(dir, ".swarm")
+		if fi, err := os.Stat(candidate); err == nil && fi.IsDir() {
+			return candidate
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ".swarm"
+		}
+		dir = parent
+	}
+}
+
 func main() {
-	root := &cobra.Command{Use: "swarm", Short: "Run and control an agent swarm", SilenceUsage: true}
-	root.PersistentFlags().StringVar(&dataDir, "data", ".swarm", "state directory")
-	root.AddCommand(serveCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(), mcpCmd(), driveCmd())
+	root := &cobra.Command{
+		Use: "aiculator", Short: "Run and control an agent swarm across coding harnesses",
+		Version: version, SilenceUsage: true,
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+			if !cmd.Flags().Changed("data") {
+				dataDir = findDataDir()
+			}
+		},
+	}
+	root.PersistentFlags().StringVar(&dataDir, "data", ".swarm", "state directory; found by searching upward when not set")
+	root.AddCommand(serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
+		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd())
 	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}
@@ -139,6 +171,9 @@ func serve(ctx context.Context, o serveOpts) error {
 	go func() { errc <- hs.Serve(ln) }()
 	url := "http://" + ln.Addr().String()
 	if err := atomicWrite(filepath.Join(dataDir, "addr"), []byte(url), 0o600); err != nil {
+		return err
+	}
+	if err := atomicWrite(filepath.Join(dataDir, "pid"), []byte(strconv.Itoa(os.Getpid())), 0o600); err != nil {
 		return err
 	}
 	log.Info("swarm listening", "url", url)
@@ -379,6 +414,18 @@ func planCmd() *cobra.Command {
 	update.Flags().Int64Var(&q.ETAMs, "eta-ms", 0, "estimated time to commit")
 	commit := &cobra.Command{Use: "commit", Short: "Publish the plan", RunE: post("/v1/plan/commit")}
 	commit.Flags().Uint64Var(&q.Epoch, "epoch", 0, "planning epoch")
-	cmd.AddCommand(begin, update, commit)
+	add := &cobra.Command{Use: "add", Short: "Add a draft task to the plan", RunE: post("/v1/plan/add")}
+	add.Flags().Uint64Var(&q.Epoch, "epoch", 0, "planning epoch")
+	add.Flags().StringVar(&q.Task.ID, "id", "", "task id; generated if empty")
+	add.Flags().StringVar(&q.Task.Title, "title", "", "short title")
+	add.Flags().StringVar(&q.Task.Spec, "spec", "", "full instructions")
+	add.Flags().IntVar(&q.Task.Tier, "tier", 1, "tier: 1 standard, 2 advanced, 3 ultra")
+	add.Flags().IntVar(&q.Task.Priority, "priority", 0, "higher runs sooner")
+	add.Flags().StringSliceVar(&q.Task.Deps, "dep", nil, "task id this depends on")
+	add.Flags().StringSliceVar(&q.Task.Tags, "tag", nil, "required capability tag")
+	add.Flags().StringSliceVar(&q.Task.Touches, "touches", nil, "path this task will change")
+	add.Flags().StringArrayVar(&q.Task.Checks, "check", nil, "acceptance command")
+	add.Flags().BoolVar(&q.Task.RequireReview, "review", false, "also require an independent agent review")
+	cmd.AddCommand(begin, update, add, commit)
 	return cmd
 }

@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,63 +11,11 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
 
 	"aiculation/internal/driver"
 	"aiculation/internal/sandbox"
 )
-
-type bearer struct {
-	token string
-	next  http.RoundTripper
-}
-
-func (b bearer) RoundTrip(r *http.Request) (*http.Response, error) {
-	r = r.Clone(r.Context())
-	r.Header.Set("Authorization", "Bearer "+b.token)
-	return b.next.RoundTrip(r)
-}
-
-// mcpCmd bridges stdio to the server's HTTP endpoint, for harnesses that can only
-// launch MCP servers as subprocesses. It reads the token from the environment, so
-// the token does not appear in process listings.
-func mcpCmd() *cobra.Command {
-	var url string
-	cmd := &cobra.Command{
-		Use:   "mcp",
-		Short: "Serve the swarm's MCP tools over stdio (token in SWARM_TOKEN)",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			token := os.Getenv("SWARM_TOKEN")
-			if token == "" {
-				return fmt.Errorf("SWARM_TOKEN is not set")
-			}
-			ctx := cmd.Context()
-			cl := mcp.NewClient(&mcp.Implementation{Name: "swarm-bridge", Version: "0.1.0"}, nil)
-			session, err := cl.Connect(ctx, &mcp.StreamableClientTransport{
-				Endpoint:   url + "/mcp",
-				HTTPClient: &http.Client{Transport: bearer{token, http.DefaultTransport}},
-			}, nil)
-			if err != nil {
-				return err
-			}
-			defer session.Close()
-			srv := mcp.NewServer(&mcp.Implementation{Name: "swarm", Version: "0.1.0"},
-				&mcp.ServerOptions{Instructions: session.InitializeResult().Instructions})
-			for t, err := range session.Tools(ctx, nil) {
-				if err != nil {
-					return err
-				}
-				srv.AddTool(t, func(ctx context.Context, r *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-					return session.CallTool(ctx, &mcp.CallToolParams{Name: r.Params.Name, Arguments: r.Params.Arguments})
-				})
-			}
-			return srv.Run(ctx, &mcp.StdioTransport{})
-		},
-	}
-	cmd.Flags().StringVar(&url, "url", "http://127.0.0.1:7777", "server URL")
-	return cmd
-}
 
 func loadManifest(harness, path string) (driver.Manifest, error) {
 	if path != "" {
@@ -83,9 +29,9 @@ func loadManifest(harness, path string) (driver.Manifest, error) {
 		}
 		return m, nil
 	}
-	m, ok := driver.Presets()[harness]
+	m, ok := driver.Preset(harness)
 	if !ok {
-		return m, fmt.Errorf("unknown harness %q: use gemini, claude, codex or --manifest", harness)
+		return m, fmt.Errorf("harness %q is unknown or has no ACP mode: see aiculator harness, or use --manifest", harness)
 	}
 	return m, nil
 }
@@ -132,7 +78,7 @@ func driveCmd() *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
-	f.StringVar(&harness, "harness", "", "preset: gemini, claude or codex")
+	f.StringVar(&harness, "harness", "", "harness id, from aiculator harness")
 	f.StringVar(&manifest, "manifest", "", "YAML manifest file, instead of a preset")
 	f.StringVar(&url, "url", "http://127.0.0.1:7777", "server URL")
 	f.StringVar(&agent, "agent", "driver", "agent name, for review notes")

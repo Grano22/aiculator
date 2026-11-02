@@ -7,7 +7,7 @@ HARNESS=${1:?harness}
 N=${2:-3}
 D=$(mktemp -d)
 D=$(cd "$D" && pwd -P)
-SW="$ROOT/bin/swarm --data $D/data"
+SW="$ROOT/bin/aiculator --data $D/data"
 git init -q -b main "$D/repo"
 git -C "$D/repo" -c user.name=t -c user.email=t@t commit -q --allow-empty -m root
 $SW serve --addr 127.0.0.1:0 --repo "$D/repo" --exit-grace 5s > "$D/server.log" 2>&1 &
@@ -26,7 +26,7 @@ export SWARM_TOKEN
 SWARM_TOKEN=$($SW token --agent "$HARNESS-gate" --tier 1)
 start=$(date +%s)
 timeout_s=${TIMEOUT:-300}
-perl -e 'alarm shift; exec @ARGV' "$timeout_s" "$ROOT/bin/swarm" drive --harness "$HARNESS" --url "$URL" --agent "$HARNESS-gate" --heartbeat 5s --hold 5s > "$D/driver.log" 2>&1 || echo "driver exited with $?"
+perl -e 'alarm shift; exec @ARGV' "$timeout_s" "$ROOT/bin/aiculator" drive --harness "$HARNESS" --url "$URL" --agent "$HARNESS-gate" --heartbeat 5s --hold 5s > "$D/driver.log" 2>&1 || echo "driver exited with $?"
 took=$(( $(date +%s) - start ))
 sleep 2
 $SW task ls

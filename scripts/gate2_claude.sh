@@ -6,7 +6,7 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 MODEL=${MODEL:-haiku}
 D=$(mktemp -d)
 D=$(cd "$D" && pwd -P)
-SW="$ROOT/bin/swarm --data $D/data"
+SW="$ROOT/bin/aiculator --data $D/data"
 git init -q -b main "$D/repo"
 git -C "$D/repo" -c user.name=t -c user.email=t@t commit -q --allow-empty -m root
 

@@ -8,20 +8,20 @@ An agent saying "done" counts for nothing: the swarm runs the acceptance checks.
 
 ```sh
 # Static on Linux. macOS does not allow static binaries, so there it links system libraries.
-CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o bin/swarm ./cmd/swarm
+CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o bin/aiculator ./cmd/aiculator
 
 # Start the server against a repository.
-bin/swarm serve --repo /path/to/repo
+bin/aiculator serve --repo /path/to/repo
 
 # In another terminal, from the same directory, add a task.
-bin/swarm task add --title "Add a health endpoint" \
+bin/aiculator task add --title "Add a health endpoint" \
   --spec "Add GET /healthz returning 200." --check "go test ./..." --tier 1
 
 # Run a harness through ACP. It only launches when there is work.
-export SWARM_TOKEN=$(bin/swarm token --agent worker1 --tier 1)
-bin/swarm drive --harness claude --agent worker1
+export SWARM_TOKEN=$(bin/aiculator token --agent worker1 --tier 1)
+bin/aiculator drive --harness claude --agent worker1
 
-bin/swarm task ls
+bin/aiculator task ls
 ```
 
 Finished work lands on the `swarm/integration` branch. Your own branches are never touched.
