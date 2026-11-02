@@ -272,7 +272,8 @@ func TestCrashHandsOverWithNoWorkLost(t *testing.T) {
 }
 
 func TestZombieIsStoppedAndTaskRecovers(t *testing.T) {
-	r := newRig(t, engine.Config{LeaseTTL: 500 * time.Millisecond, ProgressTTL: 300 * time.Millisecond})
+	// The long lease leaves room for a slow launch, so only the zombie rule can fire.
+	r := newRig(t, engine.Config{LeaseTTL: 20 * time.Second, ProgressTTL: time.Second, ExitGrace: 100 * time.Millisecond})
 	r.add(engine.TaskSpec{ID: "zb", Title: "x", Spec: "FILE: z.txt", Checks: checkPath("z.txt")})
 	d := r.driver("zombie", 1, "zombie")
 	d.o.MaxTasks = 1
@@ -280,16 +281,15 @@ func TestZombieIsStoppedAndTaskRecovers(t *testing.T) {
 	if _, err := d.Run(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if took := time.Since(start); took > 10*time.Second {
+	if took := time.Since(start); took > 15*time.Second {
 		t.Fatalf("zombie ran for %v", took)
 	}
 	x := r.get("zb")
 	if x.Failures != 1 || !strings.Contains(fmt.Sprint(x.Notes), "no_progress") {
 		t.Fatalf("zombie not recorded: %+v", x)
 	}
-	d = r.driver("fine", 1, "ok")
-	d.o.MaxTasks = 1
-	if _, err := d.Run(context.Background()); err != nil {
+	// With no task limit, this driver keeps going until the task really lands.
+	if _, err := r.driver("fine", 1, "ok").Run(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	r.await("zb", core.Done)
