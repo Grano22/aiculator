@@ -23,6 +23,7 @@ import (
 	"aiculation/internal/api"
 	"aiculation/internal/client"
 	"aiculation/internal/engine"
+	"aiculation/internal/harness"
 	"aiculation/internal/sandbox"
 	"aiculation/internal/swarm"
 )
@@ -47,13 +48,13 @@ type Manifest struct {
 	AllowedTools []string `koanf:"allowed_tools"`
 }
 
-// Presets are manifests for known harnesses.
-func Presets() map[string]Manifest {
-	return map[string]Manifest{
-		"gemini": {Name: "gemini", Command: []string{"gemini", "--acp"}, PassEnv: []string{"GEMINI_API_KEY", "GOOGLE_API_KEY"}, RealHome: true, WritePaths: []string{"~/.gemini"}},
-		"claude": {Name: "claude", Command: []string{"npx", "-y", "@agentclientprotocol/claude-agent-acp"}, PassEnv: []string{"ANTHROPIC_API_KEY"}, Env: []string{"CLAUDE_CODE_TMPDIR={private}"}, RealHome: true, WritePaths: []string{"~/.claude", "~/.claude.json", "~/.npm"}},
-		"codex":  {Name: "codex", Command: []string{"npx", "-y", "@agentclientprotocol/codex-acp"}, PassEnv: []string{"OPENAI_API_KEY"}, RealHome: true, WritePaths: []string{"~/.codex", "~/.npm"}},
+// Preset builds the manifest for a harness in the registry.
+func Preset(id string) (Manifest, bool) {
+	h, ok := harness.Get(id)
+	if !ok || len(h.ACP) == 0 {
+		return Manifest{}, false
 	}
+	return Manifest{Name: h.ID, Command: h.ACP, PassEnv: h.PassEnv, Env: h.Env, RealHome: true, WritePaths: h.StateDirs}, true
 }
 
 // Options configures a driver.
