@@ -45,20 +45,87 @@ func (h Harness) WriteMCP(root string, e Entry, backupDir string) (Result, error
 		}, backupDir)
 	case MCPOpenCode:
 		if _, err := os.Stat(filepath.Join(root, "opencode.jsonc")); err == nil {
-			return Result{}, fmt.Errorf("opencode.jsonc may hold comments that rewriting would lose; add this to its \"mcp\" object by hand:\n%s", openCodeSnippet(e))
+			return Result{}, fmt.Errorf("opencode.jsonc may hold comments that rewriting would lose; add this to its \"mcp\".\"servers\" object by hand:\n%s", openCodeSnippet(e))
 		}
-		return h.writeJSON(root, "mcp", openCodeEntry(e), backupDir)
+		return h.writeOpenCode(root, e, backupDir)
 	case MCPCodexTOML:
 		return h.writeTOML(root, e, backupDir)
 	}
 	return Result{}, nil
 }
 
+// openCodeEntry uses the v2 shape, the one opencode mcp add writes in 2.0.32. Its docs
+// page still shows the deprecated v1 shape, with "enabled" and a numeric timeout.
 func openCodeEntry(e Entry) map[string]any {
 	return map[string]any{
 		"type": "local", "command": append([]string{e.Command}, e.Args...),
-		"enabled": true, "timeout": toolTimeoutMs,
+		"timeout": map[string]any{"execution": toolTimeoutMs},
 	}
+}
+
+func (h Harness) writeOpenCode(root string, e Entry, backupDir string) (Result, error) {
+	path := h.mcpPath(root)
+	doc, old, err := readJSON(path)
+	if err != nil {
+		return Result{}, err
+	}
+	mcp, ok := doc["mcp"].(map[string]any)
+	if !ok {
+		if doc["mcp"] != nil {
+			return Result{}, fmt.Errorf("%s: \"mcp\" is not an object, so the file was left alone", path)
+		}
+		mcp = map[string]any{}
+	}
+	servers, ok := mcp["servers"].(map[string]any)
+	if !ok {
+		if mcp["servers"] != nil {
+			return Result{}, fmt.Errorf("%s: \"mcp.servers\" is not an object, so the file was left alone", path)
+		}
+		servers = map[string]any{}
+	}
+	delete(mcp, ServerName) // An entry in the old shape must not linger beside the new one.
+	servers[ServerName] = openCodeEntry(e)
+	mcp["servers"] = servers
+	doc["mcp"] = mcp
+	data, err := encodeJSON(doc)
+	if err != nil {
+		return Result{}, err
+	}
+	return commit(path, old, data, backupDir)
+}
+
+func (h Harness) removeOpenCode(root, backupDir string) (Result, error) {
+	path := h.mcpPath(root)
+	doc, old, err := readJSON(path)
+	if err != nil || old == nil {
+		return Result{Path: path}, err
+	}
+	mcp, _ := doc["mcp"].(map[string]any)
+	servers, _ := mcp["servers"].(map[string]any)
+	_, inServers := servers[ServerName]
+	_, inOld := mcp[ServerName]
+	if !inServers && !inOld {
+		return Result{Path: path}, nil
+	}
+	delete(servers, ServerName)
+	delete(mcp, ServerName)
+	if len(servers) == 0 {
+		delete(mcp, "servers")
+	}
+	if len(mcp) == 0 {
+		delete(doc, "mcp")
+	}
+	if len(doc) == 0 {
+		if err := backup(path, old, backupDir); err != nil {
+			return Result{}, err
+		}
+		return Result{Path: path, Changed: true}, os.Remove(path)
+	}
+	data, err := encodeJSON(doc)
+	if err != nil {
+		return Result{}, err
+	}
+	return commit(path, old, data, backupDir)
 }
 
 func openCodeSnippet(e Entry) string {
@@ -72,7 +139,7 @@ func (h Harness) RemoveMCP(root, backupDir string) (Result, error) {
 	case MCPServersJSON:
 		return h.removeJSON(root, "mcpServers", backupDir)
 	case MCPOpenCode:
-		return h.removeJSON(root, "mcp", backupDir)
+		return h.removeOpenCode(root, backupDir)
 	case MCPCodexTOML:
 		return h.removeTOML(root, backupDir)
 	}
@@ -87,15 +154,15 @@ func (h Harness) HasMCP(root string) bool {
 	}
 	switch h.MCP {
 	case MCPServersJSON, MCPOpenCode:
-		key := "mcpServers"
-		if h.MCP == MCPOpenCode {
-			key = "mcp"
-		}
 		var doc map[string]any
 		if json.Unmarshal(b, &doc) != nil {
 			return false
 		}
-		servers, _ := doc[key].(map[string]any)
+		servers, _ := doc["mcpServers"].(map[string]any)
+		if h.MCP == MCPOpenCode {
+			mcp, _ := doc["mcp"].(map[string]any)
+			servers, _ = mcp["servers"].(map[string]any)
+		}
 		_, ok := servers[ServerName]
 		return ok
 	case MCPCodexTOML:

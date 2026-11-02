@@ -81,13 +81,15 @@ Use the spec's fields first: `name`, `description`, `license`, `compatibility`, 
 | Claude Code | link in `.claude/skills` | `.mcp.json` | Yes: shell, MCP and ACP |
 | Codex | native | `.codex/config.toml` | No |
 | Gemini CLI | native | `.gemini/settings.json` | No |
-| OpenCode | native | `opencode.json` | No |
+| OpenCode | native | `opencode.json` | Yes: shell, MCP and ACP |
 | Cursor | native | `.cursor/mcp.json` | No |
 | GitHub Copilot CLI | native | `.mcp.json` | No |
 | Pi, goose | native | None: shell route | No |
 | Amp, Auggie, Cline, Continue, Crush, Devin, Droid, Grok, Junie, Kilo, Kimi, Kiro, Qwen, Roo, Vibe, Windsurf | From a community table, not their docs | None: shell route | No |
 
-The first eight were checked against each harness's own docs. Only Claude Code has been run end to end, so treat the rest as untested until `scripts/gate3_real.sh ID` passes for them.
+The first eight were checked against each harness's own docs. Only Claude Code and OpenCode have been run end to end, so treat the rest as untested until `scripts/gate3_real.sh ID` passes for them.
+
+OpenCode 2 needs one extra step: a running background service does not pick up new project config, and `opencode mcp list` reports the service's view. Use `opencode run --standalone` or restart the service. The shell route works either way.
 
 ## How it works
 
@@ -129,6 +131,7 @@ go test ./internal/engine -run=^$ -bench=GrantCycle
 ./scripts/gate3_real.sh claude 3                    # Any harness id; uses that account
 ROUTE=mcp ./scripts/gate_join.sh                    # Real session joins using only join's output
 ROUTE=shell ./scripts/gate_join.sh                  # The same, for a session already open
+HARNESS=opencode ROUTE=mcp ./scripts/gate_join.sh   # The same, in OpenCode with a free model
 ```
 
 ## Formal verification

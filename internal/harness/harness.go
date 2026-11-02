@@ -155,7 +155,7 @@ var registry = []Harness{
 		StateDirs: []string{"~/.config/opencode", "~/.local/share/opencode", "~/.local/state/opencode", "~/.cache/opencode"},
 		SkillsDir: ".opencode/skills", GlobalSkillsDir: "~/.config/opencode/skills", ReadsAgents: true, ReadsGlobalAgents: true,
 		MCP: MCPOpenCode, MCPFile: "opencode.json", Source: SourceDocs,
-		Note: "OpenCode's default MCP timeout is 30 seconds, so the config sets 60.",
+		Note: "A running OpenCode background service does not pick up new project config, and opencode mcp list reports its view. Use opencode run --standalone or restart the service. Shell works either way.",
 	},
 	{
 		ID: "pi", Name: "Pi", Bins: []string{"pi"},

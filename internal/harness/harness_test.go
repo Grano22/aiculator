@@ -154,16 +154,44 @@ func TestBrokenJSONIsLeftAlone(t *testing.T) {
 func TestOpenCodeFormatAndTimeout(t *testing.T) {
 	root := t.TempDir()
 	h, _ := Get("opencode")
+	path := filepath.Join(root, "opencode.json")
+	// An old-shape entry and the user's own server, both in the existing file.
+	old := `{"model": "m", "mcp": {"swarm": {"type": "local", "command": ["x"]}, "servers": {"mine": {"type": "local", "command": ["y"]}}}}`
+	if err := os.WriteFile(path, []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := h.WriteMCP(root, entry, ""); err != nil {
 		t.Fatal(err)
 	}
-	s := readDoc(t, filepath.Join(root, "opencode.json"))["mcp"].(map[string]any)[ServerName].(map[string]any)
+	doc := readDoc(t, path)
+	mcp := doc["mcp"].(map[string]any)
+	if mcp[ServerName] != nil {
+		t.Error("the old-shape entry lingered")
+	}
+	servers := mcp["servers"].(map[string]any)
+	if servers["mine"] == nil || doc["model"] != "m" {
+		t.Fatalf("merge lost data: %v", doc)
+	}
+	s := servers[ServerName].(map[string]any)
 	if s["type"] != "local" || s["command"].([]any)[0] != "swarm" {
 		t.Fatalf("format: %v", s)
 	}
-	// OpenCode's default is 30 seconds including tool calls, shorter than a long hold.
-	if s["timeout"].(float64) <= 40000 {
+	// The v2 schema rejects unknown keys here, so "enabled" must not appear.
+	if _, bad := s["enabled"]; bad {
+		t.Error(`"enabled" is not in the v2 schema`)
+	}
+	if s["timeout"].(map[string]any)["execution"].(float64) <= 40000 {
 		t.Fatalf("timeout too short for wait_for_task: %v", s["timeout"])
+	}
+	if !h.HasMCP(root) {
+		t.Error("HasMCP is false after writing")
+	}
+	if _, err := h.RemoveMCP(root, ""); err != nil {
+		t.Fatal(err)
+	}
+	mcp = readDoc(t, path)["mcp"].(map[string]any)
+	if mcp["servers"].(map[string]any)["mine"] == nil || mcp["servers"].(map[string]any)[ServerName] != nil {
+		t.Fatalf("remove: %v", mcp)
 	}
 }
 
@@ -174,7 +202,7 @@ func TestOpenCodeJSONCIsNotRewritten(t *testing.T) {
 	}
 	h, _ := Get("opencode")
 	_, err := h.WriteMCP(root, entry, "")
-	if err == nil || !strings.Contains(err.Error(), `"type": "local"`) {
+	if err == nil || !strings.Contains(err.Error(), `"type": "local"`) || !strings.Contains(err.Error(), "servers") {
 		t.Fatalf("expected a snippet to paste: %v", err)
 	}
 }
