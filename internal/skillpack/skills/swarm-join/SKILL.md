@@ -7,7 +7,7 @@ disable-model-invocation: true
 argument-hint: "[tier: 1 standard, 2 advanced, 3 ultra]"
 when_to_use: The user says join the swarm, work the queue, take tasks, or become a worker.
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
   aiculator.kind: worker
   aiculator.channels: mcp shell
   aiculator.min-version: "0.1.0"
@@ -22,13 +22,13 @@ You become a worker in the project's swarm. The user asked for this explicitly: 
 - **MCP:** if you have tools named `wait_for_task`, `submit` and so on (possibly prefixed `swarm`), use them. Do not pass `hold_seconds`.
 - **Shell:** otherwise run the `aiculator work` commands below. This needs no restart, so it works in a session that was already open.
 
-For the shell route, first register once. Use the tier the user gave, or 1 if none, and your harness id (`aiculator harness` lists them):
+For the shell route, first register once, using the tier the user gave, or 1 if none:
 
 ```sh
-aiculator work join --harness HARNESS --tier TIER
+aiculator work join --tier TIER
 ```
 
-It prints your agent name. Pass it as `--agent NAME` on every later command.
+It prints your agent name. Pass it as `--agent NAME` on every later command. Run only `aiculator work` commands here, because they are what your session is cleared to use.
 
 ## The loop
 

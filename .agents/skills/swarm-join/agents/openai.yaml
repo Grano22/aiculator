@@ -1,0 +1,6 @@
+interface:
+  display_name: Join the swarm
+  short_description: Work the project's task queue from this session
+  default_prompt: Join the swarm as a tier 1 worker and work the queue until it says exit.
+policy:
+  allow_implicit_invocation: false

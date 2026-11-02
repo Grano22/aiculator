@@ -1,4 +1,4 @@
-# Swarm
+# Aiculator
 
 One static Go binary that runs a queue of coding tasks across AI harnesses. It assigns each task to an agent of the right tier, isolates it in a git worktree and sandbox, verifies the result itself, and merges it.
 
@@ -9,24 +9,85 @@ An agent saying "done" counts for nothing: the swarm runs the acceptance checks.
 ```sh
 # Static on Linux. macOS does not allow static binaries, so there it links system libraries.
 CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o bin/aiculator ./cmd/aiculator
+export PATH="$PWD/bin:$PATH"     # The skills call aiculator by name.
 
-# Start the server against a repository.
-bin/aiculator serve --repo /path/to/repo
-
-# In another terminal, from the same directory, add a task.
-bin/aiculator task add --title "Add a health endpoint" \
-  --spec "Add GET /healthz returning 200." --check "go test ./..." --tier 1
-
-# Run a harness through ACP. It only launches when there is work.
-export SWARM_TOKEN=$(bin/aiculator token --agent worker1 --tier 1)
-bin/aiculator drive --harness claude --agent worker1
-
-bin/aiculator task ls
+cd /path/to/your/repo
+aiculator join --tier 1          # Server, skills and MCP config for every installed harness
+aiculator task add --title "Add a health endpoint" \
+  --spec "Add GET /healthz returning 200." --check "go test ./..."
+aiculator task ls
 ```
 
 Finished work lands on the `swarm/integration` branch. Your own branches are never touched.
 
-To attach a Claude Code session directly, point it at `http://127.0.0.1:7777/mcp` with `Authorization: Bearer <token>`. `scripts/gate2_claude.sh` shows a complete example.
+## Three ways to work the queue
+
+| Route | Use it when | Restart? | Sandbox? |
+|---|---|---|---|
+| **Shell:** `aiculator work ...` | A session is already open, or the harness has no MCP (Pi, goose) | No | No |
+| **MCP:** written by `aiculator join` | A new session in any harness with a project MCP file | Yes, MCP loads at start | No |
+| **ACP:** `aiculator drive --harness ID` | You want workers launched for you, with no model turns while idle | Not applicable | Yes |
+
+To join from a session that is already open, paste this into it:
+
+```text
+Read .agents/skills/swarm-join/SKILL.md and follow it. Join as tier 1.
+```
+
+In a new session, use the `swarm-join` skill (`/swarm-join 2` in Claude Code for tier 2). `swarm-plan` feeds the queue and keeps waiting workers informed, and it needs `aiculator join --planner` for its MCP tools. `swarm-operate` runs the server and launches workers. Both routes offer the same worker operations: wait, claim, heartbeat, progress, submit, fail, release, review and situation.
+
+A joined session runs under its harness's own permissions, outside the swarm's sandbox. The swarm still runs the acceptance checks itself, in a sandbox. For untrusted work, use `aiculator drive`.
+
+## Skills in one place
+
+Skills live in `.agents/skills/`, the cross-client convention from [agentskills.io](https://agentskills.io). Harnesses that scan it need nothing, and the rest get a link, so an edit reaches every harness. `.agent/skills/` is read as well, and its skills are linked into `.agents/skills/`, because that is the path harnesses actually scan.
+
+```sh
+aiculator skill --install '*'                  # All skills, to every installed harness
+aiculator skill --install 'swarm-*' '*-tool'   # By pattern: * anything, ? one character, [abc] a set
+aiculator skill --install '*' --global         # ~/.agents/skills and home directories
+aiculator skill --install '*' --harness all    # Every supported harness, installed or not
+aiculator skill --install x --harness claude,pi
+aiculator skill --install x --path ./vendor/skills --harness none   # A custom target
+aiculator skill --install x --source ~/my-skills                    # A custom source
+aiculator skill --list                         # Versions, lint state, who can see what
+aiculator skill --lint                         # Check against the Agent Skills spec
+aiculator skill --new my-skill --description "..."
+aiculator skill --uninstall 'swarm-*' --purge
+```
+
+Quote patterns. A bare `*` also works: the shell expands it to the directory listing, and aiculator recognizes that exact list as "all". zsh stops with an error on an unmatched unquoted `*-sth` before aiculator runs.
+
+Your own directories are never replaced, even with `--force`. A skill that fails the linter is not linked anywhere.
+
+### Skill metadata
+
+Use the spec's fields first: `name`, `description`, `license`, `compatibility`, `metadata` (string values only) and `allowed-tools`. Fields below are honored by some harnesses and ignored by others, so they are safe in project skills, but claude.ai uploads and the Skills API reject them.
+
+| Field or file | Honored by |
+|---|---|
+| `disable-model-invocation` | Claude Code, Cursor, Pi |
+| `paths` | Claude Code, Cursor |
+| `when_to_use`, `argument-hint`, `arguments`, `user-invocable`, `disallowed-tools`, `model`, `effort`, `context`, `agent`, `hooks` | Claude Code |
+| `icon`, `color` | Cursor |
+| `agents/openai.yaml` | Codex |
+
+## Harnesses
+
+`aiculator harness` shows all 24 and their state on this machine.
+
+| Harness | Skills | MCP config written by join | Run for real here |
+|---|---|---|---|
+| Claude Code | link in `.claude/skills` | `.mcp.json` | Yes: shell, MCP and ACP |
+| Codex | native | `.codex/config.toml` | No |
+| Gemini CLI | native | `.gemini/settings.json` | No |
+| OpenCode | native | `opencode.json` | No |
+| Cursor | native | `.cursor/mcp.json` | No |
+| GitHub Copilot CLI | native | `.mcp.json` | No |
+| Pi, goose | native | None: shell route | No |
+| Amp, Auggie, Cline, Continue, Crush, Devin, Droid, Grok, Junie, Kilo, Kimi, Kiro, Qwen, Roo, Vibe, Windsurf | From a community table, not their docs | None: shell route | No |
+
+The first eight were checked against each harness's own docs. Only Claude Code has been run end to end, so treat the rest as untested until `scripts/gate3_real.sh ID` passes for them.
 
 ## How it works
 
@@ -36,6 +97,7 @@ To attach a Claude Code session directly, point it at `http://127.0.0.1:7777/mcp
 - **Planner signal:** the planner takes a lease before reading its input and publishes its phase and expected tasks per tier. A plan becomes visible all at once when it commits. If the planner dies, the lease expires and waiters see `planner_lost`.
 - **Zombies:** the swarm hashes the worktree itself. An agent with a live heartbeat and unchanged files loses its lease.
 - **Handoff:** work is saved under `refs/swarm/<task>/`. A new attempt starts from there and first merges in whatever has landed since.
+- **Secrets:** sandboxed commands cannot read the admin token, the signing key or credential stores such as `~/.ssh`. Harness config files hold no tokens: the MCP bridge gets one locally when it starts.
 - **Harness faults:** a missing login or failed launch hands the task back with no penalty and stops that driver.
 
 ## Layout
@@ -51,7 +113,9 @@ To attach a Claude Code session directly, point it at `http://127.0.0.1:7777/mcp
 | `internal/swarm` | Service that joins the engine and work layer |
 | `internal/api` | HTTP and MCP endpoints |
 | `internal/driver` | ACP driver and permission policy |
-| `cmd/swarm` | The binary, and the `kill -9` gate test |
+| `internal/harness` | Registry of harnesses, and MCP config writers |
+| `internal/skillpack` | One-place skills, wildcard install, linter, bundled skills |
+| `cmd/aiculator` | The binary, and the `kill -9` gate test |
 | `cmd/fakeagent` | ACP agent that is slow, crashes, goes zombie or lies |
 
 ## Tests
@@ -62,7 +126,9 @@ go test ./internal/core -run=^$ -fuzz=FuzzApply -fuzztime=60s
 go test ./internal/engine -run=^$ -bench=GrantCycle
 ./scripts/license_audit.sh                          # Regenerates THIRD_PARTY_NOTICES.md
 ./scripts/gate2_claude.sh                           # Uses your Claude account
-./scripts/gate3_real.sh claude 3                    # Also gemini or codex; uses that account
+./scripts/gate3_real.sh claude 3                    # Any harness id; uses that account
+ROUTE=mcp ./scripts/gate_join.sh                    # Real session joins using only join's output
+ROUTE=shell ./scripts/gate_join.sh                  # The same, for a session already open
 ```
 
 ## Formal verification
