@@ -19,6 +19,7 @@ type Spec struct {
 	Argv       []string // Command and arguments.
 	WritePaths []string // Extra writable paths.
 	Network    bool     // Whether network access is allowed.
+	Hide       []string // Paths the command may not read at all, such as secrets.
 	Env        []string // Complete environment. The parent's is never inherited.
 }
 
@@ -67,6 +68,20 @@ func BaseEnv(home string) []string {
 		"TMPDIR=" + filepath.Join(home, ".tmp"),
 		"LANG=C.UTF-8",
 	}
+}
+
+// SecretHome lists credential stores in the home directory. Harnesses that use the
+// real home for their own login still have no reason to read these.
+func SecretHome() []string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, d := range []string{".ssh", ".aws", ".gnupg", ".kube", ".docker/config.json", ".netrc", ".config/gh", ".config/gcloud"} {
+		out = append(out, filepath.Join(home, d))
+	}
+	return out
 }
 
 func finish(ctx context.Context, s Spec, argv []string) *exec.Cmd {
@@ -130,7 +145,7 @@ func seatbeltQuote(p string) string {
 
 // Profile returns the policy: reads allowed, writes only in the listed paths,
 // and no network unless asked for.
-func (Seatbelt) Profile(dir string, writes []string, network bool) string {
+func (Seatbelt) Profile(dir string, writes, hide []string, network bool) string {
 	var b strings.Builder
 	b.WriteString("(version 1)\n(allow default)\n(deny file-write*)\n")
 	b.WriteString(`(allow file-write* (literal "/dev/null") (literal "/dev/zero") (literal "/dev/dtracehelper") (regex #"^/dev/tty") (regex #"^/dev/fd/"))` + "\n")
@@ -139,6 +154,11 @@ func (Seatbelt) Profile(dir string, writes []string, network bool) string {
 	}
 	if !network {
 		b.WriteString("(deny network*)\n")
+	}
+	// Last match wins in a profile, so these beat every allow above.
+	for _, p := range hide {
+		q := seatbeltQuote(realPath(p))
+		b.WriteString("(deny file-read* file-write* (subpath " + q + "))\n")
 	}
 	return b.String()
 }
@@ -149,7 +169,7 @@ func (x Seatbelt) Command(ctx context.Context, s Spec) (*exec.Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
-	argv := append([]string{"sandbox-exec", "-p", x.Profile(dir, s.WritePaths, s.Network)}, s.Argv...)
+	argv := append([]string{"sandbox-exec", "-p", x.Profile(dir, s.WritePaths, s.Hide, s.Network)}, s.Argv...)
 	return finish(ctx, s, argv), nil
 }
 
@@ -160,7 +180,7 @@ type Bubblewrap struct{}
 func (Bubblewrap) Name() string { return "bwrap" }
 
 // Args returns the bwrap arguments, separated out so they can be tested anywhere.
-func (Bubblewrap) Args(dir string, writes []string, network bool, argv []string) []string {
+func (Bubblewrap) Args(dir string, writes, hide []string, network bool, argv []string) []string {
 	out := []string{"--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
 		"--unshare-pid", "--unshare-ipc", "--unshare-uts", "--die-with-parent", "--new-session"}
 	if !network {
@@ -168,6 +188,17 @@ func (Bubblewrap) Args(dir string, writes []string, network bool, argv []string)
 	}
 	for _, p := range append([]string{dir}, writes...) {
 		out = append(out, "--bind", p, p)
+	}
+	for _, p := range hide {
+		fi, err := os.Stat(p)
+		switch {
+		case err != nil:
+			// Nothing there to hide.
+		case fi.IsDir():
+			out = append(out, "--tmpfs", p)
+		default:
+			out = append(out, "--ro-bind", "/dev/null", p)
+		}
 	}
 	out = append(out, "--chdir", dir, "--")
 	return append(out, argv...)
@@ -179,13 +210,14 @@ func (x Bubblewrap) Command(ctx context.Context, s Spec) (*exec.Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
-	return finish(ctx, s, append([]string{"bwrap"}, x.Args(dir, s.WritePaths, s.Network, s.Argv)...)), nil
+	return finish(ctx, s, append([]string{"bwrap"}, x.Args(dir, s.WritePaths, s.Hide, s.Network, s.Argv)...)), nil
 }
 
 // DefaultDockerImage has a shell and git; projects will usually set their own.
 const DefaultDockerImage = "alpine/git:latest"
 
-// Docker runs the command in a throwaway container.
+// Docker runs the command in a throwaway container. Spec.Hide needs no handling:
+// a container sees only what is mounted, and nothing else is.
 type Docker struct{ Image string }
 
 // Name implements Sandbox.

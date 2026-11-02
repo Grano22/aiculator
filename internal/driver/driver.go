@@ -63,7 +63,8 @@ type Options struct {
 	Token      string // This agent's token.
 	AgentID    string
 	Sandbox    sandbox.Sandbox
-	SwarmBin   string // Binary used for the stdio MCP bridge.
+	Hide       []string // Paths the harness may not read, such as the swarm's secrets.
+	SwarmBin   string   // Binary used for the stdio MCP bridge.
 	Hold       time.Duration
 	Heartbeat  time.Duration // How often to save work and renew the lease.
 	MaxTasks   int           // Stop after this many tasks; 0 means no limit.
@@ -316,7 +317,7 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
 		writes = append(writes, d.expandHome(p))
 	}
 	cmd, err := d.o.Sandbox.Command(sctx, sandbox.Spec{
-		Dir: work, Argv: d.o.Manifest.Command, Env: d.buildEnv(private), WritePaths: writes, Network: true,
+		Dir: work, Argv: d.o.Manifest.Command, Env: d.buildEnv(private), WritePaths: writes, Network: true, Hide: d.o.Hide,
 	})
 	if err != nil {
 		return sessionResult{harnessDown: true, note: "sandbox_error: " + err.Error()}

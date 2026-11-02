@@ -178,7 +178,9 @@ func (a *agent) Prompt(ctx context.Context, r acp.PromptRequest) (acp.PromptResp
 		directErr := os.WriteFile(outside+".direct", []byte("pwned"), 0o644)
 		// Neither may it plant a hook in the repository, which would run as the user.
 		hookErr := os.WriteFile(filepath.Join(os.Getenv("FAKE_REPO"), ".git", "hooks", "pre-commit"), []byte("#!/bin/sh\n"), 0o755)
+		_, secretErr := os.ReadFile(os.Getenv("FAKE_SECRET"))
 		a.record("fs.json", map[string]bool{
+			"secret_refused":    secretErr != nil,
 			"inside_ok":         inErr == nil,
 			"outside_refused":   outErr != nil,
 			"traversal_refused": trvErr != nil,

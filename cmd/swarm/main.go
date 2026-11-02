@@ -114,7 +114,7 @@ func serve(ctx context.Context, o serveOpts) error {
 		if err != nil {
 			return err
 		}
-		if wm, err = work.New(ctx, work.Options{Repo: repo, Root: filepath.Join(dataDir, "worktrees"), Branch: o.branch, Sandbox: sb}); err != nil {
+		if wm, err = work.New(ctx, work.Options{Repo: repo, Root: filepath.Join(dataDir, "worktrees"), Branch: o.branch, Sandbox: sb, Hide: secretPaths()}); err != nil {
 			return err
 		}
 		log.Info("work layer ready", "repo", repo, "branch", wm.Branch(), "sandbox", sb.Name())
@@ -152,6 +152,20 @@ func serve(ctx context.Context, o serveOpts) error {
 	defer cancel()
 	_ = hs.Shutdown(shut)
 	return nil
+}
+
+// secretPaths lists what sandboxed commands may not read. With the admin token or
+// signing key, an agent could mint any identity and approve its own work.
+func secretPaths() []string {
+	abs, err := filepath.Abs(dataDir)
+	if err != nil {
+		abs = dataDir
+	}
+	paths := sandbox.SecretHome()
+	for _, name := range []string{"admin.token", "signing.key", "agents", "nats"} {
+		paths = append(paths, filepath.Join(abs, name))
+	}
+	return paths
 }
 
 func atomicWrite(path string, b []byte, mode os.FileMode) error {

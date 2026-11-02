@@ -32,6 +32,7 @@ type Manager struct {
 	branch       string
 	sb           sandbox.Sandbox
 	checkTimeout time.Duration
+	hide         []string
 	mergeMu      sync.Mutex
 	gitMu        sync.Mutex // Serializes commands that change worktree metadata.
 }
@@ -43,6 +44,7 @@ type Options struct {
 	Branch       string
 	Sandbox      sandbox.Sandbox
 	CheckTimeout time.Duration
+	Hide         []string // Paths checks may not read, such as the swarm's secrets.
 }
 
 // New prepares the repository and creates the integration branch if needed.
@@ -63,7 +65,7 @@ func New(ctx context.Context, o Options) (*Manager, error) {
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return nil, err
 	}
-	m := &Manager{repo: o.Repo, root: root, branch: o.Branch, sb: o.Sandbox, checkTimeout: o.CheckTimeout}
+	m := &Manager{repo: o.Repo, root: root, branch: o.Branch, sb: o.Sandbox, checkTimeout: o.CheckTimeout, hide: o.Hide}
 	if _, err := m.git(ctx, m.repo, "rev-parse", "--verify", "HEAD"); err != nil {
 		return nil, fmt.Errorf("repository needs at least one commit: %w", err)
 	}
@@ -337,7 +339,7 @@ func (m *Manager) runIn(ctx context.Context, dir string, checks []string) CheckR
 		home := filepath.Join(dir, ".swarm-home")
 		_ = os.MkdirAll(filepath.Join(home, ".tmp"), 0o755)
 		cmd, err := m.sb.Command(cctx, sandbox.Spec{
-			Dir: dir, Argv: []string{"sh", "-c", check}, Env: sandbox.BaseEnv(home),
+			Dir: dir, Argv: []string{"sh", "-c", check}, Env: sandbox.BaseEnv(home), Hide: m.hide,
 		})
 		if err != nil {
 			cancel()

@@ -321,7 +321,12 @@ func TestPolicyAndConfinement(t *testing.T) {
 	r := newRig(t, engine.Config{})
 	outside := filepath.Join(t.TempDir(), "secret.txt")
 	r.add(engine.TaskSpec{ID: "pb", Title: "x", AllowEmpty: true, Checks: []string{"true"}})
-	d := r.driver("probe", 1, "probe", "FAKE_OUTSIDE="+outside, "FAKE_REPO="+r.repo, "FAKE_MCP_HTTP=1")
+	secret := filepath.Join(t.TempDir(), "admin.token")
+	if err := os.WriteFile(secret, []byte("hunter2"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	d := r.driver("probe", 1, "probe", "FAKE_OUTSIDE="+outside, "FAKE_REPO="+r.repo, "FAKE_SECRET="+secret, "FAKE_MCP_HTTP=1")
+	d.o.Hide = []string{secret}
 	d.o.MaxTasks = 1
 	if _, err := d.Run(context.Background()); err != nil {
 		t.Fatal(err)
@@ -352,7 +357,7 @@ func TestPolicyAndConfinement(t *testing.T) {
 	}
 	var fs map[string]bool
 	_ = json.Unmarshal(out, &fs)
-	for _, k := range []string{"inside_ok", "outside_refused", "traversal_refused", "direct_refused", "hook_refused"} {
+	for _, k := range []string{"inside_ok", "outside_refused", "traversal_refused", "direct_refused", "hook_refused", "secret_refused"} {
 		if !fs[k] {
 			t.Errorf("%s = false: %s", k, out)
 		}

@@ -96,13 +96,13 @@ func TestEnvironmentIsNotInherited(t *testing.T) {
 // bwrap and docker cannot run on every machine, so their policies are checked as
 // arguments. This proves the flags are right, not that isolation holds.
 func TestBubblewrapArgs(t *testing.T) {
-	a := Bubblewrap{}.Args("/w", nil, false, []string{"go", "test"})
+	a := Bubblewrap{}.Args("/w", nil, nil, false, []string{"go", "test"})
 	for _, want := range []string{"--unshare-net", "--unshare-pid", "--die-with-parent"} {
 		if !slices.Contains(a, want) {
 			t.Errorf("missing %s in %v", want, a)
 		}
 	}
-	if slices.Contains(Bubblewrap{}.Args("/w", nil, true, []string{"x"}), "--unshare-net") {
+	if slices.Contains(Bubblewrap{}.Args("/w", nil, nil, true, []string{"x"}), "--unshare-net") {
 		t.Error("network requested but still unshared")
 	}
 }
@@ -125,5 +125,44 @@ func TestOpenRefusesSilentNoSandbox(t *testing.T) {
 	}
 	if _, err := Open("bogus"); err == nil {
 		t.Fatal("unknown sandbox accepted")
+	}
+}
+
+func TestSeatbeltHidesSecretsFromReads(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("macOS only")
+	}
+	work, data := t.TempDir(), t.TempDir()
+	secret := filepath.Join(data, "admin.token")
+	if err := os.WriteFile(secret, []byte("hunter2"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	spec := Spec{Dir: work, Env: BaseEnv(work), Argv: []string{"cat", secret}}
+	if out, err := run(t, Seatbelt{}, spec); err != nil || !strings.Contains(out, "hunter2") {
+		t.Fatalf("control: unhidden file should be readable: %v %s", err, out)
+	}
+	spec.Hide = []string{secret}
+	if out, err := run(t, Seatbelt{}, spec); err == nil || strings.Contains(out, "hunter2") {
+		t.Fatalf("hidden file was read: %s", out)
+	}
+	// A symlink inside the worktree must not get around it.
+	if err := os.Symlink(secret, filepath.Join(work, "door")); err != nil {
+		t.Fatal(err)
+	}
+	spec.Argv = []string{"cat", "door"}
+	if out, err := run(t, Seatbelt{}, spec); err == nil || strings.Contains(out, "hunter2") {
+		t.Fatalf("hidden file was read through a symlink: %s", out)
+	}
+}
+
+func TestBubblewrapHidesFilesAndDirectories(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "f")
+	if err := os.WriteFile(file, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	a := strings.Join(Bubblewrap{}.Args("/w", nil, []string{dir, file, "/nonexistent"}, false, []string{"x"}), " ")
+	if !strings.Contains(a, "--tmpfs "+dir) || !strings.Contains(a, "--ro-bind /dev/null "+file) || strings.Contains(a, "/nonexistent") {
+		t.Fatalf("args: %s", a)
 	}
 }

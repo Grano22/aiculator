@@ -118,7 +118,7 @@ func driveCmd() *cobra.Command {
 			}
 			log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 			d, err := driver.New(driver.Options{
-				Manifest: m, URL: url, Token: token, AgentID: agent, Sandbox: s, SwarmBin: self,
+				Manifest: m, URL: url, Token: token, AgentID: agent, Sandbox: s, SwarmBin: self, Hide: secretPaths(),
 				Hold: hold, Heartbeat: heartbeat, MaxTasks: maxTasks, Log: log, Stderr: os.Stderr,
 			})
 			if err != nil {
