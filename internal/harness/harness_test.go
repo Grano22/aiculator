@@ -263,3 +263,47 @@ func TestConfigHoldsNoSecrets(t *testing.T) {
 		}
 	}
 }
+
+func TestSnippetsMatchWhatWriteMCPProduces(t *testing.T) {
+	for _, id := range []string{"claude", "opencode", "codex", "gemini", "cursor"} {
+		h, _ := Get(id)
+		root := t.TempDir()
+		if _, err := h.WriteMCP(root, entry, ""); err != nil {
+			t.Fatal(err)
+		}
+		b, _ := os.ReadFile(h.mcpPath(root))
+		if string(b) != h.Snippet(entry) {
+			t.Errorf("%s: pasting the snippet would differ from writing it:\n%s\nvs\n%s", id, b, h.Snippet(entry))
+		}
+	}
+}
+
+func TestCustomServerNameAndConfigPath(t *testing.T) {
+	dir := t.TempDir()
+	e := Entry{Name: "docs", Command: "docs-server", Args: []string{"--x"}, Env: map[string]string{"K": "v"}}
+	for file, format := range map[string]MCPFormat{"a.toml": MCPCodexTOML, "opencode.json": MCPOpenCode, "my.json": MCPServersJSON} {
+		path := filepath.Join(dir, file)
+		if got := FormatForPath(path); got != format {
+			t.Errorf("%s: format %s", file, got)
+		}
+		h := At(format, path)
+		for _, name := range []Entry{e, entry} { // Two servers side by side.
+			if _, err := h.WriteMCP(dir, name, ""); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if !h.HasNamed(dir, "docs") || !h.HasMCP(dir) {
+			t.Errorf("%s: a server is missing", file)
+		}
+		b, _ := os.ReadFile(path)
+		if !strings.Contains(string(b), "docs-server") || !strings.Contains(string(b), `"v"`) {
+			t.Errorf("%s:\n%s", file, b)
+		}
+		if _, err := h.RemoveNamed(dir, "docs", ""); err != nil {
+			t.Fatal(err)
+		}
+		if h.HasNamed(dir, "docs") || !h.HasMCP(dir) {
+			t.Errorf("%s: remove took the wrong server", file)
+		}
+	}
+}

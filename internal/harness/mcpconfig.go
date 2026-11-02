@@ -19,8 +19,17 @@ const ServerName = "swarm"
 // Entry is the command that starts the MCP bridge. It holds no secrets: the bridge
 // gets its token locally when it starts, so these files are safe to commit.
 type Entry struct {
+	Name    string // Server name; empty means the swarm's own.
 	Command string
 	Args    []string
+	Env     map[string]string
+}
+
+func (e Entry) name() string {
+	if e.Name == "" {
+		return ServerName
+	}
+	return e.Name
 }
 
 // toolTimeoutMs leaves room above the longest wait_for_task hold.
@@ -32,20 +41,64 @@ type Result struct {
 	Changed bool
 }
 
-func (h Harness) mcpPath(root string) string { return filepath.Join(root, h.MCPFile) }
+func (h Harness) mcpPath(root string) string {
+	if filepath.IsAbs(h.MCPFile) {
+		return h.MCPFile
+	}
+	return filepath.Join(root, h.MCPFile)
+}
+
+// At returns the same format pointed at a specific config file.
+func At(format MCPFormat, path string) Harness {
+	return Harness{ID: "custom", MCP: format, MCPFile: path}
+}
+
+// FormatForPath infers a config format from a file name.
+func FormatForPath(path string) MCPFormat {
+	base := strings.ToLower(filepath.Base(path))
+	switch {
+	case strings.HasSuffix(base, ".toml"):
+		return MCPCodexTOML
+	case strings.HasPrefix(base, "opencode"):
+		return MCPOpenCode
+	}
+	return MCPServersJSON
+}
+
+func jsonEntry(e Entry) map[string]any {
+	m := map[string]any{
+		"type": "stdio", "command": e.Command, "args": e.Args,
+		"timeout": toolTimeoutMs, "tools": []string{"*"},
+	}
+	if len(e.Env) > 0 {
+		m["env"] = e.Env
+	}
+	return m
+}
+
+// Snippet returns the config piece to paste by hand, in this harness's format.
+func (h Harness) Snippet(e Entry) string {
+	name := e.name()
+	switch h.MCP {
+	case MCPOpenCode:
+		b, _ := encodeJSON(map[string]any{"mcp": map[string]any{"servers": map[string]any{name: openCodeEntry(e)}}})
+		return string(b)
+	case MCPCodexTOML:
+		return tomlBlockFor(e)
+	}
+	b, _ := encodeJSON(map[string]any{"mcpServers": map[string]any{name: jsonEntry(e)}})
+	return string(b)
+}
 
 // WriteMCP registers the swarm's server in the harness's project config. Other
 // settings are preserved, and the previous file is copied to backupDir first.
 func (h Harness) WriteMCP(root string, e Entry, backupDir string) (Result, error) {
 	switch h.MCP {
 	case MCPServersJSON:
-		return h.writeJSON(root, "mcpServers", map[string]any{
-			"type": "stdio", "command": e.Command, "args": e.Args,
-			"timeout": toolTimeoutMs, "tools": []string{"*"},
-		}, backupDir)
+		return h.writeJSON(root, "mcpServers", e.name(), jsonEntry(e), backupDir)
 	case MCPOpenCode:
-		if _, err := os.Stat(filepath.Join(root, "opencode.jsonc")); err == nil {
-			return Result{}, fmt.Errorf("opencode.jsonc may hold comments that rewriting would lose; add this to its \"mcp\".\"servers\" object by hand:\n%s", openCodeSnippet(e))
+		if _, err := os.Stat(filepath.Join(filepath.Dir(h.mcpPath(root)), "opencode.jsonc")); err == nil {
+			return Result{}, fmt.Errorf("opencode.jsonc may hold comments that rewriting would lose; add this by hand:\n%s", h.Snippet(e))
 		}
 		return h.writeOpenCode(root, e, backupDir)
 	case MCPCodexTOML:
@@ -57,10 +110,14 @@ func (h Harness) WriteMCP(root string, e Entry, backupDir string) (Result, error
 // openCodeEntry uses the v2 shape, the one opencode mcp add writes in 2.0.32. Its docs
 // page still shows the deprecated v1 shape, with "enabled" and a numeric timeout.
 func openCodeEntry(e Entry) map[string]any {
-	return map[string]any{
+	m := map[string]any{
 		"type": "local", "command": append([]string{e.Command}, e.Args...),
 		"timeout": map[string]any{"execution": toolTimeoutMs},
 	}
+	if len(e.Env) > 0 {
+		m["environment"] = e.Env
+	}
+	return m
 }
 
 func (h Harness) writeOpenCode(root string, e Entry, backupDir string) (Result, error) {
@@ -83,8 +140,8 @@ func (h Harness) writeOpenCode(root string, e Entry, backupDir string) (Result, 
 		}
 		servers = map[string]any{}
 	}
-	delete(mcp, ServerName) // An entry in the old shape must not linger beside the new one.
-	servers[ServerName] = openCodeEntry(e)
+	delete(mcp, e.name()) // An entry in the old shape must not linger beside the new one.
+	servers[e.name()] = openCodeEntry(e)
 	mcp["servers"] = servers
 	doc["mcp"] = mcp
 	data, err := encodeJSON(doc)
@@ -94,7 +151,7 @@ func (h Harness) writeOpenCode(root string, e Entry, backupDir string) (Result, 
 	return commit(path, old, data, backupDir)
 }
 
-func (h Harness) removeOpenCode(root, backupDir string) (Result, error) {
+func (h Harness) removeOpenCode(root, name, backupDir string) (Result, error) {
 	path := h.mcpPath(root)
 	doc, old, err := readJSON(path)
 	if err != nil || old == nil {
@@ -102,13 +159,13 @@ func (h Harness) removeOpenCode(root, backupDir string) (Result, error) {
 	}
 	mcp, _ := doc["mcp"].(map[string]any)
 	servers, _ := mcp["servers"].(map[string]any)
-	_, inServers := servers[ServerName]
-	_, inOld := mcp[ServerName]
+	_, inServers := servers[name]
+	_, inOld := mcp[name]
 	if !inServers && !inOld {
 		return Result{Path: path}, nil
 	}
-	delete(servers, ServerName)
-	delete(mcp, ServerName)
+	delete(servers, name)
+	delete(mcp, name)
 	if len(servers) == 0 {
 		delete(mcp, "servers")
 	}
@@ -128,26 +185,29 @@ func (h Harness) removeOpenCode(root, backupDir string) (Result, error) {
 	return commit(path, old, data, backupDir)
 }
 
-func openCodeSnippet(e Entry) string {
-	b, _ := json.MarshalIndent(map[string]any{ServerName: openCodeEntry(e)}, "", "  ")
-	return string(b)
-}
-
 // RemoveMCP removes the swarm's server and nothing else.
 func (h Harness) RemoveMCP(root, backupDir string) (Result, error) {
+	return h.RemoveNamed(root, ServerName, backupDir)
+}
+
+// RemoveNamed removes one named server and nothing else.
+func (h Harness) RemoveNamed(root, name, backupDir string) (Result, error) {
 	switch h.MCP {
 	case MCPServersJSON:
-		return h.removeJSON(root, "mcpServers", backupDir)
+		return h.removeJSON(root, "mcpServers", name, backupDir)
 	case MCPOpenCode:
-		return h.removeOpenCode(root, backupDir)
+		return h.removeOpenCode(root, name, backupDir)
 	case MCPCodexTOML:
-		return h.removeTOML(root, backupDir)
+		return h.removeTOML(root, name, backupDir)
 	}
 	return Result{}, nil
 }
 
 // HasMCP reports whether the swarm's server is registered.
-func (h Harness) HasMCP(root string) bool {
+func (h Harness) HasMCP(root string) bool { return h.HasNamed(root, ServerName) }
+
+// HasNamed reports whether a named server is registered.
+func (h Harness) HasNamed(root, name string) bool {
 	b, err := os.ReadFile(h.mcpPath(root))
 	if err != nil {
 		return false
@@ -163,10 +223,10 @@ func (h Harness) HasMCP(root string) bool {
 			mcp, _ := doc["mcp"].(map[string]any)
 			servers, _ = mcp["servers"].(map[string]any)
 		}
-		_, ok := servers[ServerName]
+		_, ok := servers[name]
 		return ok
 	case MCPCodexTOML:
-		return tomlTable.Match(b)
+		return tomlTable(name).Match(b)
 	}
 	return false
 }
@@ -201,7 +261,7 @@ func encodeJSON(doc map[string]any) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (h Harness) writeJSON(root, key string, entry map[string]any, backupDir string) (Result, error) {
+func (h Harness) writeJSON(root, key, name string, entry map[string]any, backupDir string) (Result, error) {
 	path := h.mcpPath(root)
 	doc, old, err := readJSON(path)
 	if err != nil {
@@ -216,7 +276,7 @@ func (h Harness) writeJSON(root, key string, entry map[string]any, backupDir str
 	default:
 		return Result{}, fmt.Errorf("%s: %q is not an object, so the file was left alone", path, key)
 	}
-	servers[ServerName] = entry
+	servers[name] = entry
 	doc[key] = servers
 	data, err := encodeJSON(doc)
 	if err != nil {
@@ -225,17 +285,17 @@ func (h Harness) writeJSON(root, key string, entry map[string]any, backupDir str
 	return commit(path, old, data, backupDir)
 }
 
-func (h Harness) removeJSON(root, key, backupDir string) (Result, error) {
+func (h Harness) removeJSON(root, key, name, backupDir string) (Result, error) {
 	path := h.mcpPath(root)
 	doc, old, err := readJSON(path)
 	if err != nil || old == nil {
 		return Result{Path: path}, err
 	}
 	servers, _ := doc[key].(map[string]any)
-	if _, ok := servers[ServerName]; !ok {
+	if _, ok := servers[name]; !ok {
 		return Result{Path: path}, nil
 	}
-	delete(servers, ServerName)
+	delete(servers, name)
 	if len(servers) == 0 {
 		delete(doc, key)
 	}
@@ -252,15 +312,16 @@ func (h Harness) removeJSON(root, key, backupDir string) (Result, error) {
 	return commit(path, old, data, backupDir)
 }
 
-const (
-	tomlBegin = "# BEGIN swarm (managed by swarm join; do not edit)"
-	tomlEnd   = "# END swarm"
-)
+func tomlBegin(name string) string { return "# BEGIN " + name + " (managed by aiculator; do not edit)" }
+func tomlEnd(name string) string   { return "# END " + name }
 
-var (
-	tomlTable = regexp.MustCompile(`(?m)^\[mcp_servers\.swarm\]`)
-	tomlBlock = regexp.MustCompile(`(?s)\n?` + regexp.QuoteMeta(tomlBegin) + `.*?` + regexp.QuoteMeta(tomlEnd) + `\n?`)
-)
+func tomlTable(name string) *regexp.Regexp {
+	return regexp.MustCompile(`(?m)^\[mcp_servers\.` + regexp.QuoteMeta(name) + `\]`)
+}
+
+func tomlBlockRE(name string) *regexp.Regexp {
+	return regexp.MustCompile(`(?s)\n?` + regexp.QuoteMeta(tomlBegin(name)) + `.*?` + regexp.QuoteMeta(tomlEnd(name)) + `\n?`)
+}
 
 // tomlString writes a TOML basic string, whose escapes differ from Go's for
 // control characters.
@@ -269,27 +330,47 @@ func tomlString(s string) string {
 	return `"` + r.Replace(s) + `"`
 }
 
+func tomlBlockFor(e Entry) string {
+	name := e.name()
+	args := make([]string, len(e.Args))
+	for i, a := range e.Args {
+		args[i] = tomlString(a)
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s\n[mcp_servers.%s]\ncommand = %s\nargs = [%s]\ntool_timeout_sec = %d\n",
+		tomlBegin(name), name, tomlString(e.Command), strings.Join(args, ", "), toolTimeoutMs/1000)
+	if len(e.Env) > 0 {
+		fmt.Fprintf(&b, "\n[mcp_servers.%s.env]\n", name)
+		keys := make([]string, 0, len(e.Env))
+		for k := range e.Env {
+			keys = append(keys, k)
+		}
+		slices.Sort(keys)
+		for _, k := range keys {
+			fmt.Fprintf(&b, "%s = %s\n", k, tomlString(e.Env[k]))
+		}
+	}
+	b.WriteString(tomlEnd(name) + "\n")
+	return b.String()
+}
+
 // writeTOML works on text inside clearly marked lines, so the rest of the file
 // keeps its exact comments and formatting without needing a TOML library.
 func (h Harness) writeTOML(root string, e Entry, backupDir string) (Result, error) {
 	path := h.mcpPath(root)
+	name := e.name()
 	old, err := os.ReadFile(path)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return Result{}, err
 	}
 	rest := old
-	if tomlBlock.Match(old) {
-		rest = tomlBlock.ReplaceAll(old, []byte("\n"))
+	if re := tomlBlockRE(name); re.Match(old) {
+		rest = re.ReplaceAll(old, []byte("\n"))
 	}
-	if tomlTable.Match(rest) {
-		return Result{}, fmt.Errorf("%s already defines [mcp_servers.swarm] by hand, so it was left alone", path)
+	if tomlTable(name).Match(rest) {
+		return Result{}, fmt.Errorf("%s already defines [mcp_servers.%s] by hand, so it was left alone", path, name)
 	}
-	args := make([]string, len(e.Args))
-	for i, a := range e.Args {
-		args[i] = tomlString(a)
-	}
-	block := fmt.Sprintf("%s\n[mcp_servers.swarm]\ncommand = %s\nargs = [%s]\ntool_timeout_sec = %d\n%s\n",
-		tomlBegin, tomlString(e.Command), strings.Join(args, ", "), toolTimeoutMs/1000, tomlEnd)
+	block := tomlBlockFor(e)
 	body := bytes.TrimRight(rest, "\n")
 	var data []byte
 	if len(body) > 0 {
@@ -300,7 +381,7 @@ func (h Harness) writeTOML(root string, e Entry, backupDir string) (Result, erro
 	return commit(path, old, data, backupDir)
 }
 
-func (h Harness) removeTOML(root, backupDir string) (Result, error) {
+func (h Harness) removeTOML(root, name, backupDir string) (Result, error) {
 	path := h.mcpPath(root)
 	old, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -309,10 +390,11 @@ func (h Harness) removeTOML(root, backupDir string) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	if !tomlBlock.Match(old) {
+	re := tomlBlockRE(name)
+	if !re.Match(old) {
 		return Result{Path: path}, nil
 	}
-	body := bytes.TrimRight(tomlBlock.ReplaceAll(old, []byte("\n")), "\n")
+	body := bytes.TrimRight(re.ReplaceAll(old, []byte("\n")), "\n")
 	if len(bytes.TrimSpace(body)) == 0 {
 		if err := backup(path, old, backupDir); err != nil {
 			return Result{}, err

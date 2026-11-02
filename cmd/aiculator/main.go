@@ -32,7 +32,8 @@ import (
 
 var dataDir string
 
-const version = "0.1.0"
+// version is set at build time with -ldflags "-X main.version=v1.2.3".
+var version = "0.1.0-dev"
 
 // findDataDir walks up from the working directory, so that commands work from a
 // subdirectory and from inside a task's worktree, which lives under the data dir.

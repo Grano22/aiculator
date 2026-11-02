@@ -65,7 +65,11 @@ type Harness struct {
 	ReadsGlobalAgents bool
 	MCP               MCPFormat
 	MCPFile           string
-	Source            Source
+	// GlobalMCPFile is the user-level config, starting with ~/.
+	GlobalMCPFile string
+	// CLIAdd is the harness's own command for adding a server, when confirmed.
+	CLIAdd []string
+	Source Source
 	// Note is shown to the user when joining.
 	Note string
 }
@@ -128,7 +132,7 @@ var registry = []Harness{
 		Env:       []string{"CLAUDE_CODE_TMPDIR={private}"},
 		StateDirs: []string{"~/.claude", "~/.claude.json", npm},
 		SkillsDir: ".claude/skills", GlobalSkillsDir: "~/.claude/skills",
-		MCP: MCPServersJSON, MCPFile: ".mcp.json", Source: SourceDocs,
+		MCP: MCPServersJSON, MCPFile: ".mcp.json", GlobalMCPFile: "~/.claude.json", CLIAdd: []string{"claude", "mcp", "add", "--scope", "project", "--transport", "stdio"}, Source: SourceDocs,
 		Note: "Claude Code does not read .agents/skills, so it gets a link. It asks you to approve .mcp.json in interactive sessions.",
 	},
 	{
@@ -137,7 +141,7 @@ var registry = []Harness{
 		PassEnv:   []string{"OPENAI_API_KEY"},
 		StateDirs: []string{"~/.codex", npm},
 		SkillsDir: ".agents/skills", GlobalSkillsDir: "~/.agents/skills", ReadsAgents: true, ReadsGlobalAgents: true,
-		MCP: MCPCodexTOML, MCPFile: ".codex/config.toml", Source: SourceDocs,
+		MCP: MCPCodexTOML, MCPFile: ".codex/config.toml", GlobalMCPFile: "~/.codex/config.toml", Source: SourceDocs,
 		Note: "Codex reads .codex/config.toml only in projects you have marked as trusted.",
 	},
 	{
@@ -146,7 +150,7 @@ var registry = []Harness{
 		PassEnv:   []string{"GEMINI_API_KEY", "GOOGLE_API_KEY"},
 		StateDirs: []string{"~/.gemini", npm},
 		SkillsDir: ".gemini/skills", GlobalSkillsDir: "~/.gemini/skills", ReadsAgents: true, ReadsGlobalAgents: true,
-		MCP: MCPServersJSON, MCPFile: ".gemini/settings.json", Source: SourceDocs,
+		MCP: MCPServersJSON, MCPFile: ".gemini/settings.json", GlobalMCPFile: "~/.gemini/settings.json", Source: SourceDocs,
 	},
 	{
 		ID: "opencode", Name: "OpenCode", Bins: []string{"opencode"},
@@ -154,7 +158,7 @@ var registry = []Harness{
 		PassEnv:   []string{"ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY"},
 		StateDirs: []string{"~/.config/opencode", "~/.local/share/opencode", "~/.local/state/opencode", "~/.cache/opencode"},
 		SkillsDir: ".opencode/skills", GlobalSkillsDir: "~/.config/opencode/skills", ReadsAgents: true, ReadsGlobalAgents: true,
-		MCP: MCPOpenCode, MCPFile: "opencode.json", Source: SourceDocs,
+		MCP: MCPOpenCode, MCPFile: "opencode.json", GlobalMCPFile: "~/.config/opencode/opencode.json", CLIAdd: []string{"opencode", "mcp", "add"}, Source: SourceDocs,
 		Note: "A running OpenCode background service does not pick up new project config, and opencode mcp list reports its view. Use opencode run --standalone or restart the service. Shell works either way.",
 	},
 	{
@@ -171,7 +175,7 @@ var registry = []Harness{
 		ACP:       []string{"cursor-agent", "acp"},
 		StateDirs: []string{"~/.cursor"},
 		SkillsDir: ".cursor/skills", GlobalSkillsDir: "~/.cursor/skills", ReadsAgents: true, ReadsGlobalAgents: true,
-		MCP: MCPServersJSON, MCPFile: ".cursor/mcp.json", Source: SourceDocs,
+		MCP: MCPServersJSON, MCPFile: ".cursor/mcp.json", GlobalMCPFile: "~/.cursor/mcp.json", Source: SourceDocs,
 	},
 	{
 		ID: "copilot", Name: "GitHub Copilot CLI", Bins: []string{"copilot"},
@@ -179,7 +183,7 @@ var registry = []Harness{
 		PassEnv:   []string{"GH_TOKEN", "GITHUB_TOKEN"},
 		StateDirs: []string{"~/.copilot", npm},
 		SkillsDir: ".github/skills", GlobalSkillsDir: "~/.copilot/skills", ReadsAgents: true, ReadsGlobalAgents: true,
-		MCP: MCPServersJSON, MCPFile: ".mcp.json", Source: SourceDocs,
+		MCP: MCPServersJSON, MCPFile: ".mcp.json", GlobalMCPFile: "~/.copilot/mcp-config.json", Source: SourceDocs,
 		Note: "Copilot loads project MCP servers only after you confirm folder trust.",
 	},
 	{

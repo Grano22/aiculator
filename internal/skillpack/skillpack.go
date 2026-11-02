@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sort"
 	"strings"
@@ -186,6 +187,9 @@ func NormalizeShellStar(args []string, dir string) []string {
 
 // Install brings the selected skills into .agents/skills and links them to each harness.
 func Install(o Options) ([]Action, error) {
+	if runtime.GOOS == "windows" {
+		o.Copy = true // Creating symlinks needs special rights on Windows.
+	}
 	avail, err := o.available()
 	if err != nil {
 		return nil, err

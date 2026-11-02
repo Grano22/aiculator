@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"text/tabwriter"
 	"time"
 
@@ -131,7 +130,7 @@ func startServer(sb string) (string, error) {
 	cmd := exec.Command(self, "serve", "--data", abs, "--addr", addr, "--repo", root, "--sandbox", sb)
 	cmd.Dir = root
 	cmd.Stdout, cmd.Stderr = logFile, logFile
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	detach(cmd)
 	if err := cmd.Start(); err != nil {
 		return "", err
 	}
@@ -191,7 +190,7 @@ func downCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("bad pid file: %w", err)
 			}
-			if err := syscall.Kill(pid, syscall.SIGTERM); err != nil {
+			if err := stopProcess(pid); err != nil {
 				return err
 			}
 			for range 100 {
@@ -680,6 +679,7 @@ func mcpCmd() *cobra.Command {
 	f.StringVar(&agent, "agent", "", "agent name; generated if empty")
 	f.IntVar(&tier, "tier", 1, "tier, with --auto")
 	f.BoolVar(&planner, "planner", false, "allow planning, with --auto")
+	cmd.AddCommand(mcpAddCmd(), mcpPrintCmd(), mcpRemoveCmd())
 	return cmd
 }
 

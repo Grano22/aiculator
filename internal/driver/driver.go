@@ -11,11 +11,9 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	acp "github.com/coder/acp-go-sdk"
@@ -345,9 +343,7 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
 		select {
 		case <-exited:
 		case <-time.After(5 * time.Second):
-			if cmd.Process != nil {
-				_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-			}
+			killTree(cmd)
 		}
 	}()
 
@@ -442,12 +438,6 @@ const authRequiredCode = -32000
 func isAuthError(err error) bool {
 	var re *acp.RequestError
 	return errors.As(err, &re) && re.Code == authRequiredCode
-}
-
-func killGroup(cmd *exec.Cmd) {
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }
-	cmd.WaitDelay = 3 * time.Second
 }
 
 // handler answers the harness's requests. It decides permissions by policy and

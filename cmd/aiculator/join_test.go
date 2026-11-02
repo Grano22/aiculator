@@ -338,3 +338,74 @@ func TestHarnessListShowsEveryone(t *testing.T) {
 		}
 	}
 }
+
+func TestMCPAddAndPrintCommands(t *testing.T) {
+	p := newProject(t)
+	// A harness by id, then by the path to its executable.
+	p.run("mcp", "add", "--harness", "opencode", "--tier", "2")
+	if !strings.Contains(p.read("opencode.json"), `"servers"`) {
+		t.Fatalf("opencode: %s", p.read("opencode.json"))
+	}
+	fake := filepath.Join(t.TempDir(), "cursor-agent")
+	if err := os.WriteFile(fake, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out := p.run("mcp", "add", "--harness", fake); !strings.Contains(out, "cursor") {
+		t.Fatalf("binary path: %s", out)
+	}
+	if !p.exists(".cursor/mcp.json") {
+		t.Fatal("found the harness but did not write its config")
+	}
+	// A path to a config file, with the format inferred from its name.
+	custom := filepath.Join(t.TempDir(), "agent.toml")
+	p.run("mcp", "add", "--harness", custom)
+	b, _ := os.ReadFile(custom)
+	if !strings.Contains(string(b), "[mcp_servers.swarm]") {
+		t.Fatalf("toml: %s", b)
+	}
+	// A custom server, beside the swarm's.
+	p.run("mcp", "add", "--harness", "opencode", "--name", "docs", "--", "docs-server", "--x")
+	got := p.read("opencode.json")
+	if !strings.Contains(got, "docs-server") || !strings.Contains(got, `"swarm"`) {
+		t.Fatalf("custom: %s", got)
+	}
+	p.run("mcp", "remove", "--harness", "opencode", "--name", "docs")
+	if strings.Contains(p.read("opencode.json"), "docs-server") {
+		t.Fatal("remove failed")
+	}
+
+	before := p.read("opencode.json")
+	if out := p.run("mcp", "add", "--harness", "opencode", "--tier", "3", "--dry-run"); !strings.Contains(out, "would write") {
+		t.Fatalf("dry run: %s", out)
+	}
+	if p.read("opencode.json") != before {
+		t.Fatal("dry run changed the file")
+	}
+	// Print changes nothing, shows the harness's own command, and never a token.
+	out := p.run("mcp", "print", "--harness", "claude")
+	if !strings.Contains(out, "mcpServers") || !strings.Contains(out, "claude mcp add") || strings.Contains(strings.ToLower(out), "bearer") {
+		t.Fatalf("print: %s", out)
+	}
+	if p.exists(".mcp.json") {
+		t.Fatal("print wrote a file")
+	}
+	if out := p.run("mcp", "print", "--harness", "pi"); !strings.Contains(out, "no confirmed config") {
+		t.Fatalf("print for pi: %s", out)
+	}
+	if out, err := p.tryIn(p.root, "mcp", "add", "--harness", "nosuchthing"); err == nil {
+		t.Fatalf("unknown harness accepted: %s", out)
+	}
+	// A custom server must not take the swarm's own name.
+	if out, err := p.tryIn(p.root, "mcp", "add", "--harness", "opencode", "--", "evil"); err == nil {
+		t.Fatalf("replaced the swarm's entry: %s", out)
+	}
+}
+
+func (p *project) read(rel string) string {
+	p.t.Helper()
+	b, err := os.ReadFile(filepath.Join(p.root, rel))
+	if err != nil {
+		p.t.Fatal(err)
+	}
+	return string(b)
+}
