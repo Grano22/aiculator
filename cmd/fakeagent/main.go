@@ -111,7 +111,7 @@ func (a *agent) Prompt(ctx context.Context, r acp.PromptRequest) (acp.PromptResp
 		}
 	}
 	prompt := text.String()
-	endTurn := acp.PromptResponse{StopReason: acp.StopReasonEndTurn}
+	endTurn := acp.PromptResponse{StopReason: acp.StopReasonEndTurn, Usage: &acp.Usage{InputTokens: 100, OutputTokens: 23, TotalTokens: 123}}
 
 	if strings.Contains(prompt, "job: review") {
 		switch a.mode {

@@ -423,5 +423,14 @@ func (m *Manager) Cleanup(ctx context.Context, id string) {
 	}
 }
 
+// Probe checks that the repository and integration branch are readable.
+func (m *Manager) Probe(ctx context.Context) error {
+	_, err := m.git(ctx, m.repo, "rev-parse", "--verify", "refs/heads/"+m.branch)
+	return err
+}
+
+// SandboxName says which sandbox checks run in.
+func (m *Manager) SandboxName() string { return m.sb.Name() }
+
 // Branch returns the integration branch name.
 func (m *Manager) Branch() string { return m.branch }

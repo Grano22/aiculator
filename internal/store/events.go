@@ -117,6 +117,19 @@ func (s *Store) ReplayEvents(ctx context.Context) ([]core.Task, error) {
 	return out, nil
 }
 
+// ProjectorLag says how many committed revisions the event log has not recorded yet.
+func (s *Store) ProjectorLag(ctx context.Context) (uint64, error) {
+	c, err := s.js.Consumer(ctx, "KV_"+bucket, "projector")
+	if err != nil {
+		return 0, err
+	}
+	info, err := c.Info(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return info.NumPending + uint64(info.NumAckPending), nil
+}
+
 // WaitProjected blocks until the projector has caught up with the bucket or ctx
 // ends. It is used by replay and by tests.
 func (s *Store) WaitProjected(ctx context.Context) error {

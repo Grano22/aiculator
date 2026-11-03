@@ -18,6 +18,7 @@ import (
 
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/store"
+	"github.com/Grano22/aiculator/pkg/observe"
 )
 
 // Clock is swappable so that lease tests do not need to sleep.
@@ -120,6 +121,7 @@ type Engine struct {
 	start time.Time
 
 	presence chan Agent
+	obs      *observe.Collector
 	grants   atomic.Uint64
 
 	tasks      map[string]*entry
@@ -182,6 +184,7 @@ func New(ctx context.Context, st *store.Store, cfg Config) (*Engine, error) {
 		dead:       make(chan struct{}),
 		start:      cfg.Clock.Now(),
 		presence:   make(chan Agent, 256),
+		obs:        observe.New(time.Now()),
 		tasks:      map[string]*entry{},
 		ready:      map[int]*readyHeap{},
 		drafts:     map[string]bool{},
@@ -361,6 +364,7 @@ func (e *Engine) commit(id string, c core.Cmd) (core.Task, error) {
 	if err != nil {
 		return ent.task, err
 	}
+	began := time.Now()
 	rev, err := e.st.UpdateTask(n, ent.rev)
 	if err != nil {
 		if errors.Is(err, store.ErrConflict) {
@@ -368,11 +372,54 @@ func (e *Engine) commit(id string, c core.Cmd) (core.Task, error) {
 		}
 		return ent.task, err
 	}
+	e.obs.Observe(observe.LatencyCommit, time.Since(began))
 	old := ent.task
 	e.index(old, n, rev)
+	e.record(old, n, c)
 	e.fireHooks(old, n)
 	return n, nil
 }
+
+// record feeds the dashboards. Rates use real time. Task ages use the engine's clock,
+// which is what their timestamps came from.
+func (e *Engine) record(old, n core.Task, c core.Cmd) {
+	wall := time.Now()
+	e.obs.Count(observe.SeriesCommits, wall, 1)
+	if !core.IsSystem(c.Actor) && c.Actor != "" && (c.Cost > 0 || c.Tokens > 0) {
+		e.obs.Usage(c.Actor, max(c.Tokens, 0), max(c.Cost, 0))
+	}
+	if old.State == n.State {
+		return
+	}
+	e.obs.Transition(string(old.State), string(n.State))
+	now := e.now()
+	switch n.State {
+	case core.Claimed:
+		e.obs.Count(observe.SeriesGrants, wall, 1)
+		e.obs.Observe(observe.LatencyQueue, now.Sub(old.ReadyAt))
+	case core.Done:
+		e.obs.Count(observe.SeriesDone, wall, 1)
+		e.obs.Observe(observe.LatencyCycle, now.Sub(n.CreatedAt))
+		if n.Submitter != "" {
+			e.obs.Outcome(n.Submitter, true)
+		}
+	case core.Failed:
+		e.obs.Count(observe.SeriesFailed, wall, 1)
+		who := old.Owner
+		if who == "" {
+			who = n.Submitter
+		}
+		if who != "" {
+			e.obs.Outcome(who, false)
+		}
+		if n.Reason == "no_progress" {
+			e.obs.Count(observe.SeriesZombies, wall, 1)
+		}
+	}
+}
+
+// Collector exposes the metrics, so the API can add its own request timings.
+func (e *Engine) Collector() *observe.Collector { return e.obs }
 
 func (e *Engine) reload(id string) {
 	t, rev, err := e.st.GetTask(id)
@@ -551,6 +598,8 @@ func (e *Engine) create(t core.Task) (core.Task, error) {
 		return core.Task{}, err
 	}
 	e.index(core.Task{}, t, rev)
+	e.obs.Count(observe.SeriesCommits, time.Now(), 1)
+	e.obs.Transition("new", string(t.State))
 	return t, nil
 }
 
@@ -602,29 +651,29 @@ func (e *Engine) Heartbeat(ctx context.Context, a Agent, id string, lease uint64
 }
 
 // Progress records evidence of work. Only changed evidence resets the zombie timer.
-func (e *Engine) Progress(ctx context.Context, a Agent, id string, lease uint64, evidence, ref, note string, cost int64) (core.Task, error) {
+func (e *Engine) Progress(ctx context.Context, a Agent, id string, lease uint64, evidence, ref, note string, u core.Usage) (core.Task, error) {
 	e.touch(a)
 	return do(ctx, e, func() (core.Task, error) {
 		return e.commit(id, core.Cmd{
 			Kind: core.CmdProgress, Actor: a.ID, Lease: lease, LeaseTTL: e.cfg.LeaseTTL,
-			ProgressTTL: e.cfg.ProgressTTL, Evidence: evidence, Ref: ref, Note: note, Cost: cost,
+			ProgressTTL: e.cfg.ProgressTTL, Evidence: evidence, Ref: ref, Note: note, Cost: u.Cost, Tokens: u.Tokens,
 		})
 	})
 }
 
 // Submit moves the task to review. It is a claim of completion, nothing more.
-func (e *Engine) Submit(ctx context.Context, a Agent, id string, lease uint64, evidence, ref, note string, cost int64) (core.Task, error) {
+func (e *Engine) Submit(ctx context.Context, a Agent, id string, lease uint64, evidence, ref, note string, u core.Usage) (core.Task, error) {
 	e.touch(a)
 	return do(ctx, e, func() (core.Task, error) {
-		return e.commit(id, core.Cmd{Kind: core.CmdSubmit, Actor: a.ID, Lease: lease, Evidence: evidence, Ref: ref, Note: note, Cost: cost})
+		return e.commit(id, core.Cmd{Kind: core.CmdSubmit, Actor: a.ID, Lease: lease, Evidence: evidence, Ref: ref, Note: note, Cost: u.Cost, Tokens: u.Tokens})
 	})
 }
 
 // Fail reports that the agent gave up on the task.
-func (e *Engine) Fail(ctx context.Context, a Agent, id string, lease uint64, note string, cost int64) (core.Task, error) {
+func (e *Engine) Fail(ctx context.Context, a Agent, id string, lease uint64, note string, u core.Usage) (core.Task, error) {
 	e.touch(a)
 	return do(ctx, e, func() (core.Task, error) {
-		return e.commit(id, core.Cmd{Kind: core.CmdFail, Actor: a.ID, Lease: lease, Note: note, Cost: cost})
+		return e.commit(id, core.Cmd{Kind: core.CmdFail, Actor: a.ID, Lease: lease, Note: note, Cost: u.Cost, Tokens: u.Tokens})
 	})
 }
 
@@ -679,6 +728,7 @@ func (e *Engine) Cancel(ctx context.Context, id, note string) (core.Task, error)
 }
 
 func (e *Engine) touch(a Agent) {
+	e.obs.Seen(a.ID, a.Tier, time.Now())
 	select {
 	case e.presence <- a:
 	default: // Presence is informational; never block work on it.

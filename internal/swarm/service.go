@@ -5,6 +5,7 @@ package swarm
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/store"
 	"github.com/Grano22/aiculator/internal/work"
+	"github.com/Grano22/aiculator/pkg/observe"
 )
 
 // Service is the shared backend for all channels.
@@ -150,7 +152,7 @@ func (s *Service) prepare(ctx context.Context, a engine.Agent, r engine.WaitResp
 		bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer cancel()
 		if r.Job != "review" {
-			if _, ferr := s.Engine.Fail(bg, a, r.Task.ID, r.Lease, "worktree_error: "+err.Error(), 0); ferr != nil {
+			if _, ferr := s.Engine.Fail(bg, a, r.Task.ID, r.Lease, "worktree_error: "+err.Error(), core.Usage{}); ferr != nil {
 				s.log.Error("returning task", "task", r.Task.ID, "err", ferr)
 			}
 		}
@@ -177,7 +179,7 @@ func (s *Service) snapshot(ctx context.Context, a engine.Agent, id string, lease
 
 // Progress saves a work-in-progress commit and records its hash. When a repository
 // is configured, the agent's own evidence is ignored: only the files count.
-func (s *Service) Progress(ctx context.Context, a engine.Agent, id string, lease uint64, evidence, note string, cost int64) (core.Task, error) {
+func (s *Service) Progress(ctx context.Context, a engine.Agent, id string, lease uint64, evidence, note string, u core.Usage) (core.Task, error) {
 	ev, ref, err := s.snapshot(ctx, a, id, lease, note)
 	if err != nil {
 		return core.Task{}, err
@@ -185,14 +187,71 @@ func (s *Service) Progress(ctx context.Context, a engine.Agent, id string, lease
 	if s.Work != nil {
 		evidence = ev
 	}
-	return s.Engine.Progress(ctx, a, id, lease, evidence, ref, note, cost)
+	return s.Engine.Progress(ctx, a, id, lease, evidence, ref, note, u)
 }
 
 // Submit saves the final state and sends it to review.
-func (s *Service) Submit(ctx context.Context, a engine.Agent, id string, lease uint64, note string, cost int64) (core.Task, error) {
+func (s *Service) Submit(ctx context.Context, a engine.Agent, id string, lease uint64, note string, u core.Usage) (core.Task, error) {
 	ev, ref, err := s.snapshot(ctx, a, id, lease, note)
 	if err != nil {
 		return core.Task{}, err
 	}
-	return s.Engine.Submit(ctx, a, id, lease, ev, ref, note, cost)
+	return s.Engine.Submit(ctx, a, id, lease, ev, ref, note, u)
+}
+
+// Snapshot is the full picture for the dashboards, with live health probes.
+func (s *Service) Snapshot(ctx context.Context, version string) (observe.Snapshot, error) {
+	snap, err := s.Engine.Observe(ctx)
+	if err != nil {
+		return snap, err
+	}
+	snap.Version = version
+	snap.Probes = s.Probes(ctx)
+	snap.Ready = true
+	for _, p := range snap.Probes {
+		snap.Ready = snap.Ready && p.OK
+	}
+	return snap, nil
+}
+
+// maxProjectorLag is how far the event log may fall behind before it counts as unhealthy.
+const maxProjectorLag = 10000
+
+// Probes checks each part the swarm depends on, and how fast it answers.
+func (s *Service) Probes(ctx context.Context) []observe.Probe {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	probe := func(name string, fn func() (string, error)) observe.Probe {
+		start := time.Now()
+		detail, err := fn()
+		p := observe.Probe{Name: name, OK: err == nil, LatencyUs: time.Since(start).Microseconds(), Detail: detail}
+		if err != nil {
+			p.Detail = err.Error()
+		}
+		return p
+	}
+	out := []observe.Probe{
+		probe("writer", func() (string, error) { return "", s.Engine.Sync(ctx) }),
+		probe("store", func() (string, error) {
+			_, _, err := s.Store.GetPlanning()
+			return "", err
+		}),
+		probe("event_log", func() (string, error) {
+			lag, err := s.Store.ProjectorLag(ctx)
+			if err != nil {
+				return "", err
+			}
+			if lag > maxProjectorLag {
+				return "", fmt.Errorf("%d events behind", lag)
+			}
+			return fmt.Sprintf("%d behind", lag), nil
+		}),
+	}
+	if s.Work != nil {
+		out = append(out,
+			probe("git", func() (string, error) { return s.Work.Branch(), s.Work.Probe(ctx) }),
+			probe("sandbox", func() (string, error) { return s.Work.SandboxName(), nil }),
+		)
+	}
+	return out
 }

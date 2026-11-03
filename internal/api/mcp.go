@@ -13,7 +13,9 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/Grano22/aiculator/internal/auth"
+	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/pkg/observe"
 )
 
 // DefaultHold is how long wait_for_task holds when the caller does not say. It
@@ -48,8 +50,9 @@ type leaseInput struct {
 
 type noteInput struct {
 	leaseInput
-	Note string `json:"note,omitempty" jsonschema:"short human-readable note saved for later attempts"`
-	Cost int64  `json:"cost,omitempty" jsonschema:"cost incurred so far in micro-dollars, if known"`
+	Note   string `json:"note,omitempty" jsonschema:"short human-readable note saved for later attempts"`
+	Cost   int64  `json:"cost,omitempty" jsonschema:"cost incurred since your last report, in micro-dollars, if known"`
+	Tokens int64  `json:"tokens,omitempty" jsonschema:"tokens used since your last report, if known"`
 }
 
 type verdictInput struct {
@@ -77,7 +80,7 @@ func agentFrom(req *mcp.CallToolRequest) (engine.Agent, error) {
 
 // tool wraps a handler with the identity lookup. The agent's identity always
 // comes from its signed token and never from tool arguments.
-func tool[In any](s *mcp.Server, name, desc string, fn func(ctx context.Context, a engine.Agent, in In) (any, error)) {
+func tool[In any](c *observe.Collector, s *mcp.Server, name, desc string, fn func(ctx context.Context, a engine.Agent, in In) (any, error)) {
 	mcp.AddTool(s, &mcp.Tool{Name: name, Description: desc},
 		func(ctx context.Context, req *mcp.CallToolRequest, in In) (*mcp.CallToolResult, any, error) {
 			a, err := agentFrom(req)
@@ -86,6 +89,10 @@ func tool[In any](s *mcp.Server, name, desc string, fn func(ctx context.Context,
 			}
 			start := time.Now()
 			out, err := fn(ctx, a, in)
+			if name != "wait_for_task" { // A hold says nothing about the server's speed.
+				c.Observe(observe.LatencyAPI, time.Since(start))
+				c.Count(observe.SeriesAPI, time.Now(), 1)
+			}
 			// An audit trail, and how the 45-second limit is measured rather than assumed.
 			slog.Info("mcp call", "tool", name, "agent", a.ID, "ms", time.Since(start).Milliseconds(), "ok", err == nil)
 			if err != nil {
@@ -99,8 +106,9 @@ func tool[In any](s *mcp.Server, name, desc string, fn func(ctx context.Context,
 func (s *Server) NewMCPServer() *mcp.Server {
 	srv := mcp.NewServer(&mcp.Implementation{Name: "swarm", Version: "0.1.0"},
 		&mcp.ServerOptions{Instructions: instructions})
+	c := s.S.Engine.Collector()
 
-	tool(srv, "wait_for_task", "Get the next task. Returns a task already leased to you, or says wait or exit. Never runs longer than 40 seconds.",
+	tool(c, srv, "wait_for_task", "Get the next task. Returns a task already leased to you, or says wait or exit. Never runs longer than 40 seconds.",
 		func(ctx context.Context, a engine.Agent, in waitInput) (any, error) {
 			hold := DefaultHold
 			if in.HoldSeconds > 0 {
@@ -108,35 +116,35 @@ func (s *Server) NewMCPServer() *mcp.Server {
 			}
 			return s.S.Wait(ctx, a, min(hold, MaxToolHold))
 		})
-	tool(srv, "claim", "Claim one specific ready task by id. wait_for_task already claims for you; use this only after choosing from situation.",
+	tool(c, srv, "claim", "Claim one specific ready task by id. wait_for_task already claims for you; use this only after choosing from situation.",
 		func(ctx context.Context, a engine.Agent, in claimInput) (any, error) {
 			return s.S.Claim(ctx, a, in.TaskID)
 		})
-	tool(srv, "heartbeat", "Extend your lease while working. This shows you are alive but does not count as progress.",
+	tool(c, srv, "heartbeat", "Extend your lease while working. This shows you are alive but does not count as progress.",
 		func(ctx context.Context, a engine.Agent, in leaseInput) (any, error) {
 			return s.S.Engine.Heartbeat(ctx, a, in.TaskID, in.Lease)
 		})
-	tool(srv, "progress", "Save your work so far. The swarm commits and hashes your files; only real changes count as progress.",
+	tool(c, srv, "progress", "Save your work so far. The swarm commits and hashes your files; only real changes count as progress.",
 		func(ctx context.Context, a engine.Agent, in noteInput) (any, error) {
-			return s.S.Progress(ctx, a, in.TaskID, in.Lease, "", in.Note, in.Cost)
+			return s.S.Progress(ctx, a, in.TaskID, in.Lease, "", in.Note, core.Usage{Cost: in.Cost, Tokens: in.Tokens})
 		})
-	tool(srv, "submit", "Submit finished work for verification. The swarm runs the acceptance checks; this alone does not complete the task.",
+	tool(c, srv, "submit", "Submit finished work for verification. The swarm runs the acceptance checks; this alone does not complete the task.",
 		func(ctx context.Context, a engine.Agent, in noteInput) (any, error) {
-			return s.S.Submit(ctx, a, in.TaskID, in.Lease, in.Note, in.Cost)
+			return s.S.Submit(ctx, a, in.TaskID, in.Lease, in.Note, core.Usage{Cost: in.Cost, Tokens: in.Tokens})
 		})
-	tool(srv, "fail", "Give up on a task you hold. Your saved work and note go to the next attempt.",
+	tool(c, srv, "fail", "Give up on a task you hold. Your saved work and note go to the next attempt.",
 		func(ctx context.Context, a engine.Agent, in noteInput) (any, error) {
-			return s.S.Engine.Fail(ctx, a, in.TaskID, in.Lease, in.Note, in.Cost)
+			return s.S.Engine.Fail(ctx, a, in.TaskID, in.Lease, in.Note, core.Usage{Cost: in.Cost, Tokens: in.Tokens})
 		})
-	tool(srv, "release", "Hand a task back with no penalty, when your harness cannot do it (no login, no tools). Do not use this to escape hard work: that is what fail is for.",
+	tool(c, srv, "release", "Hand a task back with no penalty, when your harness cannot do it (no login, no tools). Do not use this to escape hard work: that is what fail is for.",
 		func(ctx context.Context, a engine.Agent, in leaseInput) (any, error) {
 			return s.S.Engine.Release(ctx, a, in.TaskID, in.Lease, "released by agent")
 		})
-	tool(srv, "review_verdict", "Approve or reject another agent's work, for a task you received with job review.",
+	tool(c, srv, "review_verdict", "Approve or reject another agent's work, for a task you received with job review.",
 		func(ctx context.Context, a engine.Agent, in verdictInput) (any, error) {
 			return s.S.Engine.Verdict(ctx, a, in.TaskID, in.Lease, in.Pass, in.Note)
 		})
-	tool(srv, "situation", "See the state of the swarm: task counts per tier, the planner, and whether you should wait or exit. Every value carries its age.",
+	tool(c, srv, "situation", "See the state of the swarm: task counts per tier, the planner, and whether you should wait or exit. Every value carries its age.",
 		func(ctx context.Context, a engine.Agent, _ noInput) (any, error) {
 			return s.S.Engine.Situation(ctx, a)
 		})

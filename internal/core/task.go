@@ -107,6 +107,7 @@ type Task struct {
 	// Budget and Spent are in micro-dollars; Budget 0 means no limit.
 	Budget int64 `json:"budget,omitempty"`
 	Spent  int64 `json:"spent,omitempty"`
+	Tokens int64 `json:"tokens,omitempty"`
 
 	CreatedAt time.Time `json:"created_at"`
 	ReadyAt   time.Time `json:"ready_at,omitzero"`
@@ -121,6 +122,12 @@ func (t Task) Clone() Task {
 	t.Checks = slices.Clone(t.Checks)
 	t.Notes = slices.Clone(t.Notes)
 	return t
+}
+
+// Usage is what a piece of work consumed.
+type Usage struct {
+	Cost   int64 // Micro-dollars.
+	Tokens int64
 }
 
 // Policy holds the settings the transitions depend on.
@@ -165,6 +172,7 @@ type Cmd struct {
 	Note        string        `json:"note,omitempty"`
 	Pass        bool          `json:"pass,omitempty"`
 	Cost        int64         `json:"cost,omitempty"`
+	Tokens      int64         `json:"tokens,omitempty"`
 	AddBudget   int64         `json:"add_budget,omitempty"`
 }
 
@@ -224,6 +232,7 @@ func Apply(t Task, c Cmd, now time.Time, p Policy) (Task, error) {
 	n := t.Clone()
 	n.UpdatedAt = now
 	n.Spent += max(c.Cost, 0)
+	n.Tokens += max(c.Tokens, 0)
 
 	switch c.Kind {
 	case CmdPublish:

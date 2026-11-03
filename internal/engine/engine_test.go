@@ -361,7 +361,7 @@ func TestZombieIsCaughtByProgressTimeout(t *testing.T) {
 	r, _ := e.Wait(bg, a1, 0)
 	// It heartbeats faithfully and reports the same evidence: alive, doing nothing.
 	for range 6 {
-		if _, err := e.Progress(bg, a1, "z", r.Lease, "same-tree", "", "", 0); err != nil {
+		if _, err := e.Progress(bg, a1, "z", r.Lease, "same-tree", "", "", core.Usage{}); err != nil {
 			break // Caught: its lease is gone, so this is the expected outcome.
 		}
 		clk.Advance(30 * time.Second)
@@ -376,7 +376,7 @@ func TestZombieIsCaughtByProgressTimeout(t *testing.T) {
 		t.Fatalf("got %+v", x)
 	}
 	// Its late submit is rejected, even though it is the same agent again.
-	if _, err := e.Submit(bg, a1, "z", r.Lease, "", "", "done!", 0); !errors.Is(err, core.ErrFenced) {
+	if _, err := e.Submit(bg, a1, "z", r.Lease, "", "", "done!", core.Usage{}); !errors.Is(err, core.ErrFenced) {
 		t.Fatalf("zombie submit: %v", err)
 	}
 }
@@ -404,7 +404,7 @@ func TestEscalationAcrossTiersCarriesNotes(t *testing.T) {
 		if err != nil || r.Action != ActionTask {
 			t.Fatalf("%s: %v %+v", a.ID, err, r)
 		}
-		if _, err := e.Fail(bg, a, "e", r.Lease, "tried "+a.ID, 0); err != nil {
+		if _, err := e.Fail(bg, a, "e", r.Lease, "tried "+a.ID, core.Usage{}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -418,7 +418,7 @@ func TestEscalationAcrossTiersCarriesNotes(t *testing.T) {
 	if r.Action != ActionTask || r.Task.Tier != 2 || len(r.Task.Notes) < 2 {
 		t.Fatalf("escalated grant: %+v", r.Task)
 	}
-	if _, err := e.Fail(bg, t2, "e", r.Lease, "x", 0); err != nil {
+	if _, err := e.Fail(bg, t2, "e", r.Lease, "x", core.Usage{}); err != nil {
 		t.Fatal(err)
 	}
 	fail(t2)
@@ -493,7 +493,7 @@ func TestDepsAndFileConflicts(t *testing.T) {
 	if r2.Task.ID == "c" {
 		rc, ac = r2, Agent{ID: "2", Tier: 1}
 	}
-	if _, err := e.Submit(bg, ac, "c", rc.Lease, "", "", "", 0); err != nil {
+	if _, err := e.Submit(bg, ac, "c", rc.Lease, "", "", "", core.Usage{}); err != nil {
 		t.Fatal(err)
 	}
 	rv, err := e.Wait(bg, Agent{ID: "rev", Tier: 1}, 0)
@@ -510,7 +510,7 @@ func TestSubmitterCannotReviewOwnWork(t *testing.T) {
 	e, _ := setup(t, Config{Clock: newClock(), ExitGrace: time.Hour})
 	add(t, e, TaskSpec{ID: "r", Title: "x"})
 	r, _ := e.Wait(bg, a1, 0)
-	if _, err := e.Submit(bg, a1, "r", r.Lease, "", "", "", 0); err != nil {
+	if _, err := e.Submit(bg, a1, "r", r.Lease, "", "", "", core.Usage{}); err != nil {
 		t.Fatal(err)
 	}
 	if r, _ := e.Wait(bg, a1, 0); r.Action == ActionTask {
@@ -568,9 +568,9 @@ func TestEventLogReplayMatchesState(t *testing.T) {
 	for i := range 25 {
 		r, _ := e.Wait(bg, a1, 0)
 		if i%2 == 0 {
-			_, _ = e.Fail(bg, a1, r.Task.ID, r.Lease, "x", 0)
+			_, _ = e.Fail(bg, a1, r.Task.ID, r.Lease, "x", core.Usage{})
 		} else {
-			_, _ = e.Submit(bg, a1, r.Task.ID, r.Lease, "", "", "", 0)
+			_, _ = e.Submit(bg, a1, r.Task.ID, r.Lease, "", "", "", core.Usage{})
 		}
 	}
 	ctx, cancel := context.WithTimeout(bg, 10*time.Second)
@@ -739,5 +739,93 @@ func BenchmarkGrantCycle(b *testing.B) {
 		if r, err := e.Wait(bg, a1, 0); err != nil || r.Action != ActionTask {
 			b.Fatalf("%v %+v", err, r)
 		}
+	}
+}
+
+func TestObserveReportsLivenessUsageAndFlow(t *testing.T) {
+	clk := newClock()
+	e, _ := setup(t, Config{Clock: clk, Tick: time.Millisecond, LeaseTTL: 100 * time.Second, ProgressTTL: 100 * time.Second})
+	add(t, e, TaskSpec{ID: "work", Title: "a", Budget: 100})
+	add(t, e, TaskSpec{ID: "queued", Title: "b", Touches: []string{"x"}})
+	r, err := e.Claim(bg, a1, "work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.Progress(bg, a1, "work", r.Lease, "tree1", "", "", core.Usage{Cost: 90, Tokens: 500}); err != nil {
+		t.Fatal(err)
+	}
+	s, err := e.Observe(bg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.States["running"] != 1 || s.States["ready"] != 1 {
+		t.Fatalf("states: %v", s.States)
+	}
+	if len(s.Tasks) != 1 || s.Tasks[0].ID != "work" || s.Tasks[0].Health != "ok" || *s.Tasks[0].LeaseRemainingMs != 100000 {
+		t.Fatalf("tasks: %+v", s.Tasks)
+	}
+	if s.Usage.Tokens != 500 || s.Usage.Spent != 90 || s.Usage.Budgeted != 100 || s.Usage.ByTier[0].Tokens != 500 {
+		t.Fatalf("usage: %+v", s.Usage)
+	}
+	if len(s.Usage.Tightest) != 1 || s.Usage.Tightest[0].ID != "work" {
+		t.Fatalf("budgets: %+v", s.Usage.Tightest)
+	}
+	if len(s.Agents) != 1 || s.Agents[0].State != "working" || s.Agents[0].Tokens != 500 || s.Agents[0].Task != "work" {
+		t.Fatalf("agents: %+v", s.Agents)
+	}
+	if s.Latency["commit"].Count == 0 || s.Latency["queue_wait"].Count != 1 || s.Throughput.TotalGrants != 1 {
+		t.Fatalf("measures: %+v %+v", s.Latency, s.Throughput)
+	}
+	found := false
+	for _, f := range s.Flow {
+		found = found || (f.From == "ready" && f.To == "claimed" && f.Count == 1)
+	}
+	if !found {
+		t.Fatalf("flow: %+v", s.Flow)
+	}
+
+	// With under a quarter of the lease left, it is at risk, and past it, expired.
+	clk.Advance(80 * time.Second)
+	if s, _ = e.Observe(bg); s.Tasks[0].Health != "at_risk" {
+		t.Fatalf("at risk: %+v", s.Tasks[0])
+	}
+}
+
+func TestObserveCountsZombiesAndOutcomes(t *testing.T) {
+	clk := newClock()
+	e, _ := setup(t, Config{Clock: clk, Tick: time.Millisecond, LeaseTTL: time.Hour, ProgressTTL: time.Minute})
+	add(t, e, TaskSpec{ID: "z", Title: "x"})
+	r, _ := e.Wait(bg, a1, 0)
+	if _, err := e.Heartbeat(bg, a1, "z", r.Lease); err != nil {
+		t.Fatal(err)
+	}
+	clk.Advance(2 * time.Minute)
+	eventually(t, "zombie caught", func() bool {
+		s, err := e.Observe(bg)
+		return err == nil && s.Throughput.TotalZombies == 1 && s.Throughput.TotalFailed == 1
+	})
+	s, _ := e.Observe(bg)
+	if s.Agents[0].Failed != 1 {
+		t.Fatalf("the failure was not credited to the agent: %+v", s.Agents)
+	}
+}
+
+func TestViewListIsCappedWithProblemsFirst(t *testing.T) {
+	clk := newClock()
+	e, _ := setup(t, Config{Clock: clk, LeaseTTL: time.Hour, ProgressTTL: time.Hour})
+	for i := range maxLiveTasks + 20 {
+		add(t, e, TaskSpec{ID: fmt.Sprintf("t%03d", i), Title: "x"})
+	}
+	for i := range maxLiveTasks + 20 {
+		if r, err := e.Wait(bg, Agent{ID: fmt.Sprintf("a%d", i), Tier: 1}, 0); err != nil || r.Action != ActionTask {
+			t.Fatalf("%v %+v", err, r)
+		}
+	}
+	s, err := e.Observe(bg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Tasks) != maxLiveTasks || s.Truncated != 20 {
+		t.Fatalf("shown %d, hidden %d", len(s.Tasks), s.Truncated)
 	}
 }

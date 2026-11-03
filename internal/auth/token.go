@@ -26,6 +26,7 @@ type Claims struct {
 	Tags    []string  `json:"tags,omitempty"`
 	Admin   bool      `json:"admin,omitempty"`
 	Planner bool      `json:"planner,omitempty"`
+	Viewer  bool      `json:"viewer,omitempty"` // May read dashboards and change nothing.
 	Expires time.Time `json:"exp,omitzero"`
 }
 
@@ -81,7 +82,7 @@ func (a *Authority) Issue(c Claims) (string, error) {
 	if !agentRE.MatchString(c.Agent) || core.IsSystem(c.Agent) {
 		return "", fmt.Errorf("invalid agent name %q", c.Agent)
 	}
-	if !c.Admin && c.Tier < 1 {
+	if !c.Admin && !c.Viewer && c.Tier < 1 {
 		return "", fmt.Errorf("agent %s needs a tier", c.Agent)
 	}
 	body, err := json.Marshal(c)

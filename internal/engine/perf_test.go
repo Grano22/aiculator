@@ -266,3 +266,20 @@ func TestPerfMemoryPerTask(t *testing.T) {
 		t.Errorf("%d bytes per task, over the 16 KiB budget", per)
 	}
 }
+
+// Dashboards call this every second, on the writer goroutine, so it must stay cheap.
+func TestPerfObserve(t *testing.T) {
+	e, _, _ := perfEngine(t, Config{})
+	for i := range 20000 {
+		add(t, e, TaskSpec{ID: fmt.Sprintf("o%d", i), Title: "x", Budget: 100})
+	}
+	var lat []time.Duration
+	for range 50 {
+		s := time.Now()
+		if _, err := e.Observe(bg); err != nil {
+			t.Fatal(err)
+		}
+		lat = append(lat, time.Since(s))
+	}
+	budget(t, "snapshot with 20k tasks, p99", percentile(lat, 99), 100*time.Millisecond)
+}

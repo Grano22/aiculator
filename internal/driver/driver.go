@@ -160,7 +160,7 @@ func (d *Driver) runTask(ctx context.Context, g swarm.Grant, st *Stats) error {
 	log := d.o.Log.With("task", t.ID, "job", g.Job, "harness", d.o.Manifest.Name)
 	log.Info("starting")
 	res := d.session(ctx, g)
-	lq := api.LeaseReq{TaskID: t.ID, Lease: g.Lease, Note: res.note}
+	lq := api.LeaseReq{TaskID: t.ID, Lease: g.Lease, Note: res.note, Tokens: res.tokens}
 	bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
 
@@ -220,6 +220,7 @@ func truncate(s string, n int) string {
 
 type sessionResult struct {
 	ok, leaseLost, harnessDown bool
+	tokens                     int64
 	note, text                 string
 }
 
@@ -377,13 +378,17 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
 	for {
 		select {
 		case out := <-done:
+			var tokens int64
+			if out.resp.Usage != nil { // Not every harness reports usage.
+				tokens = int64(out.resp.Usage.TotalTokens)
+			}
 			if out.err != nil {
-				return sessionResult{harnessDown: isAuthError(out.err), note: "agent_error: " + truncate(out.err.Error(), 300), text: h.Text()}
+				return sessionResult{tokens: tokens, harnessDown: isAuthError(out.err), note: "agent_error: " + truncate(out.err.Error(), 300), text: h.Text()}
 			}
 			if out.resp.StopReason != acp.StopReasonEndTurn {
-				return sessionResult{note: "agent_stopped: " + string(out.resp.StopReason), text: h.Text()}
+				return sessionResult{tokens: tokens, note: "agent_stopped: " + string(out.resp.StopReason), text: h.Text()}
 			}
-			return sessionResult{ok: true, text: h.Text()}
+			return sessionResult{ok: true, tokens: tokens, text: h.Text()}
 		case <-exited:
 			// The prompt may have finished just before the exit, so prefer its result.
 			select {

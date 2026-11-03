@@ -15,13 +15,17 @@ import (
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/store"
 	"github.com/Grano22/aiculator/internal/swarm"
+	"github.com/Grano22/aiculator/pkg/observe"
 )
 
 // Server holds what the handlers need.
 type Server struct {
-	S    *swarm.Service
-	Auth *auth.Authority
+	S       *swarm.Service
+	Auth    *auth.Authority
+	Version string
 }
+
+func usage(q LeaseReq) core.Usage { return core.Usage{Cost: q.Cost, Tokens: q.Tokens} }
 
 // Error is the JSON error body.
 type Error struct {
@@ -104,6 +108,7 @@ func (s *Server) authed(check func(auth.Claims) bool, h handler) http.HandlerFun
 
 func isAgent(c auth.Claims) bool   { return c.Tier >= 1 }
 func isAdmin(c auth.Claims) bool   { return c.Admin }
+func canView(c auth.Claims) bool   { return c.Admin || c.Viewer }
 func isPlanner(c auth.Claims) bool { return c.Admin || c.Planner }
 func anyone(auth.Claims) bool      { return true }
 
@@ -113,6 +118,7 @@ type LeaseReq struct {
 	Lease  uint64 `json:"lease"`
 	Note   string `json:"note,omitempty"`
 	Cost   int64  `json:"cost,omitempty"`
+	Tokens int64  `json:"tokens,omitempty"`
 	Pass   bool   `json:"pass,omitempty"`
 }
 
@@ -127,6 +133,7 @@ type TokenReq struct {
 	Tier    int      `json:"tier"`
 	Tags    []string `json:"tags,omitempty"`
 	Planner bool     `json:"planner,omitempty"`
+	Viewer  bool     `json:"viewer,omitempty"`
 	TTLSec  int64    `json:"ttl_sec,omitempty"`
 }
 
@@ -177,13 +184,13 @@ func (s *Server) Routes() *http.ServeMux {
 		return s.S.Engine.Heartbeat(ctx, a, q.TaskID, q.Lease)
 	}))
 	m.HandleFunc("POST /v1/agent/progress", lease(func(ctx context.Context, a engine.Agent, q LeaseReq) (core.Task, error) {
-		return s.S.Progress(ctx, a, q.TaskID, q.Lease, "", q.Note, q.Cost)
+		return s.S.Progress(ctx, a, q.TaskID, q.Lease, "", q.Note, usage(q))
 	}))
 	m.HandleFunc("POST /v1/agent/submit", lease(func(ctx context.Context, a engine.Agent, q LeaseReq) (core.Task, error) {
-		return s.S.Submit(ctx, a, q.TaskID, q.Lease, q.Note, q.Cost)
+		return s.S.Submit(ctx, a, q.TaskID, q.Lease, q.Note, usage(q))
 	}))
 	m.HandleFunc("POST /v1/agent/fail", lease(func(ctx context.Context, a engine.Agent, q LeaseReq) (core.Task, error) {
-		return s.S.Engine.Fail(ctx, a, q.TaskID, q.Lease, q.Note, q.Cost)
+		return s.S.Engine.Fail(ctx, a, q.TaskID, q.Lease, q.Note, usage(q))
 	}))
 	m.HandleFunc("POST /v1/agent/release", lease(func(ctx context.Context, a engine.Agent, q LeaseReq) (core.Task, error) {
 		return s.S.Engine.Release(ctx, a, q.TaskID, q.Lease, q.Note)
@@ -192,6 +199,32 @@ func (s *Server) Routes() *http.ServeMux {
 		return s.S.Engine.Verdict(ctx, a, q.TaskID, q.Lease, q.Pass, q.Note)
 	}))
 
+	// Readiness says only pass or fail, so it is safe with no token, as probes expect.
+	m.HandleFunc("GET /v1/readyz", func(w http.ResponseWriter, r *http.Request) {
+		ok := true
+		for _, p := range s.S.Probes(r.Context()) {
+			ok = ok && p.OK
+		}
+		code, word := http.StatusOK, "ready"
+		if !ok {
+			code, word = http.StatusServiceUnavailable, "not ready"
+		}
+		writeJSON(w, code, map[string]string{"status": word})
+	})
+	m.HandleFunc("GET /v1/observe", s.authed(canView, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		snap, err := s.S.Snapshot(r.Context(), s.Version)
+		reply(w, snap, err)
+	}))
+	m.HandleFunc("GET /metrics", s.authed(canView, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		snap, err := s.S.Snapshot(r.Context(), s.Version)
+		if err != nil {
+			writeJSON(w, status(err), Error{err.Error()})
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+		_, _ = io.WriteString(w, snap.Prometheus())
+	}))
+	m.HandleFunc("GET /v1/events", s.authed(canView, s.streamEvents))
 	m.HandleFunc("GET /v1/situation", s.authed(anyone, func(w http.ResponseWriter, r *http.Request, c auth.Claims) {
 		sit, err := s.S.Engine.Situation(r.Context(), agentOf(c))
 		reply(w, sit, err)
@@ -243,7 +276,7 @@ func (s *Server) Routes() *http.ServeMux {
 		if !ok {
 			return
 		}
-		cl := auth.Claims{Agent: q.Agent, Tier: q.Tier, Tags: q.Tags, Planner: q.Planner}
+		cl := auth.Claims{Agent: q.Agent, Tier: q.Tier, Tags: q.Tags, Planner: q.Planner, Viewer: q.Viewer}
 		if q.TTLSec > 0 {
 			cl.Expires = time.Now().Add(time.Duration(q.TTLSec) * time.Second)
 		}
@@ -279,4 +312,57 @@ func (s *Server) Routes() *http.ServeMux {
 		return map[string]bool{"ok": true}, s.S.Engine.PlanCommit(ctx, c.Agent, q.Epoch)
 	}))
 	return m
+}
+
+// streamEvents sends each committed task revision as JSON lines, for as long as the
+// client stays connected. Any program can follow the swarm this way.
+func (s *Server) streamEvents(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeJSON(w, http.StatusInternalServerError, Error{"streaming is not supported"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/x-ndjson")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+	lines := make(chan core.Task, 256)
+	done := make(chan error, 1)
+	go func() {
+		done <- s.S.Store.TailEvents(r.Context(), func(t core.Task) {
+			select {
+			case lines <- t:
+			case <-r.Context().Done():
+			}
+		})
+	}()
+	enc := json.NewEncoder(w)
+	for {
+		select {
+		case t := <-lines:
+			if enc.Encode(t) != nil {
+				return
+			}
+			flusher.Flush()
+		case <-done:
+			return
+		}
+	}
+}
+
+// Instrument times every call for the dashboards, leaving out long-polls and streams,
+// whose duration says nothing about how the server is doing.
+func (s *Server) Instrument(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v1/agent/wait", "/v1/events", "/mcp":
+			next.ServeHTTP(w, r)
+			return
+		}
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		c := s.S.Engine.Collector()
+		c.Observe(observe.LatencyAPI, time.Since(start))
+		c.Count(observe.SeriesAPI, time.Now(), 1)
+	})
 }
