@@ -19,15 +19,15 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"aiculation/internal/api"
-	"aiculation/internal/auth"
-	"aiculation/internal/client"
-	"aiculation/internal/core"
-	"aiculation/internal/engine"
-	"aiculation/internal/sandbox"
-	"aiculation/internal/store"
-	"aiculation/internal/swarm"
-	"aiculation/internal/work"
+	"github.com/Grano22/aiculator/internal/api"
+	"github.com/Grano22/aiculator/internal/auth"
+	"github.com/Grano22/aiculator/internal/client"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/sandbox"
+	"github.com/Grano22/aiculator/internal/store"
+	"github.com/Grano22/aiculator/internal/swarm"
+	"github.com/Grano22/aiculator/internal/work"
 )
 
 var dataDir string

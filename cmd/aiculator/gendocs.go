@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"aiculation/internal/harness"
+	"github.com/Grano22/aiculator/internal/harness"
 )
 
 // genDocsCmd writes the reference pages from the code, so that they cannot drift.

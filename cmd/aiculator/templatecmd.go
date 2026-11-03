@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"aiculation/internal/harness"
-	"aiculation/internal/skillpack"
-	"aiculation/internal/tmpl"
+	"github.com/Grano22/aiculator/internal/harness"
+	"github.com/Grano22/aiculator/internal/skillpack"
+	"github.com/Grano22/aiculator/internal/tmpl"
 )
 
 func templateCmd() *cobra.Command {

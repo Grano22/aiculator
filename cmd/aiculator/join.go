@@ -19,12 +19,12 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
 
-	"aiculation/internal/api"
-	"aiculation/internal/client"
-	"aiculation/internal/engine"
-	"aiculation/internal/harness"
-	"aiculation/internal/skillpack"
-	"aiculation/internal/swarm"
+	"github.com/Grano22/aiculator/internal/api"
+	"github.com/Grano22/aiculator/internal/client"
+	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/harness"
+	"github.com/Grano22/aiculator/internal/skillpack"
+	"github.com/Grano22/aiculator/internal/swarm"
 )
 
 // projectRoot is the git top level, or the working directory outside a repository.

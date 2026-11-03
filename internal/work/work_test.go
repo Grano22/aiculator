@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"aiculation/internal/core"
-	"aiculation/internal/sandbox"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/sandbox"
 )
 
 var ctx = context.Background()

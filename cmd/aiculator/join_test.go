@@ -13,7 +13,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"aiculation/internal/swarm"
+	"github.com/Grano22/aiculator/internal/swarm"
 )
 
 type project struct {

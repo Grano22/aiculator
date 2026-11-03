@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"aiculation/internal/core"
+	"github.com/Grano22/aiculator/internal/core"
 )
 
 // Claims is the signed content of a token.

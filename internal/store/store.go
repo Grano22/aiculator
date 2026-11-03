@@ -17,7 +17,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 
-	"aiculation/internal/core"
+	"github.com/Grano22/aiculator/internal/core"
 )
 
 const (

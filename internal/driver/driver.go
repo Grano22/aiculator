@@ -18,12 +18,12 @@ import (
 
 	acp "github.com/coder/acp-go-sdk"
 
-	"aiculation/internal/api"
-	"aiculation/internal/client"
-	"aiculation/internal/engine"
-	"aiculation/internal/harness"
-	"aiculation/internal/sandbox"
-	"aiculation/internal/swarm"
+	"github.com/Grano22/aiculator/internal/api"
+	"github.com/Grano22/aiculator/internal/client"
+	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/harness"
+	"github.com/Grano22/aiculator/internal/sandbox"
+	"github.com/Grano22/aiculator/internal/swarm"
 )
 
 // Manifest describes how to launch one harness and what it may do.

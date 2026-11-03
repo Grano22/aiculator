@@ -10,7 +10,7 @@ import (
 
 	"github.com/nats-io/nats.go/jetstream"
 
-	"aiculation/internal/core"
+	"github.com/Grano22/aiculator/internal/core"
 )
 
 // Event is one committed task revision.

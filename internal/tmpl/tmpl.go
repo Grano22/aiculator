@@ -31,7 +31,7 @@ import (
 	"github.com/nikolalohinski/gonja/v2/loaders"
 	"go.yaml.in/yaml/v3"
 
-	"aiculation/internal/harness"
+	"github.com/Grano22/aiculator/internal/harness"
 )
 
 //go:embed all:library

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"aiculation/internal/core"
-	"aiculation/internal/store"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/store"
 )
 
 // readyItem is one entry in a tier's ready heap. key is priority·agingUnit minus

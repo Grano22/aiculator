@@ -11,12 +11,12 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"aiculation/internal/api"
-	"aiculation/internal/auth"
-	"aiculation/internal/core"
-	"aiculation/internal/engine"
-	"aiculation/internal/store"
-	"aiculation/internal/swarm"
+	"github.com/Grano22/aiculator/internal/api"
+	"github.com/Grano22/aiculator/internal/auth"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/store"
+	"github.com/Grano22/aiculator/internal/swarm"
 )
 
 type bearer struct{ token string }

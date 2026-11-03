@@ -16,8 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"aiculation/internal/core"
-	"aiculation/internal/store"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/store"
 )
 
 // Clock is swappable so that lease tests do not need to sleep.

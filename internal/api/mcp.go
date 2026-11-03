@@ -12,8 +12,8 @@ import (
 	mcpauth "github.com/modelcontextprotocol/go-sdk/auth"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"aiculation/internal/auth"
-	"aiculation/internal/engine"
+	"github.com/Grano22/aiculator/internal/auth"
+	"github.com/Grano22/aiculator/internal/engine"
 )
 
 // DefaultHold is how long wait_for_task holds when the caller does not say. It

@@ -17,11 +17,11 @@ import (
 	"testing"
 	"time"
 
-	"aiculation/internal/api"
-	"aiculation/internal/client"
-	"aiculation/internal/core"
-	"aiculation/internal/engine"
-	"aiculation/internal/swarm"
+	"github.com/Grano22/aiculator/internal/api"
+	"github.com/Grano22/aiculator/internal/client"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/swarm"
 )
 
 func buildBinary(t *testing.T) string {

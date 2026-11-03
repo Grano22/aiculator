@@ -16,7 +16,7 @@ import (
 	"sort"
 	"strings"
 
-	"aiculation/internal/harness"
+	"github.com/Grano22/aiculator/internal/harness"
 )
 
 //go:embed all:skills

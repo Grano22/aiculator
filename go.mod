@@ -1,4 +1,4 @@
-module aiculation
+module github.com/Grano22/aiculator
 
 go 1.27.3
 

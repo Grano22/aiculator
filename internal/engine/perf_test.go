@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"aiculation/internal/core"
-	"aiculation/internal/store"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/store"
 )
 
 // These tests hold the engine to performance budgets, with large cases that would

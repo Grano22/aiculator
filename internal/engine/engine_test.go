@@ -15,8 +15,8 @@ import (
 
 	"github.com/anishathalye/porcupine"
 
-	"aiculation/internal/core"
-	"aiculation/internal/store"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/store"
 )
 
 type fakeClock struct {

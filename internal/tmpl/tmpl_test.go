@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"aiculation/internal/harness"
-	"aiculation/internal/skillpack"
+	"github.com/Grano22/aiculator/internal/harness"
+	"github.com/Grano22/aiculator/internal/skillpack"
 )
 
 const validFM = "---\nname: %s\ndescription: A skill made for a test, long enough for the linter.\nmetadata:\n  version: \"1.0\"\n---\n\n"

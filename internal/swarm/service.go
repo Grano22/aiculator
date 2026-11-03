@@ -8,10 +8,10 @@ import (
 	"log/slog"
 	"time"
 
-	"aiculation/internal/core"
-	"aiculation/internal/engine"
-	"aiculation/internal/store"
-	"aiculation/internal/work"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/store"
+	"github.com/Grano22/aiculator/internal/work"
 )
 
 // Service is the shared backend for all channels.

@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"aiculation/internal/harness"
+	"github.com/Grano22/aiculator/internal/harness"
 )
 
 // target is one config file to change, with a label for messages.

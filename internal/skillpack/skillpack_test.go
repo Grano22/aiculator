@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"aiculation/internal/harness"
+	"github.com/Grano22/aiculator/internal/harness"
 )
 
 func harnesses(ids ...string) []harness.Harness {

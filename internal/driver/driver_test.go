@@ -18,14 +18,14 @@ import (
 
 	acp "github.com/coder/acp-go-sdk"
 
-	"aiculation/internal/api"
-	"aiculation/internal/auth"
-	"aiculation/internal/core"
-	"aiculation/internal/engine"
-	"aiculation/internal/sandbox"
-	"aiculation/internal/store"
-	"aiculation/internal/swarm"
-	"aiculation/internal/work"
+	"github.com/Grano22/aiculator/internal/api"
+	"github.com/Grano22/aiculator/internal/auth"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/sandbox"
+	"github.com/Grano22/aiculator/internal/store"
+	"github.com/Grano22/aiculator/internal/swarm"
+	"github.com/Grano22/aiculator/internal/work"
 )
 
 var fakeBin string
@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 	}
 	defer os.RemoveAll(dir)
 	fakeBin = filepath.Join(dir, "fakeagent")
-	if out, err := exec.Command("go", "build", "-o", fakeBin, "aiculation/cmd/fakeagent").CombinedOutput(); err != nil {
+	if out, err := exec.Command("go", "build", "-o", fakeBin, "github.com/Grano22/aiculator/cmd/fakeagent").CombinedOutput(); err != nil {
 		panic(fmt.Sprintf("%v: %s", err, out))
 	}
 	os.Exit(m.Run())

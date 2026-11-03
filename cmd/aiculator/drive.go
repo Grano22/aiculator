@@ -13,8 +13,8 @@ import (
 	"github.com/knadh/koanf/v2"
 	"github.com/spf13/cobra"
 
-	"aiculation/internal/driver"
-	"aiculation/internal/sandbox"
+	"github.com/Grano22/aiculator/internal/driver"
+	"github.com/Grano22/aiculator/internal/sandbox"
 )
 
 func loadManifest(harness, path string) (driver.Manifest, error) {

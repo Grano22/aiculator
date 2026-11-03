@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"aiculation/internal/skillpack"
+	"github.com/Grano22/aiculator/internal/skillpack"
 )
 
 // generatedMarker identifies a directory this package wrote, and so may replace.

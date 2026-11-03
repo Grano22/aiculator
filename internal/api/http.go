@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"aiculation/internal/auth"
-	"aiculation/internal/core"
-	"aiculation/internal/engine"
-	"aiculation/internal/store"
-	"aiculation/internal/swarm"
+	"github.com/Grano22/aiculator/internal/auth"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/store"
+	"github.com/Grano22/aiculator/internal/swarm"
 )
 
 // Server holds what the handlers need.

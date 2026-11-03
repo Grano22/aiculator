@@ -18,8 +18,8 @@ import (
 	"sync"
 	"time"
 
-	"aiculation/internal/core"
-	"aiculation/internal/sandbox"
+	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/sandbox"
 )
 
 // DefaultBranch is where merged work lands.
