@@ -95,3 +95,11 @@ jobs:
           prerelease: ${{ needs.verify.outputs.prerelease == 'true' }}
           files: dist/*
           fail_on_unmatched_files: true
+
+  packages:
+    name: Package managers
+    needs: publish
+    uses: ./.github/workflows/packages.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets: inherit

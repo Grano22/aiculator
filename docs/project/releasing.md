@@ -117,3 +117,7 @@ Dependabot starts on its own from `.github/dependabot.yml`.
 | `dependabot.yml` | Weekly updates for Go, Actions and docs dependencies |
 
 Actions are pinned to full commit hashes, so a moved tag cannot change what runs.
+
+## Package managers
+
+Each release also goes to the package managers whose secrets are set. See [Package managers](packaging.md).

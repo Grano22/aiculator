@@ -117,3 +117,4 @@ nav:
   - Project:
       - Status: project/status.md
       - Releasing: project/releasing.md
+      - Package managers: project/packaging.md

@@ -8,6 +8,7 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ### Added
 
+- **Package manager publishing:** a release now installs and tests packages for Homebrew, Scoop, Chocolatey, WinGet, the Arch User Repository, and signed apt, dnf and apk repositories. It publishes each one whose secrets are set, and skips the rest.
 - **Templates for rich output:** new components `<TodoList>`, `<PlanMode>`, `<AskConfirm>`, `<AskText>`, `<AskPreview>`, `<Render>` and `<RichMarkdown>`, with templates `ui-confirm`, `ui-text`, `ui-preview`, `ui-todos`, `ui-plan` and `rich-markdown`. They name each harness's real tool, and `rich-markdown` covers 19 Markdown forms, with terminal fallbacks for those a terminal may not show.
 - **Template demo:** `.agent/template/demo.mdx` uses every template feature in one realistic workflow, with a docs page that shows its real source and rendered output.
 
