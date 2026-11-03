@@ -307,3 +307,12 @@ func TestCustomServerNameAndConfigPath(t *testing.T) {
 		}
 	}
 }
+
+func TestQuestionToolsAreOnlyThoseConfirmedByDocs(t *testing.T) {
+	want := map[string]string{"claude": "AskUserQuestion", "gemini": "ask_user", "opencode": "question"}
+	for _, h := range All() {
+		if h.QuestionTool != want[h.ID] {
+			t.Errorf("%s: question tool %q, want %q. A guessed name would tell a model to call a tool that is not there.", h.ID, h.QuestionTool, want[h.ID])
+		}
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -116,6 +117,11 @@ func (s *Set) write(t Template, c Context, dest, label string) (skillpack.Action
 			return act, nil
 		}
 	}
+	if exists {
+		if old, err := os.ReadFile(filepath.Join(dest, "SKILL.md")); err == nil {
+			c.Keep = DynamicSections(string(old))
+		}
+	}
 	text, err := s.Render(t, c)
 	if err != nil {
 		return act, err
@@ -223,6 +229,10 @@ func copyBundledSiblings(t Template, dst string) error {
 	})
 }
 
+// tocLines matches the line numbers in a contents list. A model's edit to a live section
+// shifts them without the skill being out of date, and the anchors still hold.
+var tocLines = regexp.MustCompile(`(?m)^(\s*- .+): line \d+`)
+
 // Check compares generated skills with what their templates produce now, so that CI
 // can catch a template that was changed without re-rendering.
 func (s *Set) Check(o InstallOptions) ([]string, error) {
@@ -243,15 +253,16 @@ func (s *Set) Check(o InstallOptions) ([]string, error) {
 		if err != nil {
 			return stale, err
 		}
-		want, err := s.Render(t, Context{Vars: o.Vars, Version: o.Version})
-		if err != nil {
-			return stale, err
-		}
 		got, err := os.ReadFile(filepath.Join(dest, "SKILL.md"))
 		if err != nil {
 			return stale, err
 		}
-		if string(got) != want {
+		// What a model wrote in a live section is expected to differ, so it is not drift.
+		want, err := s.Render(t, Context{Vars: o.Vars, Version: o.Version, Keep: DynamicSections(string(got))})
+		if err != nil {
+			return stale, err
+		}
+		if tocLines.ReplaceAllString(string(got), "$1") != tocLines.ReplaceAllString(want, "$1") {
 			stale = append(stale, name)
 		}
 	}

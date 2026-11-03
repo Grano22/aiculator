@@ -1,0 +1,29 @@
+---
+template:
+  vars:
+    parallel: 3
+name: subagent-flow
+description: Makes you run larger work as an orchestrator with staged subagents, where you check each result before moving on. Use when work splits into research, implementation and review stages, or when the user asks to use subagents.
+compatibility: Works best in a harness that can run subagents, and falls back to doing the stages in order. These are instructions to the model, not technical limits.
+metadata:
+  version: "1.0.0"
+  aiculator.kind: flow
+---
+
+# Subagent flow
+
+<Toc />
+
+<SubagentFlow id="flow" name="research, build, review">
+<Stage n="1" title="Research" id="research" parallel="{{ parallel }}" output="Short findings with file paths, and no changes to any file" done="you could explain the change to someone else, with evidence for each claim">
+Split the unknowns into separate questions, and give each to its own subagent.
+</Stage>
+
+<Stage n="2" title="Build" id="build" output="The changes made, and how they were checked" done="the code is changed and the relevant tests pass">
+Give one subagent the plan and the findings. Build in parallel only if the parts touch different files.
+</Stage>
+
+<Stage n="3" title="Review" id="review" agent="a fresh subagent that did not write the code" output="Real problems found, each with a file, a line and why it matters" done="each problem is fixed, or you have explained why it stays">
+Ask it to look for bugs in the changes. It has not seen your reasoning, which is the point.
+</Stage>
+</SubagentFlow>

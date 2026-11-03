@@ -1,0 +1,26 @@
+---
+name: living-section
+description: Makes you keep a named status section in a project file true as you work, updating it in the same step as each change. Use when the user wants a progress log, a status section, or notes that stay current during long work.
+compatibility: Works in any harness that reads skills and can edit files. These are instructions to the model, not technical limits.
+metadata:
+  version: "1.0.0"
+  aiculator.kind: maintenance
+template:
+  vars:
+    file: PROGRESS.md
+---
+
+# Living section
+
+<DynamicSection id="status" title="Status" file="{{ file }}" keep="what is done, what is in progress, what is blocked, and the next step" />
+
+## Example
+
+```markdown
+<!-- dynamic:status:start -->
+Done: login and session handling.
+In progress: password reset, with the tests still failing.
+Blocked: nothing.
+Next: fix the reset token expiry.
+<!-- dynamic:status:end -->
+```

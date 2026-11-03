@@ -370,3 +370,191 @@ func TestStarterTemplateRenders(t *testing.T) {
 		t.Error("accepted a path as a name")
 	}
 }
+
+func forHarness(id string) Context {
+	h, _ := harness.Get(id)
+	return Context{Harness: &h}
+}
+
+func TestSelectTemplateNamesTheRightToolAndMode(t *testing.T) {
+	root := project(t)
+	cases := map[string][]string{
+		"claude":   {"`AskUserQuestion`", "`multiSelect: false`", "at most 12 characters"},
+		"gemini":   {"`ask_user`", "`multiSelect: false`", "at most 16 characters", `type: "choice"`},
+		"opencode": {"`question` tool", "turn it off"},
+		"pi":       {"Use your harness's question tool if it has one", "write a numbered list"},
+	}
+	for id, wants := range cases {
+		out := render(t, root, "ui-select", forHarness(id))
+		for _, w := range wants {
+			if !strings.Contains(out, w) {
+				t.Errorf("%s: missing %q in:\n%s", id, w, out)
+			}
+		}
+	}
+	// Pi has no such built-in, so it must not be told to call a specific tool as its own.
+	if out := render(t, root, "ui-select", forHarness("claude")); strings.Contains(out, "`ask_user`") {
+		t.Error("the Claude copy names another harness's tool")
+	}
+	// The shared copy cannot know the harness, so it names them all.
+	shared := render(t, root, "ui-select", Context{})
+	for _, w := range []string{"`AskUserQuestion` in Claude Code", "`question` in OpenCode", "`ask_user` in Gemini CLI"} {
+		if !strings.Contains(shared, w) {
+			t.Errorf("shared: missing %q", w)
+		}
+	}
+}
+
+func TestCheckboxAndTabsUseTheirOwnModes(t *testing.T) {
+	root := project(t)
+	box := render(t, root, "ui-checkbox", forHarness("claude"))
+	if !strings.Contains(box, "`multiSelect: true`") || strings.Contains(box, "`multiSelect: false`") {
+		t.Errorf("checkbox:\n%s", box)
+	}
+	tabs := render(t, root, "ui-tabs", forHarness("claude"))
+	for _, w := range []string{"single call", "`questions` array", "**Language**", "**Extras**", "*(several can be chosen)*", "*(one can be chosen)*"} {
+		if !strings.Contains(tabs, w) {
+			t.Errorf("tabs: missing %q in:\n%s", w, tabs)
+		}
+	}
+}
+
+func TestEveryQuestionTypeCoversSubagentsAndNoTool(t *testing.T) {
+	root := project(t)
+	for _, name := range []string{"ui-select", "ui-checkbox", "ui-tabs"} {
+		out := render(t, root, name, Context{})
+		for _, w := range []string{"If you are a subagent", "If you have no question tool", "stop and wait"} {
+			if !strings.Contains(out, w) {
+				t.Errorf("%s: missing %q", name, w)
+			}
+		}
+	}
+	put(t, root, ".agents/templates/c.mdx", fmt.Sprintf(validFM, "c")+`<AskOne question="Pick" subagent="Use SQLite.">
+- A
+- B
+</AskOne>
+`)
+	out := render(t, root, "c", Context{})
+	if !strings.Contains(out, "**Ask the user:** Pick") || !strings.Contains(out, "- A\n- B") || !strings.Contains(out, "Use SQLite.") {
+		t.Errorf("custom question:\n%s", out)
+	}
+}
+
+func TestSubagentFlowRenders(t *testing.T) {
+	out := render(t, project(t), "subagent-flow", Context{Vars: map[string]string{"parallel": "5"}})
+	for _, w := range []string{"You are the orchestrator", "### Stage 1: Research", "Run up to 5 subagents at once", "### Stage 3: Review", "a fresh subagent", "**Done when:**", "cannot reach the user", "cannot run subagents", "- Stage 2: Build: line"} {
+		if !strings.Contains(out, w) {
+			t.Errorf("missing %q in:\n%s", w, out)
+		}
+	}
+}
+
+func TestDynamicSectionSurvivesReRenderAndCheck(t *testing.T) {
+	root := project(t)
+	put(t, root, ".agents/templates/d.md.j2", fmt.Sprintf(validFM, "d")+`# D
+
+<Toc />
+
+<DynamicSection id="state" title="State" update="after every commit">Nothing yet.</DynamicSection>
+
+## After
+Text.
+`)
+	s := NewSet(root, nil)
+	o := opts(root)
+	o.Skill.Patterns = []string{"d"}
+	if _, err := s.Install(o); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, ".agents/skills/d/SKILL.md")
+	b, _ := os.ReadFile(path)
+	if !strings.Contains(string(b), "Nothing yet.") || !strings.Contains(string(b), "after every commit") {
+		t.Fatalf("first render:\n%s", b)
+	}
+	// A model updates the section, with several more lines than before.
+	edited := strings.Replace(string(b), "Nothing yet.", "Line one.\nLine two.\nLine three.", 1)
+	if err := os.WriteFile(path, []byte(edited), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if stale, err := s.Check(o); err != nil || len(stale) != 0 {
+		t.Fatalf("a model's edit counted as drift: %v %v", stale, err)
+	}
+	// The template changes elsewhere: the check notices, and a re-render keeps the edit.
+	put(t, root, ".agents/templates/d.md.j2", fmt.Sprintf(validFM, "d")+`# D
+
+<Toc />
+
+<DynamicSection id="state" title="State" update="after every commit">Nothing yet.</DynamicSection>
+
+## After
+Different text.
+`)
+	if stale, _ := s.Check(o); len(stale) != 1 {
+		t.Fatalf("real drift was missed: %v", stale)
+	}
+	if _, err := s.Install(o); err != nil {
+		t.Fatal(err)
+	}
+	b, _ = os.ReadFile(path)
+	out := string(b)
+	if !strings.Contains(out, "Line three.") || !strings.Contains(out, "Different text.") || strings.Contains(out, "Nothing yet.") {
+		t.Fatalf("after re-render:\n%s", out)
+	}
+	// The contents list must still point at the right lines, after the section grew.
+	lines := strings.Split(out, "\n")
+	re := regexp.MustCompile(`^- After: line (\d+)`)
+	found := false
+	for _, l := range lines {
+		if m := re.FindStringSubmatch(l); m != nil {
+			n, _ := strconv.Atoi(m[1])
+			found = lines[n-1] == "## After"
+		}
+	}
+	if !found {
+		t.Fatalf("the contents list is wrong after a re-render:\n%s", out)
+	}
+	if stale, _ := s.Check(o); len(stale) != 0 {
+		t.Fatalf("still stale after re-render: %v", stale)
+	}
+}
+
+func TestLivingSectionInAFileGivesInstructionsOnly(t *testing.T) {
+	out := render(t, project(t), "living-section", Context{Vars: map[string]string{"file": "NOTES.md"}})
+	if !strings.Contains(out, "`NOTES.md`") || !strings.Contains(out, "<!-- dynamic:status:start -->") {
+		t.Errorf("file form:\n%s", out)
+	}
+	// The example in a code fence must be left out of what a re-render treats as live.
+	if got := keepDynamic(out, map[string]string{"status": "OVERWRITTEN"}); strings.Contains(got, "OVERWRITTEN") {
+		t.Errorf("a re-render rewrote the example in the code fence:\n%s", got)
+	}
+}
+
+func TestAllBundledTemplatesPassLintForEveryHarness(t *testing.T) {
+	root := project(t)
+	s := NewSet(root, nil)
+	list, err := s.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) < 6 {
+		t.Fatalf("only %d bundled templates", len(list))
+	}
+	for _, tp := range list {
+		for _, c := range []Context{{}, forHarness("claude"), forHarness("opencode"), forHarness("gemini"), forHarness("pi")} {
+			text, err := s.Render(tp, c)
+			if err != nil {
+				t.Fatalf("%s: %v", tp.Name, err)
+			}
+			if strings.Contains(text, "<Ask") || strings.Contains(text, "</") && !strings.Contains(text, "```") {
+				t.Errorf("%s: a tag was left over:\n%s", tp.Name, text)
+			}
+			dir := filepath.Join(t.TempDir(), tp.Name)
+			put(t, dir, "SKILL.md", text)
+			for _, i := range skillpack.Lint(dir) {
+				if i.Level != skillpack.LevelInfo {
+					t.Errorf("%s: %s: %s", tp.Name, i.Level, i.Msg)
+				}
+			}
+		}
+	}
+}

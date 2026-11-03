@@ -1,0 +1,31 @@
+---
+name: ui-tabs
+description: Makes you ask several related questions together in one tabbed form, instead of one at a time or in prose. Use when you need more than one decision from the user before you can continue, such as settings for a new project.
+compatibility: Works in any harness that reads skills. Uses its question tool when it has one, and numbered sections otherwise. These are instructions to the model, not technical limits.
+allowed-tools: AskUserQuestion question ask_user
+metadata:
+  version: "1.0.0"
+  aiculator.kind: ui
+---
+
+# Tabbed questions
+
+<Directive id="ask-together">When you need several decisions, gather them first and ask them together in one call. Do not ask one, wait, and then ask the next.</Directive>
+
+<AskTabs id="how-to-ask" title="How to ask" />
+
+## Example
+
+To set up a new service, ask these in one call:
+
+<Tab header="Language" question="Which language should it use?">
+Go (Recommended), or TypeScript, or Python
+</Tab>
+
+<Tab header="Storage" question="Where should it keep data?">
+PostgreSQL (Recommended), or SQLite, or none
+</Tab>
+
+<Tab header="Extras" question="Which extras should it include?" multi="true">
+Docker, or CI, or metrics
+</Tab>

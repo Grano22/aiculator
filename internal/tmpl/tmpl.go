@@ -236,13 +236,51 @@ type Context struct {
 	Vars    map[string]string // From --set; these beat the template's defaults.
 	Harness *harness.Harness  // Nil renders the shared, harness-neutral form.
 	Version string
+	// Keep holds dynamic sections to carry over from an installed skill, by id, so that
+	// re-rendering never wipes what a model has written there.
+	Keep map[string]string
+}
+
+var dynamicBlock = regexp.MustCompile(`(?s)<!-- dynamic:([A-Za-z0-9_-]+):start -->\n(.*?)\n?<!-- dynamic:[A-Za-z0-9_-]+:end -->`)
+
+// DynamicSections reads the live sections out of a rendered skill.
+func DynamicSections(text string) map[string]string {
+	out := map[string]string{}
+	for _, m := range dynamicBlock.FindAllStringSubmatch(text, -1) {
+		out[m[1]] = m[2]
+	}
+	return out
+}
+
+// keepDynamic puts earlier content back into the freshly rendered sections. A section
+// the template no longer has is dropped with it.
+func keepDynamic(body string, keep map[string]string) string {
+	if len(keep) == 0 {
+		return body
+	}
+	protected := fenceBlocks.FindAllStringIndex(body, -1)
+	var b strings.Builder
+	last := 0
+	for _, m := range dynamicBlock.FindAllStringSubmatchIndex(body, -1) {
+		id := body[m[2]:m[3]]
+		saved, ok := keep[id]
+		inCode := slices.ContainsFunc(protected, func(r []int) bool { return m[0] >= r[0] && m[0] < r[1] })
+		if !ok || inCode {
+			continue
+		}
+		b.WriteString(body[last:m[4]])
+		b.WriteString(saved)
+		last = m[5]
+	}
+	b.WriteString(body[last:])
+	return b.String()
 }
 
 func harnessVars(h *harness.Harness) map[string]any {
 	if h == nil {
-		return map[string]any{"id": "generic", "name": "your harness", "has_mcp": false, "reads_agents": true, "has_acp": false}
+		return map[string]any{"id": "generic", "name": "your harness", "has_mcp": false, "reads_agents": true, "has_acp": false, "question_tool": ""}
 	}
-	return map[string]any{"id": h.ID, "name": h.Name, "has_mcp": h.MCP != harness.MCPNone, "reads_agents": h.ReadsAgents, "has_acp": len(h.ACP) > 0}
+	return map[string]any{"id": h.ID, "name": h.Name, "has_mcp": h.MCP != harness.MCPNone, "reads_agents": h.ReadsAgents, "has_acp": len(h.ACP) > 0, "question_tool": h.QuestionTool}
 }
 
 var templateBlock = regexp.MustCompile(`(?m)^template:[ \t]*\n((?:[ \t]+.*\n|[ \t]*\n)*)`)
@@ -301,6 +339,7 @@ func (s *Set) Render(t Template, c Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	body = keepDynamic(body, c.Keep) // Before the contents list, whose line numbers it can shift.
 	if strings.TrimSpace(fm) != "" {
 		if fm, err = stampMetadata(fm, t.Name, c.Harness); err != nil {
 			return "", fmt.Errorf("%s: %w", t.Name, err)
@@ -367,6 +406,7 @@ var (
 	propRE       = regexp.MustCompile(`([a-zA-Z_][\w-]*)(?:=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\}))?`)
 	fenceRE      = regexp.MustCompile("(?m)^ {0,3}(```|~~~).*$")
 	inlineCode   = regexp.MustCompile("`[^`\n]+`")
+	fenceBlocks  = regexp.MustCompile("(?s)(?m)^ {0,3}(```|~~~).*?^ {0,3}(```|~~~)")
 )
 
 // protectedRanges finds code, where a <Tag> is an example and not a component.

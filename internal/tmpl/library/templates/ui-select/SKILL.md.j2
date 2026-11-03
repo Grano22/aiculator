@@ -1,0 +1,19 @@
+---
+name: ui-select
+description: Makes you ask the user to pick one option through a selectable list, instead of asking in prose. Use when a decision has several exclusive options and the user must choose, such as which library, approach or target.
+compatibility: Works in any harness that reads skills. Uses its question tool when it has one, and a numbered list otherwise. These are instructions to the model, not technical limits.
+allowed-tools: AskUserQuestion question ask_user
+metadata:
+  version: "1.0.0"
+  aiculator.kind: ui
+---
+
+# Single-choice questions
+
+<Directive id="use-the-list">When the user must pick one of several options, ask through the list described here. Do not write the options in a normal reply.</Directive>
+
+<AskOne id="how-to-ask" title="How to ask" />
+
+## Example
+
+For "Which database should I use?", offer `PostgreSQL (Recommended)`, `SQLite` and `MySQL`, each with one line saying when it fits best.

@@ -1,0 +1,19 @@
+---
+name: ui-checkbox
+description: Makes you ask the user to pick any number of options through a checkbox list, instead of asking in prose. Use when several options can apply at once, such as which features to include, files to change, or checks to run.
+compatibility: Works in any harness that reads skills. Uses its question tool when it has one, and a numbered list otherwise. These are instructions to the model, not technical limits.
+allowed-tools: AskUserQuestion question ask_user
+metadata:
+  version: "1.0.0"
+  aiculator.kind: ui
+---
+
+# Checkbox questions
+
+<Directive id="use-the-checkboxes">When several options can apply together, ask through the checkbox list described here. Do not ask about them one by one, and do not write them in a normal reply.</Directive>
+
+<AskMany id="how-to-ask" title="How to ask" />
+
+## Example
+
+For "Which checks should I run before the release?", offer `Unit tests`, `Lint`, `Security scan` and `Load test`, each with one line saying what it covers.
