@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -27,6 +26,7 @@ import (
 	"github.com/Grano22/aiculator/internal/sandbox"
 	"github.com/Grano22/aiculator/internal/store"
 	"github.com/Grano22/aiculator/internal/swarm"
+	"github.com/Grano22/aiculator/internal/vlog"
 	"github.com/Grano22/aiculator/internal/work"
 )
 
@@ -69,15 +69,19 @@ func rootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use: "aiculator", Short: "Run and control an agent swarm across coding harnesses",
 		Version: version, SilenceUsage: true,
-		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if !cmd.Flags().Changed("data") {
 				dataDir = findDataDir()
 			}
+			return setupLogging(cmd)
 		},
 	}
 	root.PersistentFlags().StringVar(&dataDir, "data", ".swarm", "state directory; found by searching upward when not set")
+	addLoggingFlags(root)
+	// Declared here so that cobra does not claim -v for it, since -v is the verbosity.
+	root.Flags().Bool("version", false, "print the version")
 	root.AddCommand(serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
-		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), pluginCmd(), genDocsCmd())
+		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), pluginCmd(), debugCmd(), logsCmd(), genDocsCmd())
 	addPluginCommands(root)
 	return root
 }
@@ -121,8 +125,7 @@ type serveOpts struct {
 }
 
 func serve(ctx context.Context, o serveOpts) error {
-	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	slog.SetDefault(log)
+	log := vlog.Slog("server")
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return err
 	}

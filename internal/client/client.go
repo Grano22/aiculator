@@ -8,7 +8,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/Grano22/aiculator/internal/vlog"
 )
+
+var vl = vlog.For("client")
 
 // Client talks to one server with one token.
 type Client struct {
@@ -50,14 +55,35 @@ func (c *Client) Do(ctx context.Context, method, path string, in, out any) error
 	if in != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+	if v := vl.V(vlog.LevelHeaders); v.Enabled() {
+		v.Info("request headers", "method", method, "path", path, "headers", vlog.Headers(req.Header))
+	}
+	if limit := vlog.HTTPLimit("client"); limit > 0 && in != nil {
+		if b, err := json.Marshal(in); err == nil {
+			vl.V(vlog.LevelBodies).Info("request body", "method", method, "path", path, "body", vlog.Body(b, limit))
+		}
+	}
+	began := time.Now()
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
+		if v := vl.V(vlog.LevelRequests); v.Enabled() {
+			v.Info("request failed", "method", method, "url", c.URL+path, "took", time.Since(began), "err", err)
+		}
 		return err
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
+	}
+	if v := vl.V(vlog.LevelRequests); v.Enabled() {
+		v.Info("request", "method", method, "url", c.URL+path, "status", resp.StatusCode, "took", time.Since(began), "bytes", len(data))
+	}
+	if v := vl.V(vlog.LevelHeaders); v.Enabled() {
+		v.Info("response headers", "path", path, "headers", vlog.Headers(resp.Header))
+	}
+	if limit := vlog.HTTPLimit("client"); limit > 0 {
+		vl.V(vlog.LevelBodies).Info("response body", "path", path, "status", resp.StatusCode, "body", vlog.Body(data, limit))
 	}
 	if resp.StatusCode/100 != 2 {
 		var e struct {

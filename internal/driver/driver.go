@@ -24,7 +24,10 @@ import (
 	"github.com/Grano22/aiculator/internal/harness"
 	"github.com/Grano22/aiculator/internal/sandbox"
 	"github.com/Grano22/aiculator/internal/swarm"
+	"github.com/Grano22/aiculator/internal/vlog"
 )
+
+var vl = vlog.For("driver")
 
 // Manifest describes how to launch one harness and what it may do.
 type Manifest struct {
@@ -159,7 +162,13 @@ func (d *Driver) runTask(ctx context.Context, g swarm.Grant, st *Stats) error {
 	t := g.Task
 	log := d.o.Log.With("task", t.ID, "job", g.Job, "harness", d.o.Manifest.Name)
 	log.Info("starting")
+	if v := vl.V(vlog.LevelSteady); v.Enabled() {
+		v.Info("session starting", "task", t.ID, "job", g.Job, "harness", d.o.Manifest.Name, "workdir", g.Workdir, "attempt", t.Attempt)
+	}
 	res := d.session(ctx, g)
+	if v := vl.V(vlog.LevelSteady); v.Enabled() {
+		v.Info("session ended", "task", t.ID, "ok", res.ok, "lease_lost", res.leaseLost, "harness_down", res.harnessDown, "tokens", res.tokens, "note", res.note)
+	}
 	lq := api.LeaseReq{TaskID: t.ID, Lease: g.Lease, Note: res.note, Tokens: res.tokens}
 	bg, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
@@ -334,6 +343,9 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
 	if d.o.Stderr != nil {
 		cmd.Stderr = d.o.Stderr
 	}
+	if v := vl.V(vlog.LevelChanges); v.Enabled() {
+		v.Info("launching harness", "command", d.o.Manifest.Command, "sandbox", d.o.Sandbox.Name(), "write_paths", writes)
+	}
 	if err := cmd.Start(); err != nil {
 		return sessionResult{harnessDown: true, note: "agent_launch_failed: " + err.Error()}
 	}
@@ -357,6 +369,9 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
 	})
 	if err != nil {
 		return sessionResult{harnessDown: true, note: "agent_init_failed: " + err.Error()}
+	}
+	if v := vl.V(vlog.LevelDebug); v.Enabled() {
+		v.Info("harness initialized", "protocol", init.ProtocolVersion, "mcp_http", init.AgentCapabilities.McpCapabilities.Http)
 	}
 	sess, err := conn.NewSession(sctx, acp.NewSessionRequest{Cwd: work, McpServers: d.mcpServers(init.AgentCapabilities)})
 	if err != nil {
@@ -407,6 +422,9 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
 				path = "/v1/agent/heartbeat"
 			}
 			err := d.c.Post(sctx, path, api.LeaseReq{TaskID: g.Task.ID, Lease: g.Lease}, nil)
+			if v := vl.V(vlog.LevelTrace); v.Enabled() {
+				v.Info("lease renewed", "task", g.Task.ID, "lease", g.Lease, "err", err)
+			}
 			var se *client.StatusError
 			if errors.As(err, &se) && se.Code == http.StatusConflict {
 				_ = conn.Cancel(context.WithoutCancel(sctx), acp.CancelNotification{SessionId: sess.SessionId})
@@ -471,6 +489,11 @@ func (h *handler) Text() string {
 
 // SessionUpdate implements acp.Client.
 func (h *handler) SessionUpdate(_ context.Context, n acp.SessionNotification) error {
+	if v := vl.V(vlog.LevelBodies); v.Enabled() {
+		if c := n.Update.AgentMessageChunk; c != nil && c.Content.Text != nil {
+			v.Info("agent said", "text", truncate(c.Content.Text.Text, 1000))
+		}
+	}
 	if c := n.Update.AgentMessageChunk; c != nil && c.Content.Text != nil {
 		h.mu.Lock()
 		h.text.WriteString(c.Content.Text.Text)
@@ -520,7 +543,13 @@ func (h *handler) RequestPermission(_ context.Context, p acp.RequestPermissionRe
 	if ok {
 		want = []acp.PermissionOptionKind{acp.PermissionOptionKindAllowOnce, acp.PermissionOptionKindAllowAlways}
 	}
-	h.log.Debug("permission", "allowed", ok, "tool", p.ToolCall.ToolCallId)
+	if v := vl.V(vlog.LevelChanges); v.Enabled() {
+		kind := "other"
+		if p.ToolCall.Kind != nil {
+			kind = string(*p.ToolCall.Kind)
+		}
+		v.Info("permission decision", "allowed", ok, "tool", p.ToolCall.ToolCallId, "kind", kind)
+	}
 	for _, k := range want {
 		for _, o := range p.Options {
 			if o.Kind == k {

@@ -2,6 +2,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,7 @@ import (
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/store"
 	"github.com/Grano22/aiculator/internal/swarm"
+	"github.com/Grano22/aiculator/internal/vlog"
 	"github.com/Grano22/aiculator/pkg/observe"
 )
 
@@ -311,6 +313,7 @@ func (s *Server) Routes() *http.ServeMux {
 	m.HandleFunc("POST /v1/plan/commit", plan(func(ctx context.Context, c auth.Claims, q PlanReq) (any, error) {
 		return map[string]bool{"ok": true}, s.S.Engine.PlanCommit(ctx, c.Agent, q.Epoch)
 	}))
+	s.debugRoutes(m)
 	return m
 }
 
@@ -350,21 +353,102 @@ func (s *Server) streamEvents(w http.ResponseWriter, r *http.Request, _ auth.Cla
 	}
 }
 
-// Instrument times every call for the dashboards, leaving out long-polls and streams,
-// whose duration says nothing about how the server is doing.
+var httpLog = vlog.For("http")
+
+// Instrument times calls for the dashboards, and logs traffic at -v=6 and above. It leaves
+// long-polls and streams out of the timings, since their duration says nothing about how
+// the server is doing. At lower levels it adds nothing but a level check.
 func (s *Server) Instrument(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/v1/agent/wait", "/v1/events", "/mcp":
+		path := r.URL.Path
+		timed := path != "/v1/agent/wait" && path != "/v1/events" && path != "/mcp"
+		start := time.Now()
+		if !httpLog.V(vlog.LevelRequests).Enabled() {
 			next.ServeHTTP(w, r)
+		} else {
+			logged(next, w, r, start)
+		}
+		if timed {
+			c := s.S.Engine.Collector()
+			c.Observe(observe.LatencyAPI, time.Since(start))
+			c.Count(observe.SeriesAPI, time.Now(), 1)
+		}
+	})
+}
+
+func logged(next http.Handler, w http.ResponseWriter, r *http.Request, start time.Time) {
+	limit := vlog.HTTPLimit("http")
+	if limit > 0 && r.Body != nil {
+		// Read a capped copy for the log, then hand the handler the whole body.
+		head, err := io.ReadAll(io.LimitReader(r.Body, int64(limit)))
+		if err == nil {
+			httpLog.V(vlog.LevelBodies).Info("request body", "method", r.Method, "path", r.URL.Path, "body", vlog.Body(head, limit))
+			r.Body = struct {
+				io.Reader
+				io.Closer
+			}{io.MultiReader(bytes.NewReader(head), r.Body), r.Body}
+		}
+	}
+	if v := httpLog.V(vlog.LevelHeaders); v.Enabled() {
+		v.Info("request headers", "method", r.Method, "path", r.URL.Path, "headers", vlog.Headers(r.Header))
+	}
+	// A stream's body never ends, so only its status and size are logged.
+	bodyLimit := limit
+	if r.URL.Path == "/v1/events" || r.URL.Path == "/mcp" {
+		bodyLimit = 0
+	}
+	c := vlog.NewCapture(w, bodyLimit)
+	next.ServeHTTP(c, r)
+	httpLog.V(vlog.LevelRequests).Info("request", "method", r.Method, "path", r.URL.Path, "status", c.Status, "took", time.Since(start), "bytes", c.Bytes, "remote", r.RemoteAddr)
+	if v := httpLog.V(vlog.LevelHeaders); v.Enabled() {
+		v.Info("response headers", "path", r.URL.Path, "headers", vlog.Headers(w.Header()))
+	}
+	if bodyLimit > 0 {
+		httpLog.V(vlog.LevelBodies).Info("response body", "path", r.URL.Path, "status", c.Status, "body", vlog.Body(c.Recorded(), bodyLimit))
+	}
+}
+
+// VerbosityReq changes logging on a running server.
+type VerbosityReq struct {
+	Level      *int    `json:"level,omitempty"`
+	VModule    *string `json:"vmodule,omitempty"`
+	ForSeconds int64   `json:"for_seconds,omitempty"`
+}
+
+// VerbosityState is the server's logging setting.
+type VerbosityState struct {
+	Level     int       `json:"level"`
+	VModule   string    `json:"vmodule,omitempty"`
+	RevertsAt time.Time `json:"reverts_at,omitzero"`
+}
+
+func verbosityState() VerbosityState {
+	return VerbosityState{Level: vlog.Level(), VModule: vlog.VModule(), RevertsAt: vlog.RevertsAt()}
+}
+
+func (s *Server) debugRoutes(m *http.ServeMux) {
+	m.HandleFunc("GET /v1/debug/verbosity", s.authed(isAdmin, func(w http.ResponseWriter, _ *http.Request, _ auth.Claims) {
+		writeJSON(w, http.StatusOK, verbosityState())
+	}))
+	m.HandleFunc("PUT /v1/debug/verbosity", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, c auth.Claims) {
+		q, ok := decode[VerbosityReq](w, r)
+		if !ok {
 			return
 		}
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		c := s.S.Engine.Collector()
-		c.Observe(observe.LatencyAPI, time.Since(start))
-		c.Count(observe.SeriesAPI, time.Now(), 1)
-	})
+		level, mod := vlog.Level(), vlog.VModule()
+		if q.Level != nil {
+			level = *q.Level
+		}
+		if q.VModule != nil {
+			mod = *q.VModule
+		}
+		if err := vlog.SetFor(level, mod, time.Duration(q.ForSeconds)*time.Second); err != nil {
+			writeJSON(w, http.StatusBadRequest, Error{err.Error()})
+			return
+		}
+		httpLog.V(vlog.LevelAlways).Info("verbosity changed", "level", level, "vmodule", mod, "for_seconds", q.ForSeconds, "by", c.Agent)
+		writeJSON(w, http.StatusOK, verbosityState())
+	}))
 }
 
 // ViewerOnly guards a handler with a viewer or admin token, for plugins.

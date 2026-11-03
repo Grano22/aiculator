@@ -4,6 +4,49 @@
 
 Every command, generated from the program itself. Run any command with `--help` to see the same text.
 
+## `aiculator debug`
+
+Debugging tools: verbosity levels, and changing them on a running server
+
+```text
+aiculator debug
+```
+
+## `aiculator debug levels`
+
+Explain what each verbosity level shows
+
+```text
+aiculator debug levels
+```
+
+## `aiculator debug verbosity`
+
+Show or change a running server's verbosity, with no restart
+
+Changes take effect at once. Use --for, so that a debugging session cannot leave
+the server logging at a high level by accident. The previous level then comes back by itself.
+
+```text
+aiculator debug verbosity [LEVEL] [flags]
+```
+
+**Examples**
+
+```text
+  aiculator debug verbosity                     show the current level
+  aiculator debug verbosity 5 --for 10m         trace for ten minutes
+  aiculator debug verbosity --vmodule engine=5 --for 5m
+  aiculator debug verbosity 2                   set it for good
+```
+
+**Flags**
+
+```text
+      --for duration     go back to the previous level after this long
+      --vmodule string   levels per component, such as engine=5
+```
+
 ## `aiculator down`
 
 Stop the swarm server for this project
@@ -77,6 +120,31 @@ aiculator join [flags]
       --planner          also allow these sessions to plan
       --sandbox string   sandbox for the server: auto, seatbelt, bwrap, docker or none (default "auto")
       --tier int         tier: 1 standard, 2 advanced, 3 ultra (default 1)
+```
+
+## `aiculator logs`
+
+Show the logs of a server started with aiculator up
+
+```text
+aiculator logs [flags]
+```
+
+**Examples**
+
+```text
+  aiculator logs --tail 50
+  aiculator logs -f --component engine
+  aiculator logs -f --grep ship-api-3
+```
+
+**Flags**
+
+```text
+      --component string   show only this component
+  -f, --follow             keep printing new lines
+      --grep string        show only lines containing this text
+      --tail int           show only the last N matching lines
 ```
 
 ## `aiculator mcp`

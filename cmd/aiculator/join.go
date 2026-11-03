@@ -127,7 +127,7 @@ func startServer(sb string) (string, error) {
 		return "", err
 	}
 	defer logFile.Close()
-	cmd := exec.Command(self, "serve", "--data", abs, "--addr", addr, "--repo", root, "--sandbox", sb)
+	cmd := exec.Command(self, append([]string{"serve", "--data", abs, "--addr", addr, "--repo", root, "--sandbox", sb}, loggingArgs()...)...)
 	cmd.Dir = root
 	cmd.Stdout, cmd.Stderr = logFile, logFile
 	detach(cmd)

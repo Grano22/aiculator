@@ -137,7 +137,7 @@ func runExternal(root *cobra.Command, args []string) (handled bool, code int) {
 	cmd := exec.Command(path, args[1:]...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	data, _ := filepath.Abs(findDataDir())
-	cmd.Env = append(os.Environ(), "AICULATOR_DATA="+data, "AICULATOR_VERSION="+version)
+	cmd.Env = append(os.Environ(), "AICULATOR_DATA="+data, "AICULATOR_VERSION="+version, "AICULATOR_V="+os.Getenv("AICULATOR_V"))
 	if err := cmd.Run(); err != nil {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {

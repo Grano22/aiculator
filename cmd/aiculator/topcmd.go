@@ -15,6 +15,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/Grano22/aiculator/internal/tui"
+	"github.com/Grano22/aiculator/internal/vlog"
 	"github.com/Grano22/aiculator/pkg/observe"
 )
 
@@ -71,6 +72,10 @@ Rates reset when the server restarts. Task states and usage totals do not.`,
 				}
 				fmt.Println(tui.Render(s, tui.Options{View: view, Width: w, Height: 60, Color: forceColor || (color && tty), Plain: true}))
 				return nil
+			}
+			// A log line on stderr would corrupt the screen, so logs go only to a file.
+			if logFile == "" {
+				vlog.SetOutput(io.Discard, logFormat)
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()

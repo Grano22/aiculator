@@ -11,6 +11,7 @@ import (
 
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/store"
+	"github.com/Grano22/aiculator/internal/vlog"
 )
 
 // readyItem is one entry in a tier's ready heap. key is priority·agingUnit minus
@@ -90,6 +91,9 @@ type waiter struct {
 }
 
 func (e *Engine) reply(w *waiter, r WaitResponse) {
+	if v := log.V(vlog.LevelDebug); v.Enabled() {
+		v.Info("wait answered", "agent", w.agent.ID, "tier", w.agent.Tier, "action", r.Action, "reason", r.Reason)
+	}
 	w.ch <- r // Buffered with capacity 1, and each waiter is replied to once.
 	e.waiters[w.agent.Tier] = slices.DeleteFunc(e.waiters[w.agent.Tier], func(x *waiter) bool { return x == w })
 }
@@ -114,7 +118,11 @@ func (e *Engine) Wait(ctx context.Context, a Agent, hold time.Duration) (WaitRes
 			return out{resp: r}, nil
 		}
 		if hold <= 0 {
-			return out{resp: e.idleResponse(a.Tier, since)}, nil
+			r := e.idleResponse(a.Tier, since)
+			if v := log.V(vlog.LevelDebug); v.Enabled() {
+				v.Info("wait answered", "agent", a.ID, "tier", a.Tier, "action", r.Action, "reason", r.Reason)
+			}
+			return out{resp: r}, nil
 		}
 		// An exit answer is immediate; there is nothing to hold the agent for.
 		if r := e.idleResponse(a.Tier, since); r.Action == ActionExit {
@@ -202,6 +210,9 @@ func (e *Engine) grant(a Agent, id, job string) (WaitResponse, error) {
 		return WaitResponse{}, err
 	}
 	e.grants.Add(1)
+	if v := log.V(vlog.LevelChanges); v.Enabled() {
+		v.Info("grant", "task", id, "job", job, "agent", a.ID, "agent_tier", a.Tier, "task_tier", t.Tier, "lease", t.LeaseEpoch)
+	}
 	c := t.Clone()
 	return WaitResponse{
 		Action: ActionTask, Job: job, Task: &c, Lease: t.LeaseEpoch,
@@ -315,6 +326,9 @@ func (e *Engine) matchTier(a Agent, tier int) (WaitResponse, bool) {
 			continue
 		}
 		if !e.eligible(a, ent.task) {
+			if v := log.V(vlog.LevelTrace); v.Enabled() {
+				v.Info("not eligible", "task", it.id, "agent", a.ID, "agent_tier", a.Tier, "task_tier", ent.task.Tier, "needs_tags", ent.task.Tags, "file_conflict", e.touchConflict(ent.task))
+			}
 			rejected = append(rejected, it)
 			continue
 		}
@@ -473,6 +487,9 @@ func (e *Engine) PlanBegin(ctx context.Context, planner string, ttl time.Duratio
 		if err := e.savePlanning(p); err != nil {
 			return 0, err
 		}
+		if v := log.V(vlog.LevelSteady); v.Enabled() {
+			v.Info("plan begun", "planner", planner, "epoch", p.Epoch, "ttl", ttl)
+		}
 		return p.Epoch, nil
 	})
 }
@@ -498,6 +515,9 @@ func (e *Engine) PlanUpdate(ctx context.Context, planner string, epoch uint64, t
 			}
 		}
 		p.Phase, p.Expected, p.ETAMs, p.Deadline, p.UpdatedAt = phase, expected, etaMs, now.Add(ttl), now
+		if v := log.V(vlog.LevelChanges); v.Enabled() {
+			v.Info("plan updated", "planner", planner, "epoch", epoch, "phase", phase, "expected", expected)
+		}
 		return struct{}{}, e.savePlanning(p)
 	})
 	return err
@@ -547,6 +567,9 @@ func (e *Engine) PlanCommit(ctx context.Context, planner string, epoch uint64) e
 		p.UpdatedAt = e.now()
 		if err := e.savePlanning(p); err != nil {
 			return struct{}{}, err
+		}
+		if v := log.V(vlog.LevelSteady); v.Enabled() {
+			v.Info("plan committed", "planner", planner, "epoch", epoch)
 		}
 		e.dirty = true
 		return struct{}{}, nil

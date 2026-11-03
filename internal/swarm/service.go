@@ -12,9 +12,12 @@ import (
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/store"
+	"github.com/Grano22/aiculator/internal/vlog"
 	"github.com/Grano22/aiculator/internal/work"
 	"github.com/Grano22/aiculator/pkg/observe"
 )
+
+var vl = vlog.For("swarm")
 
 // Service is the shared backend for all channels.
 type Service struct {
@@ -78,6 +81,9 @@ func (s *Service) Close() {
 func (s *Service) runChecks(t core.Task) {
 	<-s.ready
 	r, err := s.Work.RunChecks(s.bg, t)
+	if v := vl.V(vlog.LevelSteady); v.Enabled() {
+		v.Info("checks finished", "task", t.ID, "attempt", t.Attempt, "pass", r.Pass, "err", err)
+	}
 	if err != nil {
 		if s.bg.Err() != nil {
 			return // Shutting down; recovery repeats this after restart.

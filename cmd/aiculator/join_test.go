@@ -21,6 +21,7 @@ import (
 	"github.com/Grano22/aiculator/internal/client"
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/swarm"
+	"github.com/Grano22/aiculator/internal/vlog"
 )
 
 type project struct {
@@ -718,5 +719,227 @@ func TestBuildTagsChooseThePlugins(t *testing.T) {
 	p.run("task", "add", "--id", "h1", "--title", "x", "--check", "true")
 	if out := p.run("hello"); !strings.Contains(out, "0 tasks are done") {
 		t.Fatalf("hello: %s", out)
+	}
+}
+
+// runSplit returns stdout and stderr apart, because a script reading stdout must never
+// see a log line, however high the verbosity.
+func (p *project) runSplit(args ...string) (string, string, error) {
+	c := exec.Command(p.bin, args...)
+	c.Dir = p.root
+	c.Env = append(os.Environ(), "HOME="+p.home)
+	var out, errb strings.Builder
+	c.Stdout, c.Stderr = &out, &errb
+	err := c.Run()
+	return out.String(), errb.String(), err
+}
+
+func TestVerbosityFlagForms(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	for _, form := range [][]string{{"-v=6"}, {"-v", "6"}, {"--v=6"}, {"--v", "6"}} {
+		out, errOut, err := p.runSplit(append([]string{"task", "ls"}, form...)...)
+		if err != nil || !strings.Contains(errOut, "GET") || !strings.Contains(errOut, "status=200") {
+			t.Errorf("%v: %v\nstderr: %s", form, err, errOut)
+		}
+		if strings.Contains(out, "level=INFO") {
+			t.Errorf("%v: logs reached stdout: %s", form, out)
+		}
+	}
+	if _, errOut, _ := p.runSplit("task", "ls"); strings.Contains(errOut, "status=200") {
+		t.Errorf("the default level should be quiet: %s", errOut)
+	}
+	// The version flag must still work, now that -v means verbosity.
+	if out := p.run("--version"); !strings.Contains(out, "aiculator version") {
+		t.Errorf("version: %s", out)
+	}
+	if out, err := p.tryIn(p.root, "task", "ls", "--v=10"); err == nil {
+		t.Errorf("level 10 accepted: %s", out)
+	}
+	c := exec.Command(p.bin, "task", "ls")
+	c.Dir = p.root
+	c.Env = append(os.Environ(), "AICULATOR_V=6")
+	if out, _ := c.CombinedOutput(); !strings.Contains(string(out), "status=200") {
+		t.Errorf("AICULATOR_V: %s", out)
+	}
+}
+
+func TestClientLevelsShowGrowingDetail(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	args := []string{"task", "add", "--id", "v1", "--title", "Visible title", "--check", "true"}
+	_, six, _ := p.runSplit(append(args, "-v=6")...)
+	if !strings.Contains(six, "POST") || strings.Contains(six, "request headers") || strings.Contains(six, "Visible title") {
+		t.Errorf("level 6: %s", six)
+	}
+	args[2] = "v2"
+	_, seven, _ := p.runSplit(append(args, "-v=7")...)
+	if !strings.Contains(seven, "request headers") || strings.Contains(seven, "Visible title") {
+		t.Errorf("level 7: %s", seven)
+	}
+	args[2] = "v3"
+	_, eight, _ := p.runSplit(append(args, "-v=8")...)
+	if !strings.Contains(eight, "Visible title") || !strings.Contains(eight, "response body") {
+		t.Errorf("level 8: %s", eight)
+	}
+}
+
+// Asking for a token at the highest level, on both sides: the token must be printed for
+// the caller on stdout, and never appear in any log.
+func TestNoTokenInAnyLogAtTopVerbosity(t *testing.T) {
+	p := newProject(t)
+	if out, err := p.tryIn(p.root, "up", "--v=9"); err != nil {
+		t.Fatalf("%v %s", err, out)
+	}
+	stdout, stderr, err := p.runSplit("token", "--agent", "a1", "--tier", "1", "-v=9")
+	if err != nil {
+		t.Fatal(err)
+	}
+	token := strings.TrimSpace(stdout)
+	if !strings.Contains(token, ".") || len(token) < 40 {
+		t.Fatalf("stdout should be just the token: %q", stdout)
+	}
+	_, sig, _ := strings.Cut(token, ".")
+	admin := strings.TrimSpace(p.read(".swarm/admin.token"))
+	_, adminSig, _ := strings.Cut(admin, ".")
+	// Use the token for real, over HTTP and MCP, so all paths have logged something.
+	joined, joinLog, err := p.runSplit("work", "join", "--tier", "1", "-v=9")
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := strings.TrimSpace(joined) // Stdout stays clean for scripts, even at level 9.
+	stderr += joinLog
+	p.run("task", "add", "--id", "t1", "--title", "x", "--check", "true", "-v=9")
+	p.run("work", "wait", "--agent", name, "--hold", "1s", "-v=9")
+	s := mcpSession(t, p, "mcp", "--auto", "--tier", "1", "--harness", "fake", "-v=9")
+	callTool(t, s, "situation", nil, nil)
+	time.Sleep(200 * time.Millisecond)
+
+	server := p.read(".swarm/server.log")
+	if !strings.Contains(server, "request body") || !strings.Contains(server, "/v1/tokens") {
+		t.Fatalf("the server was not logging at level 9:\n%.500s", server)
+	}
+	for where, text := range map[string]string{"server": server, "client": stderr} {
+		for label, secret := range map[string]string{"agent token": sig, "admin token": adminSig} {
+			if strings.Contains(text, secret) {
+				t.Errorf("%s log holds the %s", where, label)
+			}
+		}
+		if !strings.Contains(text, vlog.Redacted) {
+			t.Errorf("%s log shows no sign of redaction", where)
+		}
+	}
+	if key := p.read(".swarm/signing.key"); strings.Contains(server, key) {
+		t.Error("the signing key is in the log")
+	}
+}
+
+func TestChangeVerbosityOnARunningServer(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	if out := p.run("debug", "verbosity"); !strings.Contains(out, "level 2") {
+		t.Fatalf("a server should default to 2: %s", out)
+	}
+	p.run("task", "add", "--id", "before", "--title", "x", "--check", "true")
+	if strings.Contains(p.read(".swarm/server.log"), `msg=commit`) {
+		t.Fatal("level 2 should not log every commit")
+	}
+	if out := p.run("debug", "verbosity", "3", "--for", "1s"); !strings.Contains(out, "level 3") || !strings.Contains(out, "until") {
+		t.Fatalf("set: %s", out)
+	}
+	p.run("task", "add", "--id", "during", "--title", "x", "--check", "true")
+	deadline := time.Now().Add(5 * time.Second)
+	for !strings.Contains(p.read(".swarm/server.log"), `msg=commit`) {
+		if time.Now().After(deadline) {
+			t.Fatal("the new level did not take effect")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if !strings.Contains(p.read(".swarm/server.log"), "verbosity changed") {
+		t.Error("the change itself should be logged")
+	}
+	time.Sleep(1200 * time.Millisecond)
+	if out := p.run("debug", "verbosity"); !strings.Contains(out, "level 2") || strings.Contains(out, "until") {
+		t.Fatalf("it should have gone back: %s", out)
+	}
+	if out := p.run("debug", "verbosity", "--vmodule", "engine=5"); !strings.Contains(out, "engine=5") {
+		t.Fatalf("vmodule: %s", out)
+	}
+	if out, err := p.tryIn(p.root, "debug", "verbosity", "12"); err == nil {
+		t.Fatalf("level 12 accepted: %s", out)
+	}
+	// Only an admin may change it; a viewer token can read dashboards, and no more.
+	link := strings.TrimSpace(p.run("web", "--no-open"))
+	base, token, _ := strings.Cut(link, "/plugins/webdash/#token=")
+	var se *client.StatusError
+	if err := client.New(base, token).Do(context.Background(), http.MethodPut, "/v1/debug/verbosity", api.VerbosityReq{}, nil); !errors.As(err, &se) || se.Code != 403 {
+		t.Fatalf("a viewer changed the level: %v", err)
+	}
+	if out := p.run("debug", "levels"); !strings.Contains(out, "Trace") || !strings.Contains(out, "engine") {
+		t.Fatalf("levels: %s", out)
+	}
+}
+
+func TestServerStepsThroughLevels(t *testing.T) {
+	p := newProject(t)
+	p.run("up", "--v=5")
+	p.run("task", "add", "--id", "t", "--title", "x", "--check", "test -f f")
+	name := strings.TrimSpace(p.run("work", "join", "--tier", "1"))
+	var g swarm.Grant
+	if err := json.Unmarshal([]byte(p.run("work", "wait", "--agent", name, "--hold", "1s")), &g); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(g.Workdir, "f"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p.run("work", "submit", "--agent", name, "--task", "t", "--lease", strconv.FormatUint(g.Lease, 10))
+	deadline := time.Now().Add(20 * time.Second)
+	for !strings.Contains(p.read(".swarm/server.log"), `msg=merged`) {
+		if time.Now().After(deadline) {
+			t.Fatalf("never merged:\n%s", p.read(".swarm/server.log"))
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	log := p.read(".swarm/server.log")
+	for _, want := range []string{"task created", "task transition", "msg=grant", "msg=commit", "compare-and-swap", "msg=git", "running check", "check output", "checks finished", "worktree ready", "component=engine", "component=work"} {
+		if !strings.Contains(log, want) {
+			t.Errorf("missing %q at level 5", want)
+		}
+	}
+	if out := p.run("logs", "--tail", "2", "--component", "engine"); strings.Count(out, "\n") != 2 || strings.Contains(out, "component=work") {
+		t.Errorf("logs --tail: %s", out)
+	}
+	if out := p.run("logs", "--grep", "compare-and-swap"); !strings.Contains(out, "from_rev") {
+		t.Errorf("logs --grep: %s", out)
+	}
+}
+
+func TestJSONLogsAreValid(t *testing.T) {
+	p := newProject(t)
+	p.run("up", "--log-format", "json", "--v=3")
+	p.run("task", "add", "--id", "t", "--title", "x", "--check", "true")
+	time.Sleep(100 * time.Millisecond)
+	lines := strings.Split(strings.TrimSpace(p.read(".swarm/server.log")), "\n")
+	if len(lines) < 3 {
+		t.Fatalf("too few lines: %v", lines)
+	}
+	for _, l := range lines {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(l), &m); err != nil {
+			t.Fatalf("not JSON: %q", l)
+		}
+	}
+}
+
+func TestLogFileFlag(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	path := filepath.Join(t.TempDir(), "out.log")
+	_, errOut, err := p.runSplit("task", "ls", "-v=6", "--log-file", path)
+	if err != nil || strings.Contains(errOut, "status=200") {
+		t.Fatalf("%v %s", err, errOut)
+	}
+	if b, _ := os.ReadFile(path); !strings.Contains(string(b), "status=200") {
+		t.Fatalf("file: %s", b)
 	}
 }

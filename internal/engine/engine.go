@@ -18,8 +18,11 @@ import (
 
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/store"
+	"github.com/Grano22/aiculator/internal/vlog"
 	"github.com/Grano22/aiculator/pkg/observe"
 )
+
+var log = vlog.For("engine")
 
 // Clock is swappable so that lease tests do not need to sleep.
 type Clock interface{ Now() time.Time }
@@ -210,6 +213,7 @@ func New(ctx context.Context, st *store.Store, cfg Config) (*Engine, error) {
 		return nil, fmt.Errorf("load planning: %w", err)
 	}
 	e.dirty = true
+	log.V(vlog.LevelDefault).Info("engine started", "tasks", len(stored), "planning_epoch", e.planning.Epoch)
 	go e.run()
 	go e.presenceLoop()
 	return e, nil
@@ -362,17 +366,30 @@ func (e *Engine) commit(id string, c core.Cmd) (core.Task, error) {
 	}
 	n, err := core.Apply(ent.task, c, e.now(), e.cfg.Policy)
 	if err != nil {
+		if v := log.V(vlog.LevelChanges); v.Enabled() {
+			v.Info("command rejected", "task", id, "kind", c.Kind, "actor", c.Actor, "state", ent.task.State, "err", err)
+		}
 		return ent.task, err
 	}
 	began := time.Now()
 	rev, err := e.st.UpdateTask(n, ent.rev)
 	if err != nil {
 		if errors.Is(err, store.ErrConflict) {
+			log.V(vlog.LevelDefault).Warn("stale revision: another writer changed this task", "task", id, "rev", ent.rev)
 			e.reload(id)
+		} else {
+			log.Error("commit failed", "task", id, "kind", c.Kind, "err", err)
 		}
 		return ent.task, err
 	}
-	e.obs.Observe(observe.LatencyCommit, time.Since(began))
+	took := time.Since(began)
+	e.obs.Observe(observe.LatencyCommit, took)
+	if v := log.V(vlog.LevelChanges); v.Enabled() {
+		v.Info("commit", "task", id, "kind", c.Kind, "actor", c.Actor, "took", took)
+	}
+	if v := log.V(vlog.LevelTrace); v.Enabled() {
+		v.Info("compare-and-swap", "task", id, "from_rev", ent.rev, "to_rev", rev, "lease", n.LeaseEpoch)
+	}
 	old := ent.task
 	e.index(old, n, rev)
 	e.record(old, n, c)
@@ -392,6 +409,9 @@ func (e *Engine) record(old, n core.Task, c core.Cmd) {
 		return
 	}
 	e.obs.Transition(string(old.State), string(n.State))
+	if v := log.V(vlog.LevelSteady); v.Enabled() {
+		v.Info("task transition", "task", n.ID, "from", old.State, "to", n.State, "tier", n.Tier, "attempt", n.Attempt, "actor", c.Actor, "reason", n.Reason)
+	}
 	now := e.now()
 	switch n.State {
 	case core.Claimed:
@@ -458,6 +478,7 @@ func (e *Engine) pump(tick bool) {
 func (e *Engine) sweep() {
 	now := e.now()
 	if e.planning.Active && now.After(e.planning.Deadline) {
+		log.V(vlog.LevelDefault).Warn("planner lease expired", "planner", e.planning.Planner, "epoch", e.planning.Epoch)
 		p := e.planning
 		p.Active, p.Planner, p.Phase, p.Expected, p.ETAMs = false, "", "", nil, 0
 		p.Epoch++ // A planner returning from the dead now holds an old epoch.
@@ -600,6 +621,9 @@ func (e *Engine) create(t core.Task) (core.Task, error) {
 	e.index(core.Task{}, t, rev)
 	e.obs.Count(observe.SeriesCommits, time.Now(), 1)
 	e.obs.Transition("new", string(t.State))
+	if v := log.V(vlog.LevelSteady); v.Enabled() {
+		v.Info("task created", "task", t.ID, "title", t.Title, "tier", t.Tier, "plan_epoch", t.PlanEpoch)
+	}
 	return t, nil
 }
 
@@ -747,7 +771,9 @@ func (e *Engine) presenceLoop() {
 				continue
 			}
 			last[a.ID] = now
-			_ = e.st.TouchPresence(a.ID, []byte(fmt.Sprintf("tier=%d", a.Tier)), e.cfg.PresenceTTL)
+			if err := e.st.TouchPresence(a.ID, []byte(fmt.Sprintf("tier=%d", a.Tier)), e.cfg.PresenceTTL); err != nil {
+				log.V(vlog.LevelDebug).Warn("presence update failed", "agent", a.ID, "err", err)
+			}
 		}
 	}
 }

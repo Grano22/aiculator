@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/Grano22/aiculator/internal/vlog"
 )
 
 // Spec describes one sandboxed command.
@@ -85,6 +87,11 @@ func SecretHome() []string {
 }
 
 func finish(ctx context.Context, s Spec, argv []string) *exec.Cmd {
+	if v := vlog.For("sandbox").V(vlog.LevelTrace); v.Enabled() {
+		v.Info("sandbox command", "argv", argv, "dir", s.Dir)
+	} else if v := vlog.For("sandbox").V(vlog.LevelDebug); v.Enabled() {
+		v.Info("sandbox command", "program", s.Argv, "dir", s.Dir, "network", s.Network)
+	}
 	c := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	c.Dir = s.Dir
 	c.Env = s.Env

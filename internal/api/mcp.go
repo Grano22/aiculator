@@ -2,9 +2,9 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,8 +15,11 @@ import (
 	"github.com/Grano22/aiculator/internal/auth"
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/vlog"
 	"github.com/Grano22/aiculator/pkg/observe"
 )
+
+var mcpLog = vlog.For("mcp")
 
 // DefaultHold is how long wait_for_task holds when the caller does not say. It
 // stays below 30 seconds, the shortest default tool timeout among known harnesses.
@@ -94,7 +97,14 @@ func tool[In any](c *observe.Collector, s *mcp.Server, name, desc string, fn fun
 				c.Count(observe.SeriesAPI, time.Now(), 1)
 			}
 			// An audit trail, and how the 45-second limit is measured rather than assumed.
-			slog.Info("mcp call", "tool", name, "agent", a.ID, "ms", time.Since(start).Milliseconds(), "ok", err == nil)
+			if v := mcpLog.V(vlog.LevelSteady); v.Enabled() {
+				v.Info("mcp call", "tool", name, "agent", a.ID, "ms", time.Since(start).Milliseconds(), "ok", err == nil)
+			}
+			if v := mcpLog.V(vlog.LevelBodies); v.Enabled() {
+				if b, merr := json.Marshal(in); merr == nil {
+					v.Info("mcp arguments", "tool", name, "args", vlog.Body(b, vlog.HTTPLimit("mcp")))
+				}
+			}
 			if err != nil {
 				return nil, nil, err
 			}

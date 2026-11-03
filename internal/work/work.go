@@ -20,7 +20,10 @@ import (
 
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/sandbox"
+	"github.com/Grano22/aiculator/internal/vlog"
 )
+
+var log = vlog.For("work")
 
 // DefaultBranch is where merged work lands.
 const DefaultBranch = "swarm/integration"
@@ -93,7 +96,12 @@ func (m *Manager) gitEnv(ctx context.Context, dir string, env []string, args ...
 	cmd.Env = append(os.Environ(), env...)
 	var out, errb bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errb
-	if err := cmd.Run(); err != nil {
+	began := time.Now()
+	err := cmd.Run()
+	if v := log.V(vlog.LevelTrace); v.Enabled() {
+		v.Info("git", "args", strings.Join(args, " "), "dir", dir, "took", time.Since(began), "err", err)
+	}
+	if err != nil {
 		detail := strings.TrimSpace(errb.String() + "\n" + out.String())
 		return "", fmt.Errorf("git %s: %w: %s", strings.Join(args, " "), err, detail)
 	}
@@ -141,6 +149,9 @@ func (m *Manager) Prepare(ctx context.Context, t core.Task) (string, error) {
 		// merge conflict would restart from the same stale base and conflict again.
 		// A real conflict is left in the files for this attempt's agent to resolve.
 		_, _ = m.git(ctx, dir, "merge", "--no-edit", "-m", "swarm: update from integration", branchRef)
+	}
+	if v := log.V(vlog.LevelDebug); v.Enabled() {
+		v.Info("worktree ready", "task", t.ID, "attempt", t.Attempt, "dir", dir, "resumed", resumed)
 	}
 	return dir, nil
 }
@@ -345,9 +356,15 @@ func (m *Manager) runIn(ctx context.Context, dir string, checks []string) CheckR
 			cancel()
 			return CheckResult{Detail: fmt.Sprintf("%s: %v", check, err)}
 		}
+		if v := log.V(vlog.LevelChanges); v.Enabled() {
+			v.Info("running check", "check", check, "sandbox", m.sb.Name(), "dir", dir)
+		}
 		out, err := cmd.CombinedOutput()
 		cancel()
 		_ = os.RemoveAll(home)
+		if v := log.V(vlog.LevelDebug); v.Enabled() {
+			v.Info("check output", "check", check, "err", err, "output", tail(out))
+		}
 		if err != nil {
 			return CheckResult{Detail: fmt.Sprintf("check failed: %s: %v\n%s", check, err, tail(out))}
 		}
@@ -399,6 +416,9 @@ func (m *Manager) Merge(ctx context.Context, t core.Task) (string, error) {
 	// Compare-and-swap on the branch, so nothing else's commit can be overwritten.
 	if _, err := m.git(ctx, m.repo, "update-ref", branchRef, merged, head); err != nil {
 		return "", err
+	}
+	if v := log.V(vlog.LevelSteady); v.Enabled() {
+		v.Info("merged", "task", t.ID, "branch", m.branch, "commit", merged)
 	}
 	return merged, nil
 }

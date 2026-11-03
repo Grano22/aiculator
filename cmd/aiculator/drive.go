@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/Grano22/aiculator/internal/driver"
 	"github.com/Grano22/aiculator/internal/sandbox"
+	"github.com/Grano22/aiculator/internal/vlog"
 )
 
 func loadManifest(harness, path string) (driver.Manifest, error) {
@@ -62,7 +62,7 @@ func driveCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+			log := vlog.Slog("driver")
 			d, err := driver.New(driver.Options{
 				Manifest: m, URL: url, Token: token, AgentID: agent, Sandbox: s, SwarmBin: self, Hide: secretPaths(),
 				Hold: hold, Heartbeat: heartbeat, MaxTasks: maxTasks, Log: log, Stderr: os.Stderr,
