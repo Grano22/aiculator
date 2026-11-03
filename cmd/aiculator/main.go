@@ -73,7 +73,7 @@ func rootCmd() *cobra.Command {
 	}
 	root.PersistentFlags().StringVar(&dataDir, "data", ".swarm", "state directory; found by searching upward when not set")
 	root.AddCommand(serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
-		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), genDocsCmd())
+		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), genDocsCmd())
 	return root
 }
 
@@ -164,14 +164,19 @@ func serve(ctx context.Context, o serveOpts) error {
 	}
 	defer svc.Close()
 
-	srv := &api.Server{S: svc, Auth: authority}
+	srv := &api.Server{S: svc, Auth: authority, Version: version}
 	mux := srv.Routes()
 	mux.Handle("/mcp", srv.MCPHandler())
+	stopPlugins, err := startPlugins(ctx, srv, mux, log)
+	if err != nil {
+		return err
+	}
+	defer stopPlugins()
 	ln, err := net.Listen("tcp", o.addr)
 	if err != nil {
 		return err
 	}
-	hs := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+	hs := &http.Server{Handler: srv.Instrument(mux), ReadHeaderTimeout: 5 * time.Second}
 	errc := make(chan error, 1)
 	go func() { errc <- hs.Serve(ln) }()
 	url := "http://" + ln.Addr().String()
