@@ -166,3 +166,84 @@ func TestBubblewrapHidesFilesAndDirectories(t *testing.T) {
 		t.Fatalf("args: %s", a)
 	}
 }
+
+func TestBubblewrapKeepsAProgramUnderTmp(t *testing.T) {
+	a := strings.Join(Bubblewrap{}.Args("/w", nil, nil, false, []string{"/tmp/x/agent"}), " ")
+	if !strings.Contains(a, "--ro-bind /tmp/x/agent /tmp/x/agent") {
+		t.Fatalf("args: %s", a)
+	}
+	if b := strings.Join(Bubblewrap{}.Args("/w", nil, nil, false, []string{"/usr/bin/agent"}), " "); strings.Contains(b, "/usr/bin/agent /usr/bin/agent") {
+		t.Fatalf("bound a program that needed no binding: %s", b)
+	}
+}
+
+// Real attacks on bubblewrap, which run wherever it works, such as in CI. Everything
+// sits under the home directory, because /tmp is replaced and would prove nothing.
+func TestBubblewrapBlocksEscapes(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("Linux only")
+	}
+	if _, err := exec.LookPath("bwrap"); err != nil {
+		t.Skip("bwrap is not installed")
+	}
+	if out, err := exec.Command("bwrap", "--ro-bind", "/", "/", "--unshare-pid", "true").CombinedOutput(); err != nil {
+		t.Skipf("bwrap cannot run here: %v %s", err, out)
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	base, err := os.MkdirTemp(home, "bwrap-test-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.RemoveAll(base) })
+	work, outside := filepath.Join(base, "work"), filepath.Join(base, "outside")
+	for _, d := range []string{work, outside} {
+		if err := os.Mkdir(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	secret := filepath.Join(outside, "admin.token")
+	if err := os.WriteFile(secret, []byte("hunter2"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sh := func(script string, hide ...string) Spec {
+		return Spec{Dir: work, Argv: []string{"sh", "-c", script}, Env: BaseEnv(work), Hide: hide}
+	}
+	b := Bubblewrap{}
+	if out, err := run(t, b, sh("echo ok > inside.txt")); err != nil {
+		t.Fatalf("write inside was blocked: %v %s", err, out)
+	}
+	if _, err := os.Stat(filepath.Join(work, "inside.txt")); err != nil {
+		t.Fatalf("write inside did not land: %v", err)
+	}
+	if _, err := run(t, b, sh("echo x > "+filepath.Join(outside, "pwned"))); err == nil {
+		t.Error("write outside the worktree succeeded")
+	}
+	if err := os.Symlink(outside, filepath.Join(work, "door")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := run(t, b, sh("echo x > door/pwned2")); err == nil {
+		t.Error("write through a symlink succeeded")
+	}
+	for _, f := range []string{"pwned", "pwned2"} {
+		if _, err := os.Stat(filepath.Join(outside, f)); err == nil {
+			t.Errorf("escape file %s exists", f)
+		}
+	}
+	if out, err := run(t, b, sh("cat "+secret)); err != nil || !strings.Contains(out, "hunter2") {
+		t.Fatalf("control: an unhidden file should be readable: %v %s", err, out)
+	}
+	if out, _ := run(t, b, sh("cat "+secret, secret)); strings.Contains(out, "hunter2") {
+		t.Errorf("a hidden file was read: %s", out)
+	}
+	if out, _ := run(t, b, sh("cat "+secret, outside)); strings.Contains(out, "hunter2") {
+		t.Errorf("a file in a hidden directory was read: %s", out)
+	}
+	if _, err := exec.LookPath("curl"); err == nil {
+		if out, err := run(t, b, sh("curl -sS --max-time 3 https://1.1.1.1")); err == nil {
+			t.Errorf("network call succeeded: %s", out)
+		}
+	}
+}

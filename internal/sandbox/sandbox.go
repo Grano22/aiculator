@@ -189,6 +189,11 @@ func (Bubblewrap) Args(dir string, writes, hide []string, network bool, argv []s
 	for _, p := range append([]string{dir}, writes...) {
 		out = append(out, "--bind", p, p)
 	}
+	// /tmp is replaced by an empty one above, so a program installed under it would
+	// vanish. Bind just that program back, read-only.
+	if len(argv) > 0 && filepath.IsAbs(argv[0]) && strings.HasPrefix(filepath.Clean(argv[0]), "/tmp/") {
+		out = append(out, "--ro-bind", argv[0], argv[0])
+	}
 	for _, p := range hide {
 		fi, err := os.Stat(p)
 		switch {
