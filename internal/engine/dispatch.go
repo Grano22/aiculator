@@ -43,6 +43,29 @@ func (h *readyHeap) Pop() any {
 }
 func (h *readyHeap) pushItem(it readyItem) { heap.Push(h, it) }
 
+// boostItem says when a ready task next reaches an aging step. seq ties it to one heap
+// entry: a task that was claimed or moved since then no longer matches, and is skipped.
+type boostItem struct {
+	at  time.Time
+	id  string
+	seq uint64
+}
+
+type boostHeap []boostItem
+
+func (h boostHeap) Len() int           { return len(h) }
+func (h boostHeap) Less(i, j int) bool { return h[i].at.Before(h[j].at) }
+func (h boostHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *boostHeap) Push(x any)        { *h = append(*h, x.(boostItem)) }
+func (h *boostHeap) Pop() any {
+	old := *h
+	n := len(old) - 1
+	it := old[n]
+	old[n] = boostItem{}
+	*h = old[:n]
+	return it
+}
+
 // Wait answers an agent's wait_for_task call with one of three actions.
 const (
 	ActionTask = "task"

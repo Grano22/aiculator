@@ -93,6 +93,8 @@ func serveCmd() *cobra.Command {
 		leaseTTL, progressTTL  time.Duration
 		exitGrace              time.Duration
 		restartGrace           time.Duration
+		agingUnit              time.Duration
+		agingArgs              []string
 	)
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -100,7 +102,11 @@ func serveCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			return serve(ctx, serveOpts{addr, repo, branch, sb, syncAlways, leaseTTL, progressTTL, exitGrace, restartGrace})
+			aging, err := parseAging(agingArgs)
+			if err != nil {
+				return err
+			}
+			return serve(ctx, serveOpts{addr, repo, branch, sb, syncAlways, leaseTTL, progressTTL, exitGrace, restartGrace, agingUnit, aging})
 		},
 	}
 	f := cmd.Flags()
@@ -113,6 +119,8 @@ func serveCmd() *cobra.Command {
 	f.DurationVar(&progressTTL, "progress-ttl", 10*time.Minute, "time without file changes before an agent counts as a zombie")
 	f.DurationVar(&exitGrace, "exit-grace", 30*time.Second, "quiet time before agents are told to exit")
 	f.DurationVar(&restartGrace, "restart-grace", 15*time.Second, "no lease expires this soon after a restart")
+	f.DurationVar(&agingUnit, "aging-unit", time.Minute, "waiting this long equals one priority point")
+	f.StringSliceVar(&agingArgs, "aging", nil, "raise priority after a wait, as wait=boost, such as 1h=5,4h=20")
 	return cmd
 }
 
@@ -122,6 +130,8 @@ type serveOpts struct {
 	leaseTTL, progressTTL  time.Duration
 	exitGrace              time.Duration
 	restartGrace           time.Duration
+	agingUnit              time.Duration
+	aging                  []core.AgingStep
 }
 
 func serve(ctx context.Context, o serveOpts) error {
@@ -171,7 +181,7 @@ func serve(ctx context.Context, o serveOpts) error {
 		log.Info("work layer ready", "repo", repo, "branch", wm.Branch(), "sandbox", sb.Name())
 	}
 
-	cfg := engine.Config{LeaseTTL: o.leaseTTL, ProgressTTL: o.progressTTL, ExitGrace: o.exitGrace, RestartGrace: o.restartGrace}
+	cfg := engine.Config{LeaseTTL: o.leaseTTL, ProgressTTL: o.progressTTL, ExitGrace: o.exitGrace, RestartGrace: o.restartGrace, AgingUnit: o.agingUnit, Aging: o.aging}
 	svc, err := swarm.New(ctx, swarm.Options{Store: st, Work: wm, Engine: cfg, Log: log})
 	if err != nil {
 		return err
@@ -257,10 +267,21 @@ func printJSON(v any) error {
 func taskCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "task", Short: "Manage tasks"}
 	var s engine.TaskSpec
+	var labelArgs, agingArgs []string
 	add := &cobra.Command{
 		Use:   "add",
 		Short: "Add a task",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			var err error
+			if s.Labels, err = parseLabels(labelArgs); err != nil {
+				return err
+			}
+			if s.Aging, err = parseAging(agingArgs); err != nil {
+				return err
+			}
+			if !cmd.Flags().Changed("aging") {
+				s.Aging = nil // No flag means the server's steps apply, not "none".
+			}
 			c, err := adminClient()
 			if err != nil {
 				return err
@@ -280,6 +301,8 @@ func taskCmd() *cobra.Command {
 	f.IntVar(&s.Tier, "tier", 1, "tier: 1 standard, 2 advanced, 3 ultra")
 	f.StringSliceVar(&s.Tags, "tag", nil, "required capability tag")
 	f.IntVar(&s.Priority, "priority", 0, "higher runs sooner")
+	f.StringArrayVar(&labelArgs, "label", nil, "label as name=value")
+	f.StringSliceVar(&agingArgs, "aging", nil, "raise priority after a wait, as wait=boost, such as 1h=5,4h=20")
 	f.StringSliceVar(&s.Deps, "dep", nil, "task id this depends on")
 	f.StringSliceVar(&s.Touches, "touches", nil, "path this task will change")
 	f.StringArrayVar(&s.Checks, "check", nil, "acceptance command")
@@ -351,7 +374,7 @@ func taskCmd() *cobra.Command {
 	}
 	unpark.Flags().StringVar(&note, "note", "", "reason")
 	unpark.Flags().Int64Var(&addBudget, "add-budget", 0, "budget to add, in micro-dollars")
-	cmd.AddCommand(add, ls, show, cancelCmd, unpark)
+	cmd.AddCommand(add, ls, show, cancelCmd, unpark, amendCmd(), priorityCmd())
 	return cmd
 }
 

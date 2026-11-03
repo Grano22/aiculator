@@ -351,6 +351,8 @@ aiculator serve [flags]
 
 ```text
       --addr string              listen address; port 0 picks a free one (default "127.0.0.1:7777")
+      --aging strings            raise priority after a wait, as wait=boost, such as 1h=5,4h=20
+      --aging-unit duration      waiting this long equals one priority point (default 1m0s)
       --branch string            branch that receives merged work (default "swarm/integration")
       --exit-grace duration      quiet time before agents are told to exit (default 30s)
       --lease-ttl duration       lease length (default 2m0s)
@@ -437,11 +439,13 @@ aiculator task add [flags]
 **Flags**
 
 ```text
+      --aging strings       raise priority after a wait, as wait=boost, such as 1h=5,4h=20
       --allow-empty         allow a submission that changes no files
       --budget int          budget in micro-dollars; 0 means no limit
       --check stringArray   acceptance command
       --dep strings         task id this depends on
       --id string           task id; generated if empty
+      --label stringArray   label as name=value
       --priority int        higher runs sooner
       --review              also require an independent agent review
       --spec string         full instructions
@@ -449,6 +453,24 @@ aiculator task add [flags]
       --tier int            tier: 1 standard, 2 advanced, 3 ultra (default 1)
       --title string        short title
       --touches strings     path this task will change
+```
+
+## `aiculator task amend`
+
+Change a task's title, spec, priority, labels or aging, without touching its progress
+
+```text
+aiculator task amend ID [flags]
+```
+
+**Flags**
+
+```text
+      --aging strings       replace the aging steps, as wait=boost, such as 1h=5
+      --label stringArray   label as name=value; name= removes it
+      --priority int        new priority
+      --spec string         new instructions
+      --title string        new title
 ```
 
 ## `aiculator task cancel`
@@ -471,6 +493,14 @@ List tasks
 
 ```text
 aiculator task ls
+```
+
+## `aiculator task priority`
+
+Show how a task's priority is worked out right now
+
+```text
+aiculator task priority ID
 ```
 
 ## `aiculator task show`

@@ -252,6 +252,18 @@ func (s *Server) Routes() *http.ServeMux {
 		t, err := s.S.Engine.Get(r.Context(), r.PathValue("id"))
 		reply(w, t, err)
 	}))
+	m.HandleFunc("GET /v1/tasks/{id}/priority", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		p, err := s.S.Engine.Priority(r.Context(), r.PathValue("id"))
+		reply(w, p, err)
+	}))
+	m.HandleFunc("POST /v1/tasks/{id}/amend", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		q, ok := decode[core.Amendment](w, r)
+		if !ok {
+			return
+		}
+		t, err := s.S.Engine.Amend(r.Context(), r.PathValue("id"), "system:operator", q)
+		reply(w, t, err)
+	}))
 	type opReq struct {
 		Note      string `json:"note,omitempty"`
 		AddBudget int64  `json:"add_budget,omitempty"`

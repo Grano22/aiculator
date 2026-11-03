@@ -38,7 +38,7 @@ func (c *fakeClock) Advance(d time.Duration) {
 
 func newClock() *fakeClock { return &fakeClock{t: time.Date(2026, 11, 2, 12, 0, 0, 0, time.UTC)} }
 
-func open(t *testing.T, dir string) *store.Store {
+func open(t testing.TB, dir string) *store.Store {
 	t.Helper()
 	st, err := store.Open(context.Background(), store.Options{Dir: dir})
 	if err != nil {

@@ -1134,3 +1134,26 @@ func TestDownSucceedsWhenTheServerDiesWhileWaiting(t *testing.T) {
 	// A killed server releases its lock, so the project can start again.
 	p.run("up")
 }
+
+func TestLabelsAgingAndAmendFromTheCLI(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	p.run("task", "add", "--id", "l1", "--title", "old", "--label", "team=core", "--label", "drop=me", "--aging", "1h=5,30m=2")
+	out := p.run("task", "show", "l1")
+	for _, want := range []string{`"team": "core"`, `"after_sec": 1800`, `"boost": 5`} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %s in %s", want, out)
+		}
+	}
+	p.run("task", "amend", "l1", "--title", "new", "--label", "drop=", "--priority", "7")
+	out = p.run("task", "show", "l1")
+	if !strings.Contains(out, `"title": "new"`) || strings.Contains(out, "drop") || !strings.Contains(out, `"priority": 7`) {
+		t.Errorf("amend: %s", out)
+	}
+	if out := p.run("task", "priority", "l1"); !strings.Contains(out, `"effective": 7`) {
+		t.Errorf("priority: %s", out)
+	}
+	if out, err := p.tryIn(p.root, "task", "add", "--title", "x", "--aging", "soon=5"); err == nil {
+		t.Errorf("a bad aging step was accepted: %s", out)
+	}
+}

@@ -283,3 +283,63 @@ func TestPerfObserve(t *testing.T) {
 	}
 	budget(t, "snapshot with 20k tasks, p99", percentile(lat, 99), 100*time.Millisecond)
 }
+
+// Heartbeats are the most common command, and they change nothing a waiter cares about.
+func BenchmarkHeartbeatWithWaiters(b *testing.B) {
+	st := open(b, b.TempDir())
+	e, err := New(bg, st, Config{RestartGrace: time.Nanosecond, MaxHold: time.Hour, LeaseTTL: time.Hour, ProgressTTL: time.Hour})
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer func() { e.Close(); st.Close() }()
+	if _, err := e.AddTask(bg, TaskSpec{ID: "hb", Title: "x"}); err != nil {
+		b.Fatal(err)
+	}
+	r, err := e.Wait(bg, a1, 0)
+	if err != nil || r.Action != ActionTask {
+		b.Fatalf("%v %+v", err, r)
+	}
+	ctx, cancel := context.WithCancel(bg)
+	defer cancel()
+	const waiters = 500
+	for i := range waiters {
+		go func() { _, _ = e.Wait(ctx, Agent{ID: fmt.Sprintf("w%d", i), Tier: 1}, time.Hour) }()
+	}
+	for {
+		s, err := e.Situation(bg, a1)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if s.WaitingAgent[1] == waiters {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if _, err := e.Heartbeat(bg, a1, "hb", r.Lease); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkAddAndGrant(b *testing.B) {
+	st := open(b, b.TempDir())
+	e, err := New(bg, st, Config{RestartGrace: time.Nanosecond})
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer func() { e.Close(); st.Close() }()
+	b.ReportAllocs()
+	i := 0
+	for b.Loop() {
+		i++
+		if _, err := e.AddTask(bg, TaskSpec{ID: fmt.Sprintf("g%d", i), Title: "x", Tags: []string{"a"}, Labels: map[string]string{"source": "x"}}); err != nil {
+			b.Fatal(err)
+		}
+		if _, err := e.Wait(bg, Agent{ID: "a", Tier: 1, Tags: []string{"a"}}, 0); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

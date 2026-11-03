@@ -27,7 +27,7 @@ func TestSpecMatchesCode(t *testing.T) {
 		t.Fatalf("parsed only %d transitions from the spec", len(spec))
 	}
 
-	kinds := []CmdKind{CmdPublish, CmdGrant, CmdHeartbeat, CmdProgress, CmdSubmit, CmdChecks, CmdVerdict, CmdMerged, CmdFail, CmdRelease, CmdExpire, CmdRecover, CmdUnpark, CmdCancel}
+	kinds := []CmdKind{CmdPublish, CmdGrant, CmdHeartbeat, CmdProgress, CmdSubmit, CmdChecks, CmdVerdict, CmdMerged, CmdFail, CmdRelease, CmdExpire, CmdRecover, CmdUnpark, CmdCancel, CmdAmend}
 	actors := []string{"owner", "subm", "other", "system:x"}
 	code := map[string]bool{}
 	for _, st := range AllStates {
@@ -49,7 +49,7 @@ func TestSpecMatchesCode(t *testing.T) {
 						for _, k := range kinds {
 							for _, a := range actors {
 								for _, pass := range []bool{true, false} {
-									c := Cmd{Kind: k, Actor: a, Lease: 1, Pass: pass, AgentTier: 3, LeaseTTL: time.Minute, ProgressTTL: time.Minute}
+									c := Cmd{Kind: k, Actor: a, Lease: 1, Pass: pass, AgentTier: 3, LeaseTTL: time.Minute, ProgressTTL: time.Minute, Amend: &Amendment{}}
 									n, err := Apply(x, c, t0, DefaultPolicy())
 									if err == nil {
 										code[fmt.Sprintf("%s %s %s", st, k, n.State)] = true

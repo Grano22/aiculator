@@ -5,6 +5,7 @@
 package engine
 
 import (
+	"container/heap"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
@@ -64,7 +65,8 @@ type Config struct {
 	RestartGrace  time.Duration // No lease expires this soon after a restart.
 	StaleAfter    time.Duration // Age at which a read value is flagged stale.
 	Tick          time.Duration
-	AgingUnit     time.Duration // Waiting this long equals one priority point.
+	AgingUnit     time.Duration    // Waiting this long equals one priority point.
+	Aging         []core.AgingStep // Extra boosts after a wait. A task's own steps replace these.
 	Steal         []StealRule
 	PresenceTTL   time.Duration
 	Hooks         Hooks
@@ -129,6 +131,7 @@ type Engine struct {
 
 	tasks      map[string]*entry
 	ready      map[int]*readyHeap
+	boosts     boostHeap
 	seq        uint64
 	reviews    []string
 	drafts     map[string]bool
@@ -315,14 +318,10 @@ func (e *Engine) index(old, t core.Task, rev uint64) {
 	setIf(e.merging, t.State == core.Merging)
 	setIf(e.leased, t.Owner != "")
 
-	if t.State == core.Ready && (old.State != core.Ready || old.ID == "") {
-		e.seq++
-		ent.readySeq = e.seq
-		e.heap(t.Tier).pushItem(readyItem{
-			id:  t.ID,
-			key: int64(t.Priority)*int64(e.cfg.AgingUnit) - t.ReadyAt.UnixNano(),
-			seq: e.seq,
-		})
+	// A new priority needs a new heap position too. The old entry is skipped later.
+	if t.State == core.Ready && (old.State != core.Ready || old.ID == "" ||
+		old.Priority != t.Priority || !slices.Equal(old.Aging, t.Aging)) {
+		e.enqueue(ent)
 	}
 	if t.State == core.Review && needsReviewer(t) && !slices.Contains(e.reviews, t.ID) {
 		e.reviews = append(e.reviews, t.ID)
@@ -335,7 +334,86 @@ func (e *Engine) index(old, t core.Task, rev uint64) {
 	default:
 		delete(e.active, t.ID)
 	}
-	e.dirty = true
+	// Only a change that could make work available is worth waking waiters for. A heartbeat
+	// is by far the most common command, and is not one of those.
+	if old.ID == "" || old.State != t.State || old.Owner != t.Owner || old.Tier != t.Tier || old.Priority != t.Priority {
+		e.dirty = true
+	}
+}
+
+// agingOf returns the steps that apply to a task.
+func (e *Engine) agingOf(t core.Task) []core.AgingStep {
+	if t.Aging != nil {
+		return t.Aging
+	}
+	return e.cfg.Aging
+}
+
+// enqueue gives a ready task its place in the heap, and schedules its next boost. Every
+// value comes from the task and the clock, so restarting rebuilds exactly the same queue.
+func (e *Engine) enqueue(ent *entry) {
+	t := ent.task
+	boost, next := core.AgingBoost(e.agingOf(t), e.now().Sub(t.ReadyAt))
+	e.seq++
+	ent.readySeq = e.seq
+	e.heap(t.Tier).pushItem(readyItem{
+		id:  t.ID,
+		key: int64(t.Priority+boost)*int64(e.cfg.AgingUnit) - t.ReadyAt.UnixNano(),
+		seq: e.seq,
+	})
+	if next > 0 {
+		heap.Push(&e.boosts, boostItem{at: e.now().Add(next), id: t.ID, seq: e.seq})
+	}
+}
+
+// applyBoosts moves tasks that have just reached an aging step. The cost is per boost,
+// and nothing is re-sorted, so a claim stays as fast with aging on as with it off.
+func (e *Engine) applyBoosts() {
+	now := e.now()
+	for len(e.boosts) > 0 && !e.boosts[0].at.After(now) {
+		it := heap.Pop(&e.boosts).(boostItem)
+		ent := e.tasks[it.id]
+		if ent == nil || ent.task.State != core.Ready || ent.readySeq != it.seq {
+			continue // It was claimed or moved since, so this boost no longer applies.
+		}
+		e.enqueue(ent)
+		if v := log.V(vlog.LevelChanges); v.Enabled() {
+			v.Info("priority raised by waiting", "task", it.id, "waited", now.Sub(ent.task.ReadyAt))
+		}
+		e.dirty = true
+	}
+}
+
+// PriorityInfo says how a task's place in the queue is worked out right now.
+type PriorityInfo struct {
+	Base      int   `json:"base"`
+	Boost     int   `json:"boost"`
+	Effective int   `json:"effective"`
+	WaitedMs  int64 `json:"waited_ms"`
+	NextInMs  int64 `json:"next_in_ms,omitempty"`
+	// AgingPoints is the steady rise on top, one point per aging unit.
+	AgingPoints int `json:"aging_points"`
+}
+
+// Priority explains a task's current priority.
+func (e *Engine) Priority(ctx context.Context, id string) (PriorityInfo, error) {
+	return do(ctx, e, func() (PriorityInfo, error) {
+		ent := e.tasks[id]
+		if ent == nil {
+			return PriorityInfo{}, fmt.Errorf("%w: %s", ErrNotFound, id)
+		}
+		t := ent.task
+		p := PriorityInfo{Base: t.Priority, Effective: t.Priority}
+		if t.State != core.Ready {
+			return p, nil
+		}
+		waited := e.now().Sub(t.ReadyAt)
+		boost, next := core.AgingBoost(e.agingOf(t), waited)
+		p.Boost, p.Effective = boost, t.Priority+boost
+		p.WaitedMs, p.NextInMs = waited.Milliseconds(), next.Milliseconds()
+		p.AgingPoints = int(waited / e.cfg.AgingUnit)
+		return p, nil
+	})
 }
 
 func needsReviewer(t core.Task) bool {
@@ -463,6 +541,7 @@ func (e *Engine) pump(tick bool) {
 		e.sweep()
 		e.dirty = true
 	}
+	changed := e.dirty
 	for range 64 { // Bounded, so a bug cannot hang the writer.
 		if !e.dirty {
 			break
@@ -471,11 +550,14 @@ func (e *Engine) pump(tick bool) {
 		e.reconcile()
 		e.matchWaiters()
 	}
-	e.settleWaiters()
+	if changed {
+		e.settleWaiters()
+	}
 }
 
 // sweep enforces deadlines. It runs on the writer's clock, so tests can drive it.
 func (e *Engine) sweep() {
+	e.applyBoosts()
 	now := e.now()
 	if e.planning.Active && now.After(e.planning.Deadline) {
 		log.V(vlog.LevelDefault).Warn("planner lease expired", "planner", e.planning.Planner, "epoch", e.planning.Epoch)
@@ -560,18 +642,20 @@ func (e *Engine) draftFate(t core.Task) draftFate {
 
 // TaskSpec is the input for creating a task.
 type TaskSpec struct {
-	ID            string   `json:"id,omitempty"`
-	Title         string   `json:"title"`
-	Spec          string   `json:"spec,omitempty"`
-	Tier          int      `json:"tier,omitempty"`
-	Tags          []string `json:"tags,omitempty"`
-	Priority      int      `json:"priority,omitempty"`
-	Deps          []string `json:"deps,omitempty"`
-	Touches       []string `json:"touches,omitempty"`
-	Checks        []string `json:"checks,omitempty"`
-	RequireReview bool     `json:"require_review,omitempty"`
-	AllowEmpty    bool     `json:"allow_empty,omitempty"`
-	Budget        int64    `json:"budget,omitempty"`
+	ID            string            `json:"id,omitempty"`
+	Title         string            `json:"title"`
+	Spec          string            `json:"spec,omitempty"`
+	Tier          int               `json:"tier,omitempty"`
+	Tags          []string          `json:"tags,omitempty"`
+	Priority      int               `json:"priority,omitempty"`
+	Labels        map[string]string `json:"labels,omitempty"`
+	Aging         []core.AgingStep  `json:"aging,omitempty"`
+	Deps          []string          `json:"deps,omitempty"`
+	Touches       []string          `json:"touches,omitempty"`
+	Checks        []string          `json:"checks,omitempty"`
+	RequireReview bool              `json:"require_review,omitempty"`
+	AllowEmpty    bool              `json:"allow_empty,omitempty"`
+	Budget        int64             `json:"budget,omitempty"`
 }
 
 var idRE = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
@@ -599,12 +683,17 @@ func (e *Engine) buildTask(s TaskSpec, epoch uint64) (core.Task, error) {
 		return core.Task{}, fmt.Errorf("%w: tier %d", ErrInvalid, s.Tier)
 	}
 	now := e.now()
-	return core.Task{
+	t := core.Task{
 		ID: s.ID, Title: s.Title, Spec: s.Spec, Tier: s.Tier, Tags: s.Tags, Priority: s.Priority,
+		Labels: s.Labels, Aging: s.Aging,
 		Deps: s.Deps, Touches: s.Touches, Checks: s.Checks, RequireReview: s.RequireReview,
 		AllowEmpty: s.AllowEmpty, Budget: s.Budget, PlanEpoch: epoch, State: core.Draft,
 		CreatedAt: now, UpdatedAt: now,
-	}, nil
+	}
+	if err := core.ValidateAttrs(t); err != nil {
+		return core.Task{}, fmt.Errorf("%w: %v", ErrInvalid, err)
+	}
+	return t, nil
 }
 
 func (e *Engine) create(t core.Task) (core.Task, error) {
@@ -741,6 +830,17 @@ func (e *Engine) SystemFail(ctx context.Context, id, note string) (core.Task, er
 func (e *Engine) Unpark(ctx context.Context, id string, addBudget int64, note string) (core.Task, error) {
 	return do(ctx, e, func() (core.Task, error) {
 		return e.commit(id, core.Cmd{Kind: core.CmdUnpark, Actor: "system:operator", AddBudget: addBudget, Note: note})
+	})
+}
+
+// Amend changes what a task says, without touching its progress. An operator or a
+// connector calls it, never an agent. A task that is being worked on keeps its lease.
+func (e *Engine) Amend(ctx context.Context, id, actor string, a core.Amendment) (core.Task, error) {
+	if !core.IsSystem(actor) {
+		return core.Task{}, fmt.Errorf("%w: actor %q", core.ErrForbidden, actor)
+	}
+	return do(ctx, e, func() (core.Task, error) {
+		return e.commit(id, core.Cmd{Kind: core.CmdAmend, Actor: actor, Amend: &a})
 	})
 }
 

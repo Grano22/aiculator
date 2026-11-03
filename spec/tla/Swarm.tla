@@ -56,7 +56,18 @@ Transitions == {
   <<"failed", "recover", "parked">>,
   <<"failed", "cancel", "canceled">>,
   <<"parked", "unpark", "ready">>,
-  <<"parked", "cancel", "canceled">>
+  <<"parked", "cancel", "canceled">>,
+  \* Amend changes what a task says and never its state. Only the swarm may send it.
+  <<"draft", "amend", "draft">>,
+  <<"ready", "amend", "ready">>,
+  <<"claimed", "amend", "claimed">>,
+  <<"running", "amend", "running">>,
+  <<"review", "amend", "review">>,
+  <<"merging", "amend", "merging">>,
+  <<"done", "amend", "done">>,
+  <<"failed", "amend", "failed">>,
+  <<"parked", "amend", "parked">>,
+  <<"canceled", "amend", "canceled">>
 }
 
 States == {"draft", "ready", "claimed", "running", "review", "merging",

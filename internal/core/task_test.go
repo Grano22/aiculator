@@ -230,3 +230,38 @@ func TestReleaseCarriesNoPenalty(t *testing.T) {
 		t.Fatalf("double release: %v", err)
 	}
 }
+
+func TestApplySharesNothingAPreviousTaskCanSee(t *testing.T) {
+	base := Task{ID: "x", Tier: 1, State: Running, Owner: "a", LeaseEpoch: 1, LeaseDeadline: t0, ReadyAt: t0,
+		Notes: make([]Note, 1, 8), Labels: map[string]string{"k": "v"}}
+	n, err := Apply(base, Cmd{Kind: CmdProgress, Actor: "a", Lease: 1, Note: "one", LeaseTTL: time.Minute, ProgressTTL: time.Minute}, t0, DefaultPolicy())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(base.Notes) != 1 || base.Notes[:2][1].Text != "" {
+		t.Fatalf("the old task can see the new note: %+v", base.Notes[:2])
+	}
+	m, err := Apply(n, Cmd{Kind: CmdAmend, Actor: "system:x", Amend: &Amendment{Labels: map[string]string{"k": "changed"}}}, t0, DefaultPolicy())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n.Labels["k"] != "v" || m.Labels["k"] != "changed" {
+		t.Fatalf("amend wrote into the old task's labels: %v %v", n.Labels, m.Labels)
+	}
+}
+
+func TestAgingBoostSteps(t *testing.T) {
+	steps := []AgingStep{{AfterSec: 60, Boost: 5}, {AfterSec: 120, Boost: 20}}
+	for _, c := range []struct {
+		waited time.Duration
+		boost  int
+		next   time.Duration
+	}{{0, 0, time.Minute}, {59 * time.Second, 0, time.Second}, {time.Minute, 5, time.Minute}, {2 * time.Minute, 20, 0}, {time.Hour, 20, 0}} {
+		if b, n := AgingBoost(steps, c.waited); b != c.boost || n != c.next {
+			t.Errorf("%v: got %d %v", c.waited, b, n)
+		}
+	}
+	if b, n := AgingBoost(nil, time.Hour); b != 0 || n != 0 {
+		t.Errorf("no steps: %d %v", b, n)
+	}
+}

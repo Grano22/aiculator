@@ -6,6 +6,8 @@ package core
 import (
 	"errors"
 	"fmt"
+	"maps"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -75,9 +77,15 @@ type Task struct {
 	Tier      int      `json:"tier"`
 	Tags      []string `json:"tags,omitempty"`
 	Priority  int      `json:"priority,omitempty"`
-	Deps      []string `json:"deps,omitempty"`
-	Touches   []string `json:"touches,omitempty"`
-	Checks    []string `json:"checks,omitempty"`
+	// Labels are small facts about a task, for people, filters and connectors. Anything
+	// large belongs in the separate metadata store, because this record is rewritten on
+	// every heartbeat.
+	Labels map[string]string `json:"labels,omitempty"`
+	// Aging overrides the server's aging steps for this task.
+	Aging   []AgingStep `json:"aging,omitempty"`
+	Deps    []string    `json:"deps,omitempty"`
+	Touches []string    `json:"touches,omitempty"`
+	Checks  []string    `json:"checks,omitempty"`
 
 	// RequireReview demands an independent agent review as well as checks.
 	RequireReview bool `json:"require_review,omitempty"`
@@ -121,7 +129,83 @@ func (t Task) Clone() Task {
 	t.Touches = slices.Clone(t.Touches)
 	t.Checks = slices.Clone(t.Checks)
 	t.Notes = slices.Clone(t.Notes)
+	t.Labels = maps.Clone(t.Labels)
+	t.Aging = slices.Clone(t.Aging)
 	return t
+}
+
+// AgingStep raises a task's priority by Boost once it has been ready for AfterSec. The
+// highest step reached counts; steps do not add up.
+type AgingStep struct {
+	AfterSec int64 `json:"after_sec"`
+	Boost    int   `json:"boost"`
+}
+
+// After is how long a task must wait to reach this step.
+func (a AgingStep) After() time.Duration { return time.Duration(a.AfterSec) * time.Second }
+
+// AgingBoost returns the boost earned after waiting this long, and how much longer until
+// the next step. A wait of 0 means there are no more steps. It needs sorted steps.
+func AgingBoost(steps []AgingStep, waited time.Duration) (boost int, next time.Duration) {
+	for _, s := range steps {
+		if waited < s.After() {
+			return boost, s.After() - waited
+		}
+		boost = s.Boost
+	}
+	return boost, 0
+}
+
+// Limits on what a task record may carry. They keep commits fast, and keep priority
+// arithmetic far from overflowing.
+const (
+	MaxLabels     = 64
+	MaxLabelValue = 256
+	MaxAgingSteps = 16
+	MaxPriority   = 1_000_000
+)
+
+var labelKeyRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._/-]{0,62}$`)
+
+// ValidateAttrs checks the fields a person or an outside system can set. It is separate
+// from Validate because these fields are set rarely, and Validate runs on every command.
+func ValidateAttrs(t Task) error {
+	if t.Priority > MaxPriority || t.Priority < -MaxPriority {
+		return fmt.Errorf("%s: priority %d is outside +-%d", t.ID, t.Priority, MaxPriority)
+	}
+	if len(t.Labels) > MaxLabels {
+		return fmt.Errorf("%s: %d labels, over the limit of %d", t.ID, len(t.Labels), MaxLabels)
+	}
+	for k, v := range t.Labels {
+		if !labelKeyRE.MatchString(k) {
+			return fmt.Errorf("%s: label name %q", t.ID, k)
+		}
+		if len(v) > MaxLabelValue {
+			return fmt.Errorf("%s: label %s is longer than %d bytes", t.ID, k, MaxLabelValue)
+		}
+	}
+	if len(t.Aging) > MaxAgingSteps {
+		return fmt.Errorf("%s: %d aging steps, over the limit of %d", t.ID, len(t.Aging), MaxAgingSteps)
+	}
+	for i, s := range t.Aging {
+		if s.AfterSec <= 0 || s.Boost > MaxPriority || s.Boost < -MaxPriority {
+			return fmt.Errorf("%s: aging step %+v", t.ID, s)
+		}
+		if i > 0 && s.AfterSec <= t.Aging[i-1].AfterSec {
+			return fmt.Errorf("%s: aging steps must be in order of time", t.ID)
+		}
+	}
+	return nil
+}
+
+// Amendment changes what a task says, never how far along it is. A nil field is left
+// alone. A label set to "" is removed.
+type Amendment struct {
+	Title    *string           `json:"title,omitempty"`
+	Spec     *string           `json:"spec,omitempty"`
+	Priority *int              `json:"priority,omitempty"`
+	Labels   map[string]string `json:"labels,omitempty"`
+	Aging    *[]AgingStep      `json:"aging,omitempty"`
 }
 
 // Usage is what a piece of work consumed.
@@ -157,6 +241,7 @@ const (
 	CmdRecover   CmdKind = "recover"   // failed → ready or parked
 	CmdUnpark    CmdKind = "unpark"    // parked → ready
 	CmdCancel    CmdKind = "cancel"    // any non-terminal → canceled
+	CmdAmend     CmdKind = "amend"     // any → same state, new title, labels and so on
 )
 
 // Cmd is one command. Which fields matter depends on Kind.
@@ -174,6 +259,7 @@ type Cmd struct {
 	Cost        int64         `json:"cost,omitempty"`
 	Tokens      int64         `json:"tokens,omitempty"`
 	AddBudget   int64         `json:"add_budget,omitempty"`
+	Amend       *Amendment    `json:"amend,omitempty"`
 }
 
 // Errors returned by Apply. Callers compare them with errors.Is.
@@ -193,7 +279,8 @@ func (t *Task) addNote(c Cmd, text string, now time.Time) {
 	if text == "" {
 		return
 	}
-	t.Notes = append(t.Notes, Note{Attempt: t.Attempt, Tier: t.Tier, Actor: c.Actor, Text: text, Ref: c.Ref, At: now})
+	// Clip first: the previous task shares this array, and must not see the new note.
+	t.Notes = append(slices.Clip(t.Notes), Note{Attempt: t.Attempt, Tier: t.Tier, Actor: c.Actor, Text: text, Ref: c.Ref, At: now})
 	if len(t.Notes) > maxNotes {
 		t.Notes = t.Notes[len(t.Notes)-maxNotes:]
 	}
@@ -229,7 +316,9 @@ func Apply(t Task, c Cmd, now time.Time, p Policy) (Task, error) {
 			return t, fmt.Errorf("%w: %s no longer holds %s", ErrFenced, c.Actor, t.ID)
 		}
 	}
-	n := t.Clone()
+	// A shallow copy is enough, and saves an allocation per list on every heartbeat. No
+	// command writes into a list: addNote copies before it appends, and amend builds new ones.
+	n := t
 	n.UpdatedAt = now
 	n.Spent += max(c.Cost, 0)
 	n.Tokens += max(c.Tokens, 0)
@@ -468,6 +557,45 @@ func Apply(t Task, c Cmd, now time.Time, p Policy) (Task, error) {
 		}
 		n.clearLease()
 		n.State, n.Reason = Canceled, c.Note
+
+	case CmdAmend:
+		if !IsSystem(c.Actor) {
+			return t, fmt.Errorf("%w: only the swarm amends tasks", ErrForbidden)
+		}
+		if c.Amend == nil {
+			return t, fmt.Errorf("%w: amend with nothing to change", ErrIllegal)
+		}
+		if a := c.Amend; a.Title != nil {
+			n.Title = *a.Title
+		}
+		if a := c.Amend; a.Spec != nil {
+			n.Spec = *a.Spec
+		}
+		if a := c.Amend; a.Priority != nil {
+			n.Priority = *a.Priority
+		}
+		if a := c.Amend; a.Aging != nil {
+			n.Aging = *a.Aging
+		}
+		if len(c.Amend.Labels) > 0 {
+			n.Labels = maps.Clone(t.Labels)
+			if n.Labels == nil {
+				n.Labels = map[string]string{}
+			}
+			for k, v := range c.Amend.Labels {
+				if v == "" {
+					delete(n.Labels, k)
+				} else {
+					n.Labels[k] = v
+				}
+			}
+			if len(n.Labels) == 0 {
+				n.Labels = nil
+			}
+		}
+		if err := ValidateAttrs(n); err != nil {
+			return t, fmt.Errorf("%w: %v", ErrIllegal, err)
+		}
 
 	default:
 		return t, fmt.Errorf("%w: unknown command %q", ErrIllegal, c.Kind)
