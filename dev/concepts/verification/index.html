@@ -999,6 +999,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#performance-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance budgets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#real-harness-runs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1315,6 +1326,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#performance-budgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance budgets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#real-harness-runs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1395,6 +1417,75 @@
 <p class="admonition-title">What these results do not say</p>
 <p>They are bounded: they hold for the models at the sizes in each <code>.cfg</code> file and <code>check</code> command. Only the transition table is tied to the code automatically, by <code>TestSpecMatchesCode</code>. The other rules were written by hand from the code, and the tests have to cover that gap.</p>
 </div>
+<h2 id="performance-budgets">Performance budgets<a class="headerlink" href="#performance-budgets" title="Permanent link">&para;</a></h2>
+<p><code>go test -run TestPerf ./internal/engine ./cmd/aiculator</code> holds the code to these budgets, and CI runs it on every push. The cases are deliberately large, to expose work that grows badly with the number of tasks. Budgets leave room for a busy CI machine, so a failure means a real regression.</p>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Measured on an M-series Mac</th>
+<th>Budget</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Add a task and wake a waiting agent, p99</td>
+<td>0.32 ms</td>
+<td>5 ms, or 50 ms in CI</td>
+</tr>
+<tr>
+<td>One add-and-grant cycle</td>
+<td>55 µs, about 18,000 per second</td>
+<td>2 ms</td>
+</tr>
+<tr>
+<td>One grant among 32 competing agents</td>
+<td>18 µs</td>
+<td>2 ms</td>
+</tr>
+<tr>
+<td>Grant with 20,000 tasks waiting, p99</td>
+<td>32 µs</td>
+<td>10 ms</td>
+</tr>
+<tr>
+<td>Wake with 2,000 agents waiting, p99</td>
+<td>0.78 ms</td>
+<td>25 ms</td>
+</tr>
+<tr>
+<td>One <code>plan_add</code> with 5,000 drafts</td>
+<td>0.15 ms</td>
+<td>3 ms</td>
+</tr>
+<tr>
+<td>Commit a 5,000-task plan</td>
+<td>44 ms</td>
+<td>1 s</td>
+</tr>
+<tr>
+<td>Restart with 20,000 tasks</td>
+<td>0.31 s</td>
+<td>5 s</td>
+</tr>
+<tr>
+<td>Heap per task</td>
+<td>1.3 KiB</td>
+<td>16 KiB</td>
+</tr>
+<tr>
+<td>CLI start</td>
+<td>9 ms</td>
+<td>200 ms</td>
+</tr>
+<tr>
+<td>Server ready</td>
+<td>20 ms</td>
+<td>3 s</td>
+</tr>
+</tbody>
+</table>
+<p>These cover the swarm's own machinery. Most of a task's real time goes to the model and your checks.</p>
 <h2 id="real-harness-runs">Real harness runs<a class="headerlink" href="#real-harness-runs" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

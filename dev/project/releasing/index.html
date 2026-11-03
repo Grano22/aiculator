@@ -1216,6 +1216,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#size-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Size budget
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#docs" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1306,6 +1317,17 @@
     <span class="md-ellipsis">
       
         What a tag does
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#size-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Size budget
       
     </span>
   </a>
@@ -1436,6 +1458,30 @@
 <p>Check an archive's provenance with:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>gh<span class="w"> </span>attestation<span class="w"> </span>verify<span class="w"> </span>aiculator_v1.2.3_linux_amd64.tar.gz<span class="w"> </span>--repo<span class="w"> </span>OWNER/REPO
 </code></pre></div>
+<h2 id="size-budget">Size budget<a class="headerlink" href="#size-budget" title="Permanent link">&para;</a></h2>
+<p><code>scripts/build_release.sh</code> fails if a binary or an archive goes over budget, so neither CI nor a release can ship past it.</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Budget</th>
+<th>Current</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Binary</td>
+<td>30 MiB</td>
+<td>About 25 to 28 MiB</td>
+</tr>
+<tr>
+<td>Archive</td>
+<td>11 MiB</td>
+<td>8.9 to 10.3 MiB</td>
+</tr>
+</tbody>
+</table>
+<p>The template engine accounts for about 5.4 MiB of the binary, because real Jinja2 brings text-handling and JSON libraries with it. To raise a limit, change it in the script on purpose and say why in the commit.</p>
 <h2 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

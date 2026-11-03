@@ -1406,7 +1406,7 @@
 </table>
 <div class="admonition note">
 <p class="admonition-title">How well each sandbox is tested</p>
-<p>Seatbelt was attacked for real, including escapes through symlinks. For bubblewrap and Docker, only the arguments have been checked so far.</p>
+<p>Seatbelt and bubblewrap are attacked for real in the test suite, including escapes through symlinks. For Docker, only the arguments have been checked so far.</p>
 </div>
 <h2 id="identity">Identity<a class="headerlink" href="#identity" title="Permanent link">&para;</a></h2>
 <p>Agent tokens are signed with ed25519. Tier and identity come from the token, so an agent cannot claim a higher tier or act as another agent. No token can be issued for the swarm's own <code>system:</code> identities.</p>
