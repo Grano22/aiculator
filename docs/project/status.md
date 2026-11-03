@@ -9,6 +9,7 @@
 - Crash tests, formal models and fuzzing
 - CI, releases and docs
 - Performance budgets and a package size budget
+- Terminal and web dashboards, metrics and a plugin system
 
 ## Tested on real harnesses
 
@@ -23,7 +24,7 @@ The other harnesses are configured from their docs or a community table. Use `./
 ## Not built yet
 
 - Mailboxes and the memory board
-- The dashboard and OpenTelemetry traces
+- OpenTelemetry traces, replay and chaos mode
 - Thompson sampling, budgets per plan, and the circuit breaker
 - Automatic re-splitting of failed tasks by a planner
 - Mutation testing and network chaos with toxiproxy

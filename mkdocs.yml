@@ -66,7 +66,7 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
 
 nav:
-  - Home: index.md
+  - Showcase: index.md
   - Getting started:
       - Install: getting-started/install.md
       - Quickstart: getting-started/quickstart.md
@@ -77,6 +77,8 @@ nav:
       - Skills: guides/skills.md
       - Templates: guides/templates.md
       - MCP config: guides/mcp.md
+      - Dashboards: guides/dashboards.md
+      - Plugins: guides/plugins.md
   - Concepts:
       - Architecture: concepts/architecture.md
       - Tasks and tiers: concepts/tasks.md

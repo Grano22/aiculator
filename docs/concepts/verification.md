@@ -50,6 +50,7 @@ Models named `Bug` break a rule on purpose and must fail, which proves the check
 | One `plan_add` with 5,000 drafts | 0.15 ms | 3 ms |
 | Commit a 5,000-task plan | 44 ms | 1 s |
 | Restart with 20,000 tasks | 0.31 s | 5 s |
+| Dashboard snapshot with 20,000 tasks, p99 | 6 ms | 100 ms |
 | Heap per task | 1.3 KiB | 16 KiB |
 | CLI start | 9 ms | 200 ms |
 | Server ready | 20 ms | 3 s |

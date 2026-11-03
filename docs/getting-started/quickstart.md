@@ -57,6 +57,8 @@ aiculator situation
 
 The task moves through `ready`, `claimed`, `running`, `review` and `merging` to `done`.
 
+For a live view, run `aiculator top` in a terminal or `aiculator web` for your browser. See [Dashboards](../guides/dashboards.md).
+
 ## 5. See the result
 
 Finished work lands on the `swarm/integration` branch. Your own branches are never touched, so you choose when to merge it:

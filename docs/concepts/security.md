@@ -20,6 +20,8 @@
 
 Agent tokens are signed with ed25519. Tier and identity come from the token, so an agent cannot claim a higher tier or act as another agent. No token can be issued for the swarm's own `system:` identities.
 
+Viewer tokens are read-only and expire, for dashboards and scrapers. See [Dashboards](../guides/dashboards.md#security).
+
 ## Verification rules
 
 These are enforced by the state machine and modeled in TLA+:

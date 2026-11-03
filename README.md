@@ -4,9 +4,27 @@ One static Go binary that runs a queue of coding tasks across AI harnesses. It a
 
 An agent saying "done" counts for nothing: the swarm runs the acceptance checks.
 
+![The web dashboard, showing throughput, the flow of tasks, latency, health probes, tasks at risk, agents and budgets.](docs/assets/screens/web-dark.png)
+
+<sub>A real server doing real work, from `scripts/screenshots.sh`. Agents were driven through the CLI, so token and cost figures are demo values.</sub>
+
+**[Read the docs](https://grano22.github.io/aiculator/)**, which start with a showcase of what it does.
+
+## Live dashboards
+
+`aiculator top` shows flow, throughput, latency with jitter, health probes, usage and tasks in trouble, in your terminal. `aiculator web` shows the same in your browser, compiled into the binary, with a read-only link.
+
+![The aiculator top terminal dashboard.](docs/assets/screens/tui-overview.png)
+
+<p>
+  <img src="docs/assets/screens/tui-usage.png" alt="The usage and budgets screen of aiculator top." width="49%">
+  <img src="docs/assets/screens/tui-tasks.png" alt="The tasks screen of aiculator top." width="49%">
+</p>
+
 ## Quick start
 
 ```sh
+# Or download a binary from the releases page, or: go install github.com/Grano22/aiculator/cmd/aiculator@latest
 # Static on Linux. macOS does not allow static binaries, so there it links system libraries.
 CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o bin/aiculator ./cmd/aiculator
 export PATH="$PWD/bin:$PATH"     # The skills call aiculator by name.
@@ -16,6 +34,7 @@ aiculator join --tier 1          # Server, skills and MCP config for every insta
 aiculator task add --title "Add a health endpoint" \
   --spec "Add GET /healthz returning 200." --check "go test ./..."
 aiculator task ls
+aiculator top                    # Watch it live
 ```
 
 Finished work lands on the `swarm/integration` branch. Your own branches are never touched.
@@ -123,6 +142,11 @@ OpenCode 2 needs one extra step: a running background service does not pick up n
 | `internal/driver` | ACP driver and permission policy |
 | `internal/harness` | Registry of harnesses, and MCP config writers |
 | `internal/skillpack` | One-place skills, wildcard install, linter, bundled skills |
+| `internal/tmpl` | Templates, components and rendering |
+| `internal/tui` | The terminal dashboard |
+| `pkg/observe` | Public: live metrics |
+| `pkg/plugin` | Public: the plugin API |
+| `plugins/webdash` | The web dashboard plugin |
 | `cmd/aiculator` | The binary, and the `kill -9` gate test |
 | `cmd/fakeagent` | ACP agent that is slow, crashes, goes zombie or lies |
 
@@ -156,6 +180,10 @@ HARNESS=opencode ROUTE=mcp ./scripts/gate_join.sh   # The same, in OpenCode with
 Models named `Bug` break a rule on purpose and must fail, which shows the checker can catch that defect. `TestSpecMatchesCode` fails the build if the TLA+ transition table and `core.Apply` disagree.
 
 These results are bounded: they hold for the model and the sizes in each `.cfg` file and `check` command. Only the transition table is tied to the code mechanically. The other rules in the models were written by hand from the code, and the tests have to cover that gap.
+
+## Plugins
+
+Compile plugins in with a registry (`pkg/plugin`), put a program named `aiculator-NAME` on your `PATH`, or follow `aiculator events` from any language. The web dashboard is itself a plugin; `go build -tags noweb` leaves it out. See `docs/guides/plugins.md`.
 
 ## Docs and releases
 

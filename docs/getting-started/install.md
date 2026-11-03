@@ -30,6 +30,12 @@ Download the archive for your platform from the project's GitHub releases page, 
 You need Go at the version in `go.mod`, and git.
 
 ```sh
+go install github.com/Grano22/aiculator/cmd/aiculator@latest
+```
+
+Or from a checkout:
+
+```sh
 CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o bin/aiculator ./cmd/aiculator
 export PATH="$PWD/bin:$PATH"
 ```
