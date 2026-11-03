@@ -93,7 +93,7 @@ Use the spec's fields first: `name`, `description`, `license`, `compatibility`, 
 
 ## Templates and MCP config
 
-`aiculator template` renders reusable instructions into skills, using Jinja2 and MDX-style components such as `<Backoff retries="3" />`, `<Subagents>`, `<OutputFormat>` and `<Flow>`. Bundled templates make a model ask through a selectable list, checkboxes or tabs, run staged subagent flows, and keep a status section current.
+`aiculator template` renders reusable instructions into skills, using Jinja2 and MDX-style components such as `<Backoff retries="3" />`, `<Subagents>`, `<OutputFormat>` and `<Flow>`. Bundled templates make a model ask through a selectable list, checkboxes or tabs, run staged subagent flows, and keep a status section current. [`.agent/template/demo.mdx`](.agent/template/demo.mdx) uses every feature at once.
 
 `aiculator mcp add` and `aiculator mcp print` add a server to any harness or config file, or print the piece to paste. Both are covered in the docs under `docs/guides/`.
 

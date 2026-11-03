@@ -1,0 +1,104 @@
+---
+template:
+  vars:
+    project: the checkout service
+    retries: 3
+    timeout: 120s
+    max_subagents: 3
+    checks: [unit tests, lint, security scan]
+name: demo
+description: Demonstrates every template feature by walking through shipping a feature, with questions, subagents, retries and a live status section. Use when the user asks to see the demo template or how the template features work.
+compatibility: Works in any harness that reads skills. These are instructions to the model, not technical limits.
+metadata:
+  version: "1.0.0"
+  aiculator.kind: demo
+---
+
+{# A Jinja2 comment. It does not reach the rendered skill. #}
+{% macro check_row(name, n) %}{{ n }}. Run {{ name }}, and stop if it fails.{% endmacro %}
+
+# Ship a feature in {{ project }}
+
+<Toc />
+
+{# A condition: this differs per harness when rendered with --per-harness. #}
+{% if harness.question_tool %}
+Rendered for {{ harness.name }}, whose question tool is `{{ harness.question_tool }}`.
+{% else %}
+Rendered for {{ harness.name }}, so the questions below fall back to numbered lists where needed.
+{% endif %}
+
+<Directive id="ship-safely">Never push to the main branch. Every change goes through a review.</Directive>
+
+<Directive level="must not" id="no-false-claims">Say something works unless you ran it and saw it work.</Directive>
+
+<Note>This skill is a demo of the template features, built around a realistic workflow.</Note>
+
+{# An include: shared text kept in one file, partials/house-style.md. #}
+{% include "partials/house-style.md" %}
+
+<DemoBadge label="Custom component">This one comes from `components/DemoBadge.md`, next to this template.</DemoBadge>
+
+<AskOne id="choose-approach" title="Step A: choose an approach" question="How should I build this feature?" subagent="Use the smallest change that works, and say so in your report.">
+- Smallest change (Recommended): touch as little as possible
+- Refactor first: clean the area up, then add the feature
+- Feature flag: ship it switched off
+</AskOne>
+
+<AskMany id="choose-checks" title="Step B: choose the checks" question="Which checks should I run before review?" min="1">
+{% for check in checks %}
+- {{ check | capitalize }}
+{% endfor %}
+</AskMany>
+
+<AskTabs id="choose-settings" title="Step C: settle the details">
+<Tab header="Rollout" question="How should it roll out?">
+All at once (Recommended), or gradually
+</Tab>
+
+<Tab header="Docs" question="Which docs need updating?" multi="true">
+README, or the changelog, or the API reference
+</Tab>
+</AskTabs>
+
+<Subagents use="when" max="{{ max_subagents }}" when="the work splits into independent parts, or needs broad searching" not_when="the steps depend on each other" />
+
+<SubagentFlow id="build-flow" title="Step D: build it" name="research, build, review">
+<Stage n="1" title="Research" id="research" parallel="{{ max_subagents }}" output="Short findings with file paths, and no changes to any file" done="you could explain the change, with evidence for each claim">
+Find the code this feature touches.
+</Stage>
+
+<Stage n="2" title="Build" id="build" output="The changes made, and how they were checked" done="the code is changed and the tests pass">
+Make the change the user chose in step A.
+</Stage>
+
+<Stage n="3" title="Review" id="review" agent="a fresh subagent that did not write the code" output="Real problems, each with a file, a line and why it matters" done="each problem is fixed, or you have explained why it stays">
+Look for bugs in the changes.
+</Stage>
+</SubagentFlow>
+
+<Backoff timeout="{{ timeout }}" retries="{{ retries }}" base="2s" factor="2" limit="30s" on="timeouts, network errors and rate limits" />
+
+## Checks to run
+<Anchor id="checks" />
+
+{# A loop that calls a macro defined above. #}
+{% for check in checks %}
+{{ check_row(check, loop.index) }}
+{% endfor %}
+
+<Flow id="ship-flow" name="ship it">
+<Step n="1" title="Confirm" id="confirm" ask="Is this ready to ship?" subagent="Do not ask. Report that it is ready, with your evidence.">Summarize what changed and what you checked.</Step>
+
+<Step n="2" title="Ship" id="ship" subagent="Do not ship. Only the agent that started you does that.">Open the pull request.</Step>
+</Flow>
+
+<OutputFormat>
+Done: what changed
+Checked: what you ran and the result
+Next: what remains, or "nothing"
+</OutputFormat>
+
+<DynamicSection id="progress" title="Progress" update="after each step above" keep="the current step, and anything blocking it">Not started.</DynamicSection>
+
+<DynamicSection id="changelog" title="Release notes" file="RELEASE_NOTES.md" update="whenever the plan changes" />

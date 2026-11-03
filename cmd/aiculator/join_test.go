@@ -970,3 +970,48 @@ func TestDocsHoldNoTokens(t *testing.T) {
 		}
 	}
 }
+
+// The docs include the demo's rendered form from these files, so they must stay current.
+func TestDemoSnippetsAreCurrent(t *testing.T) {
+	root := filepath.Join("..", "..")
+	for _, id := range demoHarnesses {
+		want, err := renderDemo(root, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := os.ReadFile(filepath.Join(root, "docs", "snippets", demoSnippetName(id)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(got) != want {
+			t.Errorf("%s is out of date; run: go run ./cmd/aiculator gen-docs", demoSnippetName(id))
+		}
+	}
+}
+
+// What the docs tell people to run, in a project with its own copy of the demo.
+func TestDemoTemplateInstalls(t *testing.T) {
+	p := newProject(t)
+	src := filepath.Join("..", "..", ".agent", "template")
+	if err := os.CopyFS(filepath.Join(p.root, ".agent", "template"), os.DirFS(src)); err != nil {
+		t.Fatal(err)
+	}
+	if out := p.run("template", "--list"); !strings.Contains(out, "demo") {
+		t.Fatalf("list: %s", out)
+	}
+	if out := p.run("template", "--render", "demo", "--for", "claude", "--set", "retries=1"); !strings.Contains(out, "| 2 | 2s |") || strings.Contains(out, "| 3 |") {
+		t.Fatalf("render: %s", out)
+	}
+	p.run("template", "--install", "demo", "--harness", "claude")
+	if !p.exists(".claude/skills/demo/SKILL.md") {
+		t.Fatal("the demo was not linked")
+	}
+	p.run("template", "--check")
+	if out := p.run("skill", "--lint"); strings.Contains(out, "demo: error") || strings.Contains(out, "demo: warn") {
+		t.Fatalf("lint: %s", out)
+	}
+	p.run("template", "--install", "demo", "--per-harness", "--harness", "opencode")
+	if !strings.Contains(p.read(".opencode/skills/demo/SKILL.md"), "`question`") {
+		t.Fatal("the OpenCode copy does not name its own tool")
+	}
+}

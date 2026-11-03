@@ -558,3 +558,50 @@ func TestAllBundledTemplatesPassLintForEveryHarness(t *testing.T) {
 		}
 	}
 }
+
+// The demo promises to show every feature, so a new component has to be added to it.
+func TestDemoUsesEveryComponent(t *testing.T) {
+	root := filepath.Join("..", "..")
+	src, err := os.ReadFile(filepath.Join(root, ".agent", "template", "demo.mdx"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(src)
+	names := BundledComponents()
+	if len(names) < 15 {
+		t.Fatalf("only %d components: %v", len(names), names)
+	}
+	for _, name := range names {
+		if !strings.Contains(text, "<"+name) {
+			t.Errorf("demo.mdx does not use <%s>", name)
+		}
+	}
+	for _, feature := range []string{"{% if ", "{% for ", "{% include ", "{% macro ", "{# ", "| capitalize", "template:\n  vars:", "<DemoBadge"} {
+		if !strings.Contains(text, feature) {
+			t.Errorf("demo.mdx does not show %q", feature)
+		}
+	}
+	s := NewSet(root, nil)
+	tp, err := s.Get("demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []Context{{}, forHarness("claude"), forHarness("opencode"), forHarness("gemini"), forHarness("pi")} {
+		out, err := s.Render(tp, c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, bad := range []string{"{{", "{%", "{#", "<AskOne", "<Tab", "<Stage", "<Flow", "<DemoBadge", "<Toc"} {
+			if strings.Contains(out, bad) {
+				t.Errorf("%q was left in the rendered demo", bad)
+			}
+		}
+		dir := filepath.Join(t.TempDir(), "demo")
+		put(t, dir, "SKILL.md", out)
+		for _, i := range skillpack.Lint(dir) {
+			if i.Level == skillpack.LevelError || i.Level == skillpack.LevelWarn {
+				t.Errorf("%s: %s", i.Level, i.Msg)
+			}
+		}
+	}
+}

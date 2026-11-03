@@ -607,3 +607,16 @@ func finish(fm, body string) string {
 	sized := renderToc(scanHeadings(assemble(renderToc(nil))))
 	return assemble(renderToc(scanHeadings(assemble(sized))))
 }
+
+// BundledComponents lists the components that ship in the binary.
+func BundledComponents() []string {
+	entries, err := fs.ReadDir(library, "library/components")
+	if err != nil {
+		return nil
+	}
+	out := make([]string, 0, len(entries)+1)
+	for _, e := range entries {
+		out = append(out, strings.TrimSuffix(e.Name(), ".md"))
+	}
+	return append(out, "Toc") // Toc is built in, and has no file.
+}

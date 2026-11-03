@@ -6,6 +6,10 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+### Added
+
+- **Template demo:** `.agent/template/demo.mdx` uses every template feature in one realistic workflow, with a docs page that shows its real source and rendered output.
+
 ## [0.3.0] - 2026-11-03
 
 ### Added
