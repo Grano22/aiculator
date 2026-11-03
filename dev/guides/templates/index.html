@@ -907,6 +907,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#forcing-rich-markdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forcing rich Markdown
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#subagent-flows" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1707,6 +1718,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#forcing-rich-markdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forcing rich Markdown
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#subagent-flows" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1976,6 +1998,31 @@
 <td><code>&lt;AskTabs&gt;</code> and <code>&lt;Tab&gt;</code></td>
 <td>Several questions in one form, with tabs</td>
 </tr>
+<tr>
+<td><code>ui-confirm</code></td>
+<td><code>&lt;AskConfirm&gt;</code></td>
+<td>A yes or no choice before a risky action</td>
+</tr>
+<tr>
+<td><code>ui-text</code></td>
+<td><code>&lt;AskText&gt;</code></td>
+<td>A place to type, when options cannot cover the answer</td>
+</tr>
+<tr>
+<td><code>ui-preview</code></td>
+<td><code>&lt;AskPreview&gt;</code></td>
+<td>Choices with a visible example of each</td>
+</tr>
+<tr>
+<td><code>ui-todos</code></td>
+<td><code>&lt;TodoList&gt;</code></td>
+<td>A live task list</td>
+</tr>
+<tr>
+<td><code>ui-plan</code></td>
+<td><code>&lt;PlanMode&gt;</code></td>
+<td>A plan to approve before anything changes</td>
+</tr>
 </tbody>
 </table>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span><span class="s1">'ui-*'</span>
@@ -1986,33 +2033,40 @@
 <thead>
 <tr>
 <th>Harness</th>
-<th>Tool</th>
-<th>Single and multiple choice</th>
+<th>Questions</th>
+<th>Task list</th>
+<th>Plan mode</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Claude Code</td>
-<td><code>AskUserQuestion</code></td>
-<td><code>multiSelect</code></td>
+<td><code>AskUserQuestion</code>, with <code>multiSelect</code></td>
+<td><code>TaskCreate</code>, <code>TaskUpdate</code></td>
+<td><code>EnterPlanMode</code>, <code>ExitPlanMode</code></td>
 </tr>
 <tr>
 <td>Gemini CLI</td>
-<td><code>ask_user</code></td>
-<td><code>type: "choice"</code> and <code>multiSelect</code></td>
+<td><code>ask_user</code>, with <code>type</code> <code>choice</code>, <code>text</code> or <code>yesno</code></td>
+<td><code>write_todos</code></td>
+<td><code>enter_plan_mode</code>, <code>exit_plan_mode</code></td>
 </tr>
 <tr>
 <td>OpenCode</td>
-<td><code>question</code></td>
-<td>Its docs do not state multi-select, so the skill falls back if it has none</td>
+<td><code>question</code>; its docs do not state multi-select</td>
+<td><code>todowrite</code></td>
+<td>None in its tool docs</td>
 </tr>
 <tr>
 <td>Others</td>
-<td>None named</td>
-<td>A numbered list, then stop and wait</td>
+<td>None named: a numbered list, then stop and wait</td>
+<td>A Markdown checklist</td>
+<td>A numbered plan, then stop and wait</td>
 </tr>
 </tbody>
 </table>
+<p>On some Claude Code models the task tools must be switched on, so <code>ui-todos</code> also tells the model what to do without them. Whether <code>AskUserQuestion</code> offers <code>preview</code> depends on the session, so <code>&lt;AskPreview&gt;</code> falls back to labeled code blocks.</p>
+<p><code>ui-plan</code> deliberately has no <code>allowed-tools</code>. In Claude Code that field skips the permission prompt, and the prompt on <code>ExitPlanMode</code> is your approval of the plan.</p>
 <p>Without <code>--per-harness</code>, one shared skill names all three tools, because it cannot know which harness reads it.</p>
 <p>To ask a specific question, use the components in your own template:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">&lt;</span><span class="nt">AskOne</span> <span class="na">question</span><span class="o">=</span><span class="s">"Which database?"</span> <span class="na">subagent</span><span class="o">=</span><span class="s">"Use SQLite, and say so in your report."</span><span class="p">&gt;</span>
@@ -2029,30 +2083,190 @@
 <a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="p">&lt;</span><span class="nt">Tab</span> <span class="na">header</span><span class="o">=</span><span class="s">"Language"</span> <span class="na">question</span><span class="o">=</span><span class="s">"Which language?"</span><span class="p">&gt;</span>Go, or Python<span class="p">&lt;/</span><span class="nt">Tab</span><span class="p">&gt;</span>
 <a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="p">&lt;</span><span class="nt">Tab</span> <span class="na">header</span><span class="o">=</span><span class="s">"Extras"</span> <span class="na">question</span><span class="o">=</span><span class="s">"Which extras?"</span> <span class="na">multi</span><span class="o">=</span><span class="s">"true"</span><span class="p">&gt;</span>Docker, or CI<span class="p">&lt;/</span><span class="nt">Tab</span><span class="p">&gt;</span>
 <a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="p">&lt;/</span><span class="nt">AskTabs</span><span class="p">&gt;</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="p">&lt;</span><span class="nt">AskConfirm</span> <span class="na">question</span><span class="o">=</span><span class="s">"Delete 3 merged branches?"</span> <span class="p">/&gt;</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="p">&lt;</span><span class="nt">AskText</span> <span class="na">question</span><span class="o">=</span><span class="s">"What should the service be called?"</span> <span class="na">placeholder</span><span class="o">=</span><span class="s">"my-service"</span> <span class="p">/&gt;</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="p">&lt;</span><span class="nt">AskPreview</span> <span class="na">question</span><span class="o">=</span><span class="s">"Which layout?"</span><span class="p">&gt;</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>- Compact: `a | b`
+<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>- Spacious: `a  |  b`
+<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="p">&lt;/</span><span class="nt">AskPreview</span><span class="p">&gt;</span>
+<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>
+<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="p">&lt;</span><span class="nt">TodoList</span><span class="p">&gt;</span>
+<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>- Write the tests
+<a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a>- Make them pass
+<a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="p">&lt;/</span><span class="nt">TodoList</span><span class="p">&gt;</span>
+<a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a>
+<a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a><span class="p">&lt;</span><span class="nt">PlanMode</span><span class="p">&gt;</span>
+<a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a>- Which files change
+<a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a>- How you will verify it
+<a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a><span class="p">&lt;/</span><span class="nt">PlanMode</span><span class="p">&gt;</span>
 </code></pre></div>
 <p>Every question also covers two cases: a harness with no question tool, and a subagent that cannot reach the user.</p>
+<h2 id="forcing-rich-markdown">Forcing rich Markdown<a class="headerlink" href="#forcing-rich-markdown" title="Permanent link">&para;</a></h2>
+<p><code>rich-markdown</code> sets how a model formats its replies, using the right form for each thing. <code>&lt;RichMarkdown&gt;</code> includes every rule below, and <code>&lt;Render&gt;</code> adds a single one.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span>rich-markdown<span class="w">                    </span><span class="c1"># For a terminal</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span>rich-markdown<span class="w"> </span>--set<span class="w"> </span><span class="nv">surface</span><span class="o">=</span>rich<span class="w"> </span><span class="c1"># Where full Markdown renders</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">&lt;</span><span class="nt">RichMarkdown</span> <span class="na">only</span><span class="o">=</span><span class="s">"code,diff,table,fileref"</span> <span class="na">surface</span><span class="o">=</span><span class="s">"terminal"</span> <span class="p">/&gt;</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="p">&lt;</span><span class="nt">Render</span> <span class="na">kind</span><span class="o">=</span><span class="s">"callout"</span><span class="p">&gt;</span>Use this for production warnings only.<span class="p">&lt;/</span><span class="nt">Render</span><span class="p">&gt;</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th><code>kind</code></th>
+<th>What the model is told</th>
+<th>With <code>surface="terminal"</code> (the default)</th>
+<th>With <code>surface="rich"</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>code</code></td>
+<td>Fenced block with a language</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>inline</code></td>
+<td><code>code</code>, bold and italics, for the right things</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>shell</code></td>
+<td>A <code>sh</code> block to paste, with output apart</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>diff</code></td>
+<td>A <code>diff</code> block</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>table</code></td>
+<td>Comparisons, with short cells</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>list</code></td>
+<td>Numbered when order matters</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>checklist</code></td>
+<td><code>- [ ]</code> and <code>- [x]</code></td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>headings</code></td>
+<td><code>##</code> and <code>###</code> for longer answers</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>callout</code></td>
+<td>A quote with a bold label</td>
+<td>Same</td>
+<td>Also GitHub's <code>&gt; [!WARNING]</code></td>
+</tr>
+<tr>
+<td><code>quote</code></td>
+<td>Exact errors, logs and documents</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>fileref</code></td>
+<td><code>path/to/file.go:42</code></td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>tree</code></td>
+<td>A directory layout in a <code>text</code> block</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>link</code></td>
+<td>Descriptive text, and only URLs it has seen</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>diagram</code></td>
+<td>Flows and relationships</td>
+<td>ASCII in a <code>text</code> block</td>
+<td>A <code>mermaid</code> block</td>
+</tr>
+<tr>
+<td><code>image</code></td>
+<td>Pictures</td>
+<td>A path and a description</td>
+<td><code>![alt](path)</code></td>
+</tr>
+<tr>
+<td><code>details</code></td>
+<td>Long optional material</td>
+<td>Left out, or at the end</td>
+<td><code>&lt;details&gt;</code></td>
+</tr>
+<tr>
+<td><code>math</code></td>
+<td>Formulas</td>
+<td>Plain text or code</td>
+<td><code>$...$</code> and <code>$$...$$</code></td>
+</tr>
+<tr>
+<td><code>footnote</code></td>
+<td>Asides and sources</td>
+<td>Short sentences and links</td>
+<td><code>[^1]</code></td>
+</tr>
+<tr>
+<td><code>rule</code></td>
+<td>Separate parts of a reply</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+</tbody>
+</table>
+<p>An unknown <code>kind</code> fails the render, so a typo cannot silently drop a rule.</p>
+<div class="admonition warning">
+<p class="admonition-title">What this controls, and what it does not</p>
+<p>These rules decide what the model writes. How it then looks depends on your harness and where it runs, which most harnesses do not document. Terminal rules are the cautious default for that reason, so check a sample in your own harness before you set <code>surface=rich</code>.</p>
+</div>
+<p>A long skill can keep its contents list short with <code>&lt;Toc depth="2" /&gt;</code>, which lists only the <code>##</code> sections.</p>
 <h2 id="subagent-flows">Subagent flows<a class="headerlink" href="#subagent-flows" title="Permanent link">&para;</a></h2>
 <p><code>subagent-flow</code> makes a model act as an orchestrator: it runs stages in order, delegates each one, and checks each result before moving on.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="p">&lt;</span><span class="nt">SubagentFlow</span> <span class="na">name</span><span class="o">=</span><span class="s">"research, build, review"</span><span class="p">&gt;</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="p">&lt;</span><span class="nt">Stage</span> <span class="na">n</span><span class="o">=</span><span class="s">"1"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Research"</span> <span class="na">parallel</span><span class="o">=</span><span class="s">"3"</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>  <span class="na">output</span><span class="o">=</span><span class="s">"Short findings with file paths"</span> <span class="na">done</span><span class="o">=</span><span class="s">"you could explain the change"</span><span class="p">&gt;</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>Split the unknowns into separate questions.
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="p">&lt;/</span><span class="nt">Stage</span><span class="p">&gt;</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="p">&lt;</span><span class="nt">Stage</span> <span class="na">n</span><span class="o">=</span><span class="s">"2"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Review"</span> <span class="na">agent</span><span class="o">=</span><span class="s">"a fresh subagent that did not write the code"</span>
-<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>  <span class="na">done</span><span class="o">=</span><span class="s">"each problem is fixed or explained"</span><span class="p">&gt;</span>
-<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>Ask it to look for bugs.
-<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="p">&lt;/</span><span class="nt">Stage</span><span class="p">&gt;</span>
-<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="p">&lt;/</span><span class="nt">SubagentFlow</span><span class="p">&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="p">&lt;</span><span class="nt">SubagentFlow</span> <span class="na">name</span><span class="o">=</span><span class="s">"research, build, review"</span><span class="p">&gt;</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="p">&lt;</span><span class="nt">Stage</span> <span class="na">n</span><span class="o">=</span><span class="s">"1"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Research"</span> <span class="na">parallel</span><span class="o">=</span><span class="s">"3"</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>  <span class="na">output</span><span class="o">=</span><span class="s">"Short findings with file paths"</span> <span class="na">done</span><span class="o">=</span><span class="s">"you could explain the change"</span><span class="p">&gt;</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>Split the unknowns into separate questions.
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="p">&lt;/</span><span class="nt">Stage</span><span class="p">&gt;</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="p">&lt;</span><span class="nt">Stage</span> <span class="na">n</span><span class="o">=</span><span class="s">"2"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Review"</span> <span class="na">agent</span><span class="o">=</span><span class="s">"a fresh subagent that did not write the code"</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>  <span class="na">done</span><span class="o">=</span><span class="s">"each problem is fixed or explained"</span><span class="p">&gt;</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>Ask it to look for bugs.
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="p">&lt;/</span><span class="nt">Stage</span><span class="p">&gt;</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="p">&lt;/</span><span class="nt">SubagentFlow</span><span class="p">&gt;</span>
 </code></pre></div>
 <h2 id="sections-a-model-keeps-current">Sections a model keeps current<a class="headerlink" href="#sections-a-model-keeps-current" title="Permanent link">&para;</a></h2>
 <p><code>&lt;DynamicSection&gt;</code> marks text the model must keep true as it works. <code>living-section</code> is a ready-made one, for a progress file.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">&lt;</span><span class="nt">DynamicSection</span> <span class="na">id</span><span class="o">=</span><span class="s">"status"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Status"</span> <span class="na">file</span><span class="o">=</span><span class="s">"PROGRESS.md"</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>  <span class="na">update</span><span class="o">=</span><span class="s">"after every commit"</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>  <span class="na">keep</span><span class="o">=</span><span class="s">"what is done, what is blocked, and the next step"</span> <span class="p">/&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">&lt;</span><span class="nt">DynamicSection</span> <span class="na">id</span><span class="o">=</span><span class="s">"status"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Status"</span> <span class="na">file</span><span class="o">=</span><span class="s">"PROGRESS.md"</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>  <span class="na">update</span><span class="o">=</span><span class="s">"after every commit"</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>  <span class="na">keep</span><span class="o">=</span><span class="s">"what is done, what is blocked, and the next step"</span> <span class="p">/&gt;</span>
 </code></pre></div>
 <p>With <code>file</code>, the section lives in that project file, which is usually what you want. Without it, the section lives in the skill itself, between markers:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="p">&lt;</span><span class="nt">DynamicSection</span> <span class="na">id</span><span class="o">=</span><span class="s">"decisions"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Decisions so far"</span><span class="p">&gt;</span>Nothing yet.<span class="p">&lt;/</span><span class="nt">DynamicSection</span><span class="p">&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">&lt;</span><span class="nt">DynamicSection</span> <span class="na">id</span><span class="o">=</span><span class="s">"decisions"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Decisions so far"</span><span class="p">&gt;</span>Nothing yet.<span class="p">&lt;/</span><span class="nt">DynamicSection</span><span class="p">&gt;</span>
 </code></pre></div>
 <p>Re-rendering keeps what a model wrote there, and <code>--check</code> does not count it as drift. A model's edit can shift the line numbers in a contents list until the next render, though the anchors stay right.</p>
 <h2 id="how-well-this-works">How well this works<a class="headerlink" href="#how-well-this-works" title="Permanent link">&para;</a></h2>
@@ -2093,20 +2307,45 @@
 <td><code>subagent-flow</code></td>
 <td>Three subagents, including a separate reviewer, and the bug fixed</td>
 </tr>
+<tr>
+<td><code>ui-confirm</code></td>
+<td>One choice, <code>Delete build directory</code> or <code>Keep it</code>, before acting</td>
+</tr>
+<tr>
+<td><code>ui-text</code></td>
+<td>Asks in its reply, and creates nothing</td>
+</tr>
+<tr>
+<td><code>ui-preview</code></td>
+<td>Every option carries a <code>preview</code></td>
+</tr>
+<tr>
+<td><code>ui-todos</code></td>
+<td><code>TaskCreate</code> per step, and <code>TaskUpdate</code> as each one starts and ends</td>
+</tr>
+<tr>
+<td><code>ui-plan</code></td>
+<td>Presents a numbered plan, and changes no file</td>
+</tr>
+<tr>
+<td><code>rich-markdown</code></td>
+<td>A <code>diff</code> block, a <code>sh</code> block, a table and <code>calc.go:3</code> in one reply</td>
+</tr>
 </tbody>
 </table>
 <p>Print mode has nobody to answer, so Claude Code does not offer <code>AskUserQuestion</code> there. For the mode probes, a small server offers a tool with the same name and schema, and records the arguments. So this proves what the model asks for, but not how the real interactive UI looks. Other harnesses have not been tested this way.</p>
+<p>Two more limits follow from this. The <code>ui-plan</code> probe proves the plan comes first and nothing changes, but not the real <code>EnterPlanMode</code> tool, which the model did not call in print mode. The <code>rich-markdown</code> probe checks the text the model wrote, not how a terminal displays it.</p>
 <h2 id="your-own-components">Your own components<a class="headerlink" href="#your-own-components" title="Permanent link">&para;</a></h2>
 <p>Create <code>components/Name.md</code> in a template directory, using Jinja2. Props become variables, and the tag's content becomes <code>children</code>. A project component with a bundled name replaces the bundled one.</p>
-<div class="highlight"><span class="filename">.agents/templates/components/Warn.md</span><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="x">&gt; **Warning</span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">topic</span> <span class="k">is</span> <span class="nf">defined</span> <span class="cp">%}</span><span class="x"> about </span><span class="cp">{{</span> <span class="nv">topic</span> <span class="cp">}}{%</span> <span class="k">endif</span> <span class="cp">%}</span><span class="x">:** </span><span class="cp">{{</span> <span class="nv">children</span> <span class="o">|</span> <span class="nf">trim</span> <span class="cp">}}</span>
+<div class="highlight"><span class="filename">.agents/templates/components/Warn.md</span><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="x">&gt; **Warning</span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">topic</span> <span class="k">is</span> <span class="nf">defined</span> <span class="cp">%}</span><span class="x"> about </span><span class="cp">{{</span> <span class="nv">topic</span> <span class="cp">}}{%</span> <span class="k">endif</span> <span class="cp">%}</span><span class="x">:** </span><span class="cp">{{</span> <span class="nv">children</span> <span class="o">|</span> <span class="nf">trim</span> <span class="cp">}}</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">&lt;</span><span class="nt">Warn</span> <span class="na">topic</span><span class="o">=</span><span class="s">"deploys"</span><span class="p">&gt;</span>Check the staging logs first.<span class="p">&lt;/</span><span class="nt">Warn</span><span class="p">&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="p">&lt;</span><span class="nt">Warn</span> <span class="na">topic</span><span class="o">=</span><span class="s">"deploys"</span><span class="p">&gt;</span>Check the staging logs first.<span class="p">&lt;/</span><span class="nt">Warn</span><span class="p">&gt;</span>
 </code></pre></div>
 <p>Tags inside code fences and inline code are left alone, so you can show examples.</p>
 <h2 id="per-harness-copies">Per-harness copies<a class="headerlink" href="#per-harness-copies" title="Permanent link">&para;</a></h2>
 <p>A skill installed the normal way is one file shared through links, so <code>harness.id</code> is <code>generic</code> in it. To vary by harness, render a separate copy into each harness's own directory:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span>my-rules<span class="w"> </span>--per-harness<span class="w"> </span>--harness<span class="w"> </span>claude,opencode
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--render<span class="w"> </span>my-rules<span class="w"> </span>--for<span class="w"> </span>claude<span class="w">     </span><span class="c1"># Preview one</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span>my-rules<span class="w"> </span>--per-harness<span class="w"> </span>--harness<span class="w"> </span>claude,opencode
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--render<span class="w"> </span>my-rules<span class="w"> </span>--for<span class="w"> </span>claude<span class="w">     </span><span class="c1"># Preview one</span>
 </code></pre></div>
 <table>
 <thead>
@@ -2151,7 +2390,7 @@
 </ul>
 <h2 id="keep-skills-current">Keep skills current<a class="headerlink" href="#keep-skills-current" title="Permanent link">&para;</a></h2>
 <p>Rendered skills are ordinary files, so a changed template leaves them stale. This fails if any have drifted, which suits CI:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--check
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--check
 </code></pre></div>
 
 
