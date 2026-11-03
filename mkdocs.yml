@@ -1,0 +1,90 @@
+site_name: Aiculator
+site_description: Run a queue of coding tasks across AI harnesses, and verify the results yourself.
+# The docs workflow sets these from the repository. They are not needed for a local build.
+site_url: !ENV [SITE_URL, "http://127.0.0.1:8000/"]
+repo_url: !ENV [REPO_URL, ""]
+repo_name: !ENV [REPO_NAME, ""]
+strict: true
+exclude_docs: |
+  requirements.txt
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+extra:
+  version:
+    provider: mike
+    default: latest
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Install: getting-started/install.md
+      - Quickstart: getting-started/quickstart.md
+  - Guides:
+      - Join from an open harness: guides/join.md
+      - Run sandboxed workers: guides/workers.md
+      - Plan work: guides/planning.md
+      - Skills: guides/skills.md
+      - Templates: guides/templates.md
+      - MCP config: guides/mcp.md
+  - Concepts:
+      - Architecture: concepts/architecture.md
+      - Tasks and tiers: concepts/tasks.md
+      - Security: concepts/security.md
+      - Verification: concepts/verification.md
+  - Reference:
+      - CLI: reference/cli.md
+      - Harnesses: reference/harnesses.md
+  - Project:
+      - Status: project/status.md
+      - Releasing: project/releasing.md

@@ -463,3 +463,43 @@ func TestReferenceDocsAreCurrent(t *testing.T) {
 		}
 	}
 }
+
+// The exact commands from docs/guides/planning.md.
+func TestPlanCommandsFromTheDocs(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	if out := p.run("plan", "begin", "--ttl", "5m"); !strings.Contains(out, `"epoch": 1`) {
+		t.Fatalf("begin: %s", out)
+	}
+	p.run("plan", "update", "--epoch", "1", "--ttl", "5m", "--phase", "reading code")
+	p.run("plan", "update", "--epoch", "1", "--ttl", "5m", "--phase", "splitting", "--expected", "1=12", "--expected", "2=3")
+	if out := p.run("situation"); !strings.Contains(out, "splitting") || !strings.Contains(out, `"12"`) && !strings.Contains(out, ": 12") {
+		t.Fatalf("hints are not visible: %s", out)
+	}
+	p.run("plan", "add", "--epoch", "1", "--id", "api", "--title", "Add the API", "--tier", "2", "--check", "true")
+	p.run("plan", "add", "--epoch", "1", "--id", "ui", "--title", "Add the UI", "--dep", "api", "--check", "true")
+	if strings.Contains(p.run("task", "ls"), "ready") {
+		t.Fatal("a draft became visible before the commit")
+	}
+	p.run("plan", "commit", "--epoch", "1")
+	out := p.run("task", "ls")
+	if !strings.Contains(out, "ready") || !strings.Contains(out, "draft") {
+		t.Fatalf("after commit, api should be ready and ui should wait for it:\n%s", out)
+	}
+}
+
+// The manifest format shown in docs/guides/workers.md.
+func TestManifestFromTheDocs(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "my-harness.yaml")
+	body := "name: my-harness\ncommand: [my-harness, --acp]\npass_env: [MY_API_KEY]\nreal_home: true\nwrite_paths: [\"~/.my-harness\"]\ndenied_tools: [fetch]\n"
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m, err := loadManifest("", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Name != "my-harness" || len(m.Command) != 2 || m.PassEnv[0] != "MY_API_KEY" || !m.RealHome || m.WritePaths[0] != "~/.my-harness" || m.DeniedTools[0] != "fetch" {
+		t.Fatalf("manifest: %+v", m)
+	}
+}

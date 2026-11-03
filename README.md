@@ -72,6 +72,12 @@ Use the spec's fields first: `name`, `description`, `license`, `compatibility`, 
 | `icon`, `color` | Cursor |
 | `agents/openai.yaml` | Codex |
 
+## Templates and MCP config
+
+`aiculator template` renders reusable instructions into skills, using Jinja2 and MDX-style components such as `<Backoff retries="3" />`, `<Subagents>`, `<OutputFormat>` and `<Flow>`.
+
+`aiculator mcp add` and `aiculator mcp print` add a server to any harness or config file, or print the piece to paste. Both are covered in the docs under `docs/guides/`.
+
 ## Harnesses
 
 `aiculator harness` shows all 24 and their state on this machine.
@@ -150,6 +156,16 @@ HARNESS=opencode ROUTE=mcp ./scripts/gate_join.sh   # The same, in OpenCode with
 Models named `Bug` break a rule on purpose and must fail, which shows the checker can catch that defect. `TestSpecMatchesCode` fails the build if the TLA+ transition table and `core.Apply` disagree.
 
 These results are bounded: they hold for the model and the sizes in each `.cfg` file and `check` command. Only the transition table is tied to the code mechanically. The other rules in the models were written by hand from the code, and the tests have to cover that gap.
+
+## Docs and releases
+
+The full docs are in `docs/` and publish to GitHub Pages. To read them locally, with Python 3.10 or newer:
+
+```sh
+python3 -m venv .venv && .venv/bin/pip install -r docs/requirements.txt && .venv/bin/mkdocs serve
+```
+
+To release, keep `CHANGELOG.md` current, then run `scripts/release.sh --bump minor --push`. See `docs/project/releasing.md`.
 
 ## Licenses
 
