@@ -6,6 +6,8 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-03
+
 ### Added
 
 - **Verbosity:** `-v=0` to `-v=9` as in kubectl, `--vmodule` per component, `--log-format json` and `--log-file`. `aiculator debug verbosity` changes a running server, and can go back by itself after `--for`. `aiculator logs` reads and follows the log of a server started with `aiculator up`. Credentials never reach a log at any level.
