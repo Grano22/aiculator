@@ -543,6 +543,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#make-a-model-ask-with-a-list-not-a-paragraph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Make a model ask with a list, not a paragraph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-it-the-way-you-debug-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debug it the way you debug Kubernetes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#add-an-mcp-server-to-any-harness" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -977,6 +999,34 @@
     
   
     Plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guides/debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Debugging
   
 
     
@@ -1514,6 +1564,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#make-a-model-ask-with-a-list-not-a-paragraph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Make a model ask with a list, not a paragraph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-it-the-way-you-debug-kubernetes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debug it the way you debug Kubernetes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#add-an-mcp-server-to-any-harness" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1696,17 +1768,32 @@
 <a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>| 2 | 2s |
 <a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>| 3 | 4s |
 </code></pre></div>
+<h3 id="make-a-model-ask-with-a-list-not-a-paragraph">Make a model ask with a list, not a paragraph<a class="headerlink" href="#make-a-model-ask-with-a-list-not-a-paragraph" title="Permanent link">&para;</a></h3>
+<p>Templates for single-choice lists, checkboxes, tabbed forms, staged subagent flows, and sections a model keeps current. On a real model, <code>ui-tabs</code> produced one call with three questions:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Language  one of: Go (Recommended), TypeScript, Python
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>Database  one of: PostgreSQL (Recommended), SQLite, MongoDB, None
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>Hosting   one of: Fly.io (Recommended), AWS, Render, Self-hosted VPS
+</code></pre></div>
+<p>See <a href="guides/templates/#forcing-a-kind-of-question">Templates</a>.</p>
+<h3 id="debug-it-the-way-you-debug-kubernetes">Debug it the way you debug Kubernetes<a class="headerlink" href="#debug-it-the-way-you-debug-kubernetes" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="gp">$ </span>aiculator<span class="w"> </span>task<span class="w"> </span>ls<span class="w"> </span>-v<span class="o">=</span><span class="m">6</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="go">level=INFO msg=request v=6 component=client method=GET url=http://127.0.0.1:7777/v1/tasks status=200 took=1.1ms bytes=2</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="gp">$ </span>aiculator<span class="w"> </span>debug<span class="w"> </span>verbosity<span class="w"> </span><span class="m">5</span><span class="w"> </span>--for<span class="w"> </span>10m<span class="w">     </span><span class="c1"># Trace a running server, then go back by itself</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="gp">$ </span>aiculator<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>--component<span class="w"> </span>engine
+</code></pre></div>
+<p>Levels 0 to 9 mean what they mean in kubectl, and credentials never reach a log at any level. See <a href="guides/debugging/">Debugging</a>.</p>
 <h3 id="add-an-mcp-server-to-any-harness">Add an MCP server to any harness<a class="headerlink" href="#add-an-mcp-server-to-any-harness" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="gp">$ </span>aiculator<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--harness<span class="w"> </span>opencode<span class="w"> </span>--tier<span class="w"> </span><span class="m">2</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="gp">$ </span>aiculator<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--name<span class="w"> </span>docs<span class="w"> </span>--harness<span class="w"> </span>claude<span class="w"> </span>--<span class="w"> </span>npx<span class="w"> </span>-y<span class="w"> </span>docs-server
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="gp">$ </span>aiculator<span class="w"> </span>mcp<span class="w"> </span>print<span class="w"> </span>--harness<span class="w"> </span>codex
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="gp">$ </span>aiculator<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--harness<span class="w"> </span>opencode<span class="w"> </span>--tier<span class="w"> </span><span class="m">2</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="gp">$ </span>aiculator<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--name<span class="w"> </span>docs<span class="w"> </span>--harness<span class="w"> </span>claude<span class="w"> </span>--<span class="w"> </span>npx<span class="w"> </span>-y<span class="w"> </span>docs-server
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="gp">$ </span>aiculator<span class="w"> </span>mcp<span class="w"> </span>print<span class="w"> </span>--harness<span class="w"> </span>codex
 </code></pre></div>
 <h3 id="extend-it">Extend it<a class="headerlink" href="#extend-it" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="gp">$ </span>aiculator<span class="w"> </span>plugin
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="go">NAME     KIND         DESCRIPTION</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="go">webdash  compiled in  Web dashboard, embedded in the binary</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="gp">$ </span>aiculator<span class="w"> </span>events<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.state == "done") | .id'</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="gp">$ </span>aiculator<span class="w"> </span>plugin
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="go">NAME     KIND         DESCRIPTION</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="go">webdash  compiled in  Web dashboard, embedded in the binary</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="gp">$ </span>aiculator<span class="w"> </span>events<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.state == "done") | .id'</span>
 </code></pre></div>
 <p>Compile plugins in, put a program named <code>aiculator-NAME</code> on your <code>PATH</code>, or follow the event stream from any language. See <a href="guides/plugins/">Plugins</a>.</p>
 <h2 id="why-it-holds-up">Why it holds up<a class="headerlink" href="#why-it-holds-up" title="Permanent link">&para;</a></h2>
