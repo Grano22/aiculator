@@ -15,6 +15,10 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 - `.gitignore` now covers Go, operating system, editor and secret files, and `.DS_Store` is no longer tracked.
 
+### Fixed
+
+- `aiculator down` now waits for the server process to exit. It used to return when the health endpoint closed, while the store could still be writing to `.swarm`.
+
 ## [0.3.0] - 2026-11-03
 
 ### Added

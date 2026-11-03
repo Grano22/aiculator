@@ -193,8 +193,10 @@ func downCmd() *cobra.Command {
 			if err := stopProcess(pid); err != nil {
 				return err
 			}
-			for range 100 {
-				if !healthy(url) {
+			// The endpoint closes before the store finishes writing, so wait for the
+			// process itself. Then a new up, or removing .swarm, cannot meet it.
+			for range 400 {
+				if !processAlive(pid) {
 					if !waitForPathRemoval(filepath.Join(dataDir, "pid"), 30*time.Second) {
 						return errors.New("the server stopped responding but did not finish shutting down")
 					}
@@ -203,7 +205,12 @@ func downCmd() *cobra.Command {
 				}
 				time.Sleep(50 * time.Millisecond)
 			}
-			return errors.New("the server did not stop")
+			if healthy(url) {
+				return errors.New("the server did not stop")
+			}
+			// A container with no init never reaps the process, so it looks alive forever.
+			fmt.Printf("stopped answering, but process %d has not exited\n", pid)
+			return nil
 		},
 	}
 }
