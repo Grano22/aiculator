@@ -5,6 +5,9 @@ Templates let you write instructions once and reuse them. Use them for the rules
 !!! warning "Instructions, not enforcement"
     A template produces text for a model, and a model can still ignore text. Clear, specific rules are followed far more often, but anything that must hold needs a real check, such as a task's `--check` command.
 
+!!! example "See every feature working together"
+    The [template demo](template-demo.md) walks through one template that uses all of this.
+
 ## Quick start
 
 ```sh

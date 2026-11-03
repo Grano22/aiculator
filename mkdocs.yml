@@ -7,6 +7,7 @@ repo_name: !ENV [REPO_NAME, ""]
 strict: true
 exclude_docs: |
   requirements.txt
+  snippets/
 
 theme:
   name: material
@@ -22,6 +23,10 @@ theme:
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
+    - content.code.select
+    - content.tooltips
+    - navigation.path
+    - navigation.tracking
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -38,6 +43,9 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 
+extra_css:
+  - assets/extra.css
+
 extra:
   version:
     provider: mike
@@ -47,10 +55,27 @@ plugins:
   - search
 
 markdown_extensions:
+  - abbr
   - admonition
   - attr_list
+  - def_list
+  - footnotes
   - md_in_html
   - tables
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  # The demo page includes the real template and its real rendered output.
+  - pymdownx.snippets:
+      base_path: [".", "docs/snippets"]
+      check_paths: true
   - toc:
       permalink: true
   - pymdownx.details
@@ -76,6 +101,7 @@ nav:
       - Plan work: guides/planning.md
       - Skills: guides/skills.md
       - Templates: guides/templates.md
+      - Template demo: guides/template-demo.md
       - MCP config: guides/mcp.md
       - Dashboards: guides/dashboards.md
       - Plugins: guides/plugins.md

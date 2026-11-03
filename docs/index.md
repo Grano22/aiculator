@@ -165,7 +165,7 @@ Database  one of: PostgreSQL (Recommended), SQLite, MongoDB, None
 Hosting   one of: Fly.io (Recommended), AWS, Render, Self-hosted VPS
 ```
 
-See [Templates](guides/templates.md#forcing-a-kind-of-question).
+See [Templates](guides/templates.md#forcing-a-kind-of-question), or the [template demo](guides/template-demo.md), which uses every feature at once.
 
 ### Debug it the way you debug Kubernetes
 
