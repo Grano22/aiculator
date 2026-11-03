@@ -56,6 +56,12 @@ func findDataDir() string {
 }
 
 func main() {
+	if err := rootCmd().Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func rootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use: "aiculator", Short: "Run and control an agent swarm across coding harnesses",
 		Version: version, SilenceUsage: true,
@@ -67,10 +73,8 @@ func main() {
 	}
 	root.PersistentFlags().StringVar(&dataDir, "data", ".swarm", "state directory; found by searching upward when not set")
 	root.AddCommand(serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
-		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd())
-	if err := root.Execute(); err != nil {
-		os.Exit(1)
-	}
+		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), genDocsCmd())
+	return root
 }
 
 func serveCmd() *cobra.Command {

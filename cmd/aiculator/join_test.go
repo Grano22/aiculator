@@ -451,3 +451,15 @@ func TestTemplateCommands(t *testing.T) {
 		t.Errorf("custom path: %v", err)
 	}
 }
+
+func TestReferenceDocsAreCurrent(t *testing.T) {
+	for file, want := range map[string]string{"cli.md": cliReference(), "harnesses.md": harnessReference()} {
+		got, err := os.ReadFile(filepath.Join("..", "..", "docs", "reference", file))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(got) != want {
+			t.Errorf("docs/reference/%s is out of date; run: go run ./cmd/aiculator gen-docs", file)
+		}
+	}
+}
