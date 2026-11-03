@@ -93,7 +93,7 @@ Use the spec's fields first: `name`, `description`, `license`, `compatibility`, 
 
 ## Templates and MCP config
 
-`aiculator template` renders reusable instructions into skills, using Jinja2 and MDX-style components such as `<Backoff retries="3" />`, `<Subagents>`, `<OutputFormat>` and `<Flow>`.
+`aiculator template` renders reusable instructions into skills, using Jinja2 and MDX-style components such as `<Backoff retries="3" />`, `<Subagents>`, `<OutputFormat>` and `<Flow>`. Bundled templates make a model ask through a selectable list, checkboxes or tabs, run staged subagent flows, and keep a status section current.
 
 `aiculator mcp add` and `aiculator mcp print` add a server to any harness or config file, or print the piece to paste. Both are covered in the docs under `docs/guides/`.
 
@@ -159,6 +159,7 @@ go test ./internal/engine -run=^$ -bench=GrantCycle
 ./scripts/license_audit.sh                          # Regenerates THIRD_PARTY_NOTICES.md
 ./scripts/gate2_claude.sh                           # Uses your Claude account
 ./scripts/gate3_real.sh claude 3                    # Any harness id; uses that account
+./scripts/gate_ui_templates.sh                      # Do the UI templates steer a real model?
 ROUTE=mcp ./scripts/gate_join.sh                    # Real session joins using only join's output
 ROUTE=shell ./scripts/gate_join.sh                  # The same, for a session already open
 HARNESS=opencode ROUTE=mcp ./scripts/gate_join.sh   # The same, in OpenCode with a free model
@@ -184,6 +185,10 @@ These results are bounded: they hold for the model and the sizes in each `.cfg` 
 ## Plugins
 
 Compile plugins in with a registry (`pkg/plugin`), put a program named `aiculator-NAME` on your `PATH`, or follow `aiculator events` from any language. The web dashboard is itself a plugin; `go build -tags noweb` leaves it out. See `docs/guides/plugins.md`.
+
+## Debugging
+
+Verbosity works like kubectl: `-v=0` to `-v=9`, and `--vmodule engine=5` for one component. `aiculator debug verbosity 5 --for 10m` changes a running server and goes back by itself, and `aiculator logs -f` follows it. Credentials never reach a log. See `docs/guides/debugging.md`.
 
 ## Docs and releases
 

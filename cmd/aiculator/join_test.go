@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -941,5 +942,31 @@ func TestLogFileFlag(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(path); !strings.Contains(string(b), "status=200") {
 		t.Fatalf("file: %s", b)
+	}
+}
+
+// Examples in the docs are captured from real runs, so a token could be pasted in by accident.
+func TestDocsHoldNoTokens(t *testing.T) {
+	root := filepath.Join("..", "..")
+	var files []string
+	for _, pattern := range []string{"README.md", "CHANGELOG.md", "docs/*.md", "docs/*/*.md"} {
+		m, err := filepath.Glob(filepath.Join(root, pattern))
+		if err != nil {
+			t.Fatal(err)
+		}
+		files = append(files, m...)
+	}
+	if len(files) < 15 {
+		t.Fatalf("found only %d files", len(files))
+	}
+	shape := regexp.MustCompile(`eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{16,}`)
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if m := shape.FindString(string(b)); m != "" {
+			t.Errorf("%s holds a token: %.20s...", f, m)
+		}
 	}
 }

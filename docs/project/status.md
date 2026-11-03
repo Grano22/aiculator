@@ -10,6 +10,7 @@
 - CI, releases and docs
 - Performance budgets and a package size budget
 - Terminal and web dashboards, metrics and a plugin system
+- Verbosity levels, and templates for question types, subagent flows and live sections
 
 ## Tested on real harnesses
 

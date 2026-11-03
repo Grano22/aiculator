@@ -139,6 +139,105 @@ Marks a rule the model can cite by name. `level` is any word, and defaults to `m
 <Note>Something worth pointing out.</Note>
 ```
 
+## Forcing a kind of question
+
+Bundled templates tell a model which interface to use, so you get a list to select from, and not a paragraph to answer.
+
+| Template | Component | What the user sees |
+|---|---|---|
+| `ui-select` | `<AskOne>` | One choice from a list |
+| `ui-checkbox` | `<AskMany>` | Any number of choices, as checkboxes |
+| `ui-tabs` | `<AskTabs>` and `<Tab>` | Several questions in one form, with tabs |
+
+```sh
+aiculator template --install 'ui-*'
+aiculator template --install 'ui-*' --per-harness --harness claude,opencode   # Names the exact tool
+```
+
+They name the harness's real tool and settings when it has one, and that comes from each harness's docs:
+
+| Harness | Tool | Single and multiple choice |
+|---|---|---|
+| Claude Code | `AskUserQuestion` | `multiSelect` |
+| Gemini CLI | `ask_user` | `type: "choice"` and `multiSelect` |
+| OpenCode | `question` | Its docs do not state multi-select, so the skill falls back if it has none |
+| Others | None named | A numbered list, then stop and wait |
+
+Without `--per-harness`, one shared skill names all three tools, because it cannot know which harness reads it.
+
+To ask a specific question, use the components in your own template:
+
+```html
+<AskOne question="Which database?" subagent="Use SQLite, and say so in your report.">
+- PostgreSQL (Recommended): best for most apps
+- SQLite: no server to run
+</AskOne>
+
+<AskMany question="Which checks should I run?" min="1">
+- Unit tests
+- Security scan
+</AskMany>
+
+<AskTabs>
+<Tab header="Language" question="Which language?">Go, or Python</Tab>
+<Tab header="Extras" question="Which extras?" multi="true">Docker, or CI</Tab>
+</AskTabs>
+```
+
+Every question also covers two cases: a harness with no question tool, and a subagent that cannot reach the user.
+
+## Subagent flows
+
+`subagent-flow` makes a model act as an orchestrator: it runs stages in order, delegates each one, and checks each result before moving on.
+
+```html
+<SubagentFlow name="research, build, review">
+<Stage n="1" title="Research" parallel="3"
+  output="Short findings with file paths" done="you could explain the change">
+Split the unknowns into separate questions.
+</Stage>
+
+<Stage n="2" title="Review" agent="a fresh subagent that did not write the code"
+  done="each problem is fixed or explained">
+Ask it to look for bugs.
+</Stage>
+</SubagentFlow>
+```
+
+## Sections a model keeps current
+
+`<DynamicSection>` marks text the model must keep true as it works. `living-section` is a ready-made one, for a progress file.
+
+```html
+<DynamicSection id="status" title="Status" file="PROGRESS.md"
+  update="after every commit"
+  keep="what is done, what is blocked, and the next step" />
+```
+
+With `file`, the section lives in that project file, which is usually what you want. Without it, the section lives in the skill itself, between markers:
+
+```html
+<DynamicSection id="decisions" title="Decisions so far">Nothing yet.</DynamicSection>
+```
+
+Re-rendering keeps what a model wrote there, and `--check` does not count it as drift. A model's edit can shift the line numbers in a contents list until the next render, though the anchors stay right.
+
+## How well this works
+
+These are instructions, so a model can still ignore them. `scripts/gate_ui_templates.sh` tests them on a real Claude Code session, using Haiku, the cheapest model:
+
+| Probe | Result on the real model |
+|---|---|
+| `ui-select` | One call with `multiSelect: false`, recommendation first |
+| `ui-checkbox` | One call with `multiSelect: true` |
+| `ui-tabs` | One call holding 3 questions |
+| No question tool | Looks for the tool, then writes the numbered list |
+| As a subagent | Does not ask, and reports its choice |
+| `living-section` | Writes `PROGRESS.md` with the markers |
+| `subagent-flow` | Three subagents, including a separate reviewer, and the bug fixed |
+
+Print mode has nobody to answer, so Claude Code does not offer `AskUserQuestion` there. For the mode probes, a small server offers a tool with the same name and schema, and records the arguments. So this proves what the model asks for, but not how the real interactive UI looks. Other harnesses have not been tested this way.
+
 ## Your own components
 
 Create `components/Name.md` in a template directory, using Jinja2. Props become variables, and the tag's content becomes `children`. A project component with a bundled name replaces the bundled one.
@@ -167,6 +266,7 @@ aiculator template --render my-rules --for claude     # Preview one
 | `harness.id`, `harness.name` | Which harness, or `generic` |
 | `harness.has_mcp`, `harness.has_acp` | What it supports |
 | `harness.reads_agents` | Whether it reads `.agents/skills` |
+| `harness.question_tool` | Its question tool, if confirmed; empty otherwise |
 | `skill.name` | The template's name |
 | `aiculator.version` | The running version |
 

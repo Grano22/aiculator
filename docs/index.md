@@ -155,6 +155,30 @@ Give every command a time limit of **120s**. A command that hits the limit has f
 | 3 | 4s |
 ```
 
+### Make a model ask with a list, not a paragraph
+
+Templates for single-choice lists, checkboxes, tabbed forms, staged subagent flows, and sections a model keeps current. On a real model, `ui-tabs` produced one call with three questions:
+
+```text
+Language  one of: Go (Recommended), TypeScript, Python
+Database  one of: PostgreSQL (Recommended), SQLite, MongoDB, None
+Hosting   one of: Fly.io (Recommended), AWS, Render, Self-hosted VPS
+```
+
+See [Templates](guides/templates.md#forcing-a-kind-of-question).
+
+### Debug it the way you debug Kubernetes
+
+```console
+$ aiculator task ls -v=6
+level=INFO msg=request v=6 component=client method=GET url=http://127.0.0.1:7777/v1/tasks status=200 took=1.1ms bytes=2
+
+$ aiculator debug verbosity 5 --for 10m     # Trace a running server, then go back by itself
+$ aiculator logs -f --component engine
+```
+
+Levels 0 to 9 mean what they mean in kubectl, and credentials never reach a log at any level. See [Debugging](guides/debugging.md).
+
 ### Add an MCP server to any harness
 
 ```console

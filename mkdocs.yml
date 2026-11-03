@@ -79,6 +79,7 @@ nav:
       - MCP config: guides/mcp.md
       - Dashboards: guides/dashboards.md
       - Plugins: guides/plugins.md
+      - Debugging: guides/debugging.md
   - Concepts:
       - Architecture: concepts/architecture.md
       - Tasks and tiers: concepts/tasks.md
