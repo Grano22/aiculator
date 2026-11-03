@@ -1,10 +1,10 @@
 name: Docs
 
 # Each release publishes its own version of the docs with mike. Stable releases also
-# become "latest". The main branch publishes as "dev". Prereleases do not move "latest".
+# become "latest". The master branch publishes as "dev". Prereleases do not move "latest".
 on:
   push:
-    branches: [main]
+    branches: [master]
     tags: ["v[0-9]*"]
   workflow_dispatch:
     inputs:

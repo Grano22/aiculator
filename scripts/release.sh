@@ -10,7 +10,7 @@ Usage: scripts/release.sh (--bump LEVEL | --version X.Y.Z) [options]
   --bump major|minor|patch  Next version, from the latest v* tag.
   --version X.Y.Z           An exact version. A leading v is accepted.
   --pre LABEL               Prerelease suffix, such as rc.1, making vX.Y.Z-rc.1.
-  --allow-branch            Allow releasing from a branch other than main.
+  --allow-branch            Allow releasing from a branch other than master.
   --skip-tests              Skip go test. CI still runs them.
   --push                    Push the commit and tag, which publishes the release.
   --dry-run                 Show what would happen and change nothing.
@@ -55,7 +55,7 @@ TAG="v$VERSION"
 
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && die "$TAG already exists"
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-[ "$BRANCH" = main ] || [ "$ALLOW" = 1 ] || die "on $BRANCH, not main; pass --allow-branch to override"
+[ "$BRANCH" = master ] || [ "$ALLOW" = 1 ] || die "on $BRANCH, not master; pass --allow-branch to override"
 [ -z "$(git status --porcelain)" ] || die "the working tree has uncommitted changes"
 grep -q '^## \[Unreleased\]' CHANGELOG.md || die "CHANGELOG.md has no [Unreleased] section"
 NOTES=$(awk '/^## \[/ { if (u) exit; if (index($0, "## [Unreleased]") == 1) { u = 1; next } } u { print }' CHANGELOG.md | sed -e '/./,$!d')

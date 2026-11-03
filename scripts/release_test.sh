@@ -4,7 +4,7 @@ set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 D=$(mktemp -d); trap 'rm -rf "$D"' EXIT
 cd "$D"
-git init -q -b main .
+git init -q -b master .
 git config user.name t; git config user.email t@t
 mkdir -p scripts
 cp "$ROOT/scripts/release.sh" scripts/
@@ -47,11 +47,11 @@ git add -A; git commit -qm change
 # The same version cannot be released twice.
 rejects $R --version 0.1.0
 
-# Off main needs an explicit flag.
+# Off master needs an explicit flag.
 git switch -qc other
 rejects $R --bump patch --dry-run
 $R --bump patch --dry-run --allow-branch >/dev/null
-git switch -q main
+git switch -q master
 
 # Prerelease, then the next bump ignores it and counts from the last stable version.
 $R --bump patch --pre rc.1 >/dev/null
@@ -67,6 +67,6 @@ dd() { env "$@" "$ROOT/scripts/docs_deploy.sh" --dry-run; }
 dd EVENT=push REF_TYPE=tag REF_NAME=v1.2.3 | grep -q 'mike deploy --push --update-aliases 1.2 latest' || fail "stable docs"
 dd EVENT=push REF_TYPE=tag REF_NAME=v1.2.3-rc.1 | grep -q 'mike deploy --push 1.2.3-rc.1$' || fail "prerelease docs"
 if dd EVENT=push REF_TYPE=tag REF_NAME=v1.2.3-rc.1 | grep -q latest; then fail "a prerelease moved latest"; fi
-dd EVENT=push REF_TYPE=branch REF_NAME=main | grep -q 'mike deploy --push dev$' || fail "main docs"
+dd EVENT=push REF_TYPE=branch REF_NAME=master | grep -q 'mike deploy --push dev$' || fail "master docs"
 dd EVENT=workflow_dispatch INPUT_VERSION=2.0 INPUT_ALIAS=stable | grep -q '2.0 stable' || fail "manual docs"
 echo "release tests passed"

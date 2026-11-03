@@ -24,7 +24,7 @@ Releases are driven by semantic version tags. `scripts/release.sh` creates the t
 | `--pre rc.1` | A prerelease, such as `v1.2.0-rc.1` |
 | `--push` | Push the commit and tag, which publishes |
 | `--dry-run` | Show what would happen, and change nothing |
-| `--allow-branch` | Release from a branch other than `main` |
+| `--allow-branch` | Release from a branch other than `master` |
 | `--skip-tests` | Skip the local tests; CI still runs them |
 
 Without `--push`, nothing leaves your machine, and the script prints how to undo it.
@@ -58,7 +58,7 @@ gh attestation verify aiculator_v1.2.3_linux_amd64.tar.gz --repo OWNER/REPO
 |---|---|
 | Stable tag `v1.2.3` | `1.2`, which also becomes `latest` |
 | Prerelease tag `v1.2.3-rc.1` | `1.2.3-rc.1` |
-| Push to `main` | `dev` |
+| Push to `master` | `dev` |
 | Run the Docs workflow by hand | The version and alias you give |
 
 To work on the docs locally, with Python 3.10 or newer:
@@ -82,7 +82,7 @@ These are one-time steps on GitHub:
 2. **Actions:** in Settings, allow workflows to read and write, so that releases and docs can publish.
 3. **Snyk:** add a `SNYK_TOKEN` repository secret. Until then, that scan is skipped.
 4. **CodeQL:** code scanning results need a public repository or GitHub Advanced Security. The same goes for attestations on a private repository.
-5. **Branch protection:** require the CI checks on `main`.
+5. **Branch protection:** require the CI checks on `master`.
 
 Dependabot starts on its own from `.github/dependabot.yml`.
 

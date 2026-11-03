@@ -3,7 +3,7 @@ name: Snyk
 # Needs a SNYK_TOKEN repository secret. Without one, the scan is skipped, not failed.
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
   schedule:
     - cron: "41 5 * * 1"
