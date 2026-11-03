@@ -197,6 +197,9 @@ func downCmd() *cobra.Command {
 			// process itself. Then a new up, or removing .swarm, cannot meet it.
 			for range 400 {
 				if !processAlive(pid) {
+					if !waitForPathRemoval(filepath.Join(dataDir, "pid"), 30*time.Second) {
+						return errors.New("the server stopped responding but did not finish shutting down")
+					}
 					fmt.Println("stopped")
 					return nil
 				}
@@ -209,6 +212,19 @@ func downCmd() *cobra.Command {
 			fmt.Printf("stopped answering, but process %d has not exited\n", pid)
 			return nil
 		},
+	}
+}
+
+func waitForPathRemoval(path string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for {
+		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+			return true
+		}
+		if time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(25 * time.Millisecond)
 	}
 }
 
