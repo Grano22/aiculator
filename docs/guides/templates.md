@@ -151,6 +151,11 @@ Bundled templates tell a model which interface to use, so you get a list to sele
 | `ui-select` | `<AskOne>` | One choice from a list |
 | `ui-checkbox` | `<AskMany>` | Any number of choices, as checkboxes |
 | `ui-tabs` | `<AskTabs>` and `<Tab>` | Several questions in one form, with tabs |
+| `ui-confirm` | `<AskConfirm>` | A yes or no choice before a risky action |
+| `ui-text` | `<AskText>` | A place to type, when options cannot cover the answer |
+| `ui-preview` | `<AskPreview>` | Choices with a visible example of each |
+| `ui-todos` | `<TodoList>` | A live task list |
+| `ui-plan` | `<PlanMode>` | A plan to approve before anything changes |
 
 ```sh
 aiculator template --install 'ui-*'
@@ -159,12 +164,16 @@ aiculator template --install 'ui-*' --per-harness --harness claude,opencode   # 
 
 They name the harness's real tool and settings when it has one, and that comes from each harness's docs:
 
-| Harness | Tool | Single and multiple choice |
-|---|---|---|
-| Claude Code | `AskUserQuestion` | `multiSelect` |
-| Gemini CLI | `ask_user` | `type: "choice"` and `multiSelect` |
-| OpenCode | `question` | Its docs do not state multi-select, so the skill falls back if it has none |
-| Others | None named | A numbered list, then stop and wait |
+| Harness | Questions | Task list | Plan mode |
+|---|---|---|---|
+| Claude Code | `AskUserQuestion`, with `multiSelect` | `TaskCreate`, `TaskUpdate` | `EnterPlanMode`, `ExitPlanMode` |
+| Gemini CLI | `ask_user`, with `type` `choice`, `text` or `yesno` | `write_todos` | `enter_plan_mode`, `exit_plan_mode` |
+| OpenCode | `question`; its docs do not state multi-select | `todowrite` | None in its tool docs |
+| Others | None named: a numbered list, then stop and wait | A Markdown checklist | A numbered plan, then stop and wait |
+
+On some Claude Code models the task tools must be switched on, so `ui-todos` also tells the model what to do without them. Whether `AskUserQuestion` offers `preview` depends on the session, so `<AskPreview>` falls back to labeled code blocks.
+
+`ui-plan` deliberately has no `allowed-tools`. In Claude Code that field skips the permission prompt, and the prompt on `ExitPlanMode` is your approval of the plan.
 
 Without `--per-harness`, one shared skill names all three tools, because it cannot know which harness reads it.
 
@@ -185,9 +194,72 @@ To ask a specific question, use the components in your own template:
 <Tab header="Language" question="Which language?">Go, or Python</Tab>
 <Tab header="Extras" question="Which extras?" multi="true">Docker, or CI</Tab>
 </AskTabs>
+
+<AskConfirm question="Delete 3 merged branches?" />
+
+<AskText question="What should the service be called?" placeholder="my-service" />
+
+<AskPreview question="Which layout?">
+- Compact: `a | b`
+- Spacious: `a  |  b`
+</AskPreview>
+
+<TodoList>
+- Write the tests
+- Make them pass
+</TodoList>
+
+<PlanMode>
+- Which files change
+- How you will verify it
+</PlanMode>
 ```
 
 Every question also covers two cases: a harness with no question tool, and a subagent that cannot reach the user.
+
+## Forcing rich Markdown
+
+`rich-markdown` sets how a model formats its replies, using the right form for each thing. `<RichMarkdown>` includes every rule below, and `<Render>` adds a single one.
+
+```sh
+aiculator template --install rich-markdown                    # For a terminal
+aiculator template --install rich-markdown --set surface=rich # Where full Markdown renders
+```
+
+```html
+<RichMarkdown only="code,diff,table,fileref" surface="terminal" />
+
+<Render kind="callout">Use this for production warnings only.</Render>
+```
+
+| `kind` | What the model is told | With `surface="terminal"` (the default) | With `surface="rich"` |
+|---|---|---|---|
+| `code` | Fenced block with a language | Same | Same |
+| `inline` | `code`, bold and italics, for the right things | Same | Same |
+| `shell` | A `sh` block to paste, with output apart | Same | Same |
+| `diff` | A `diff` block | Same | Same |
+| `table` | Comparisons, with short cells | Same | Same |
+| `list` | Numbered when order matters | Same | Same |
+| `checklist` | `- [ ]` and `- [x]` | Same | Same |
+| `headings` | `##` and `###` for longer answers | Same | Same |
+| `callout` | A quote with a bold label | Same | Also GitHub's `> [!WARNING]` |
+| `quote` | Exact errors, logs and documents | Same | Same |
+| `fileref` | `path/to/file.go:42` | Same | Same |
+| `tree` | A directory layout in a `text` block | Same | Same |
+| `link` | Descriptive text, and only URLs it has seen | Same | Same |
+| `diagram` | Flows and relationships | ASCII in a `text` block | A `mermaid` block |
+| `image` | Pictures | A path and a description | `![alt](path)` |
+| `details` | Long optional material | Left out, or at the end | `<details>` |
+| `math` | Formulas | Plain text or code | `$...$` and `$$...$$` |
+| `footnote` | Asides and sources | Short sentences and links | `[^1]` |
+| `rule` | Separate parts of a reply | Same | Same |
+
+An unknown `kind` fails the render, so a typo cannot silently drop a rule.
+
+!!! warning "What this controls, and what it does not"
+    These rules decide what the model writes. How it then looks depends on your harness and where it runs, which most harnesses do not document. Terminal rules are the cautious default for that reason, so check a sample in your own harness before you set `surface=rich`.
+
+A long skill can keep its contents list short with `<Toc depth="2" />`, which lists only the `##` sections.
 
 ## Subagent flows
 
@@ -238,8 +310,16 @@ These are instructions, so a model can still ignore them. `scripts/gate_ui_templ
 | As a subagent | Does not ask, and reports its choice |
 | `living-section` | Writes `PROGRESS.md` with the markers |
 | `subagent-flow` | Three subagents, including a separate reviewer, and the bug fixed |
+| `ui-confirm` | One choice, `Delete build directory` or `Keep it`, before acting |
+| `ui-text` | Asks in its reply, and creates nothing |
+| `ui-preview` | Every option carries a `preview` |
+| `ui-todos` | `TaskCreate` per step, and `TaskUpdate` as each one starts and ends |
+| `ui-plan` | Presents a numbered plan, and changes no file |
+| `rich-markdown` | A `diff` block, a `sh` block, a table and `calc.go:3` in one reply |
 
 Print mode has nobody to answer, so Claude Code does not offer `AskUserQuestion` there. For the mode probes, a small server offers a tool with the same name and schema, and records the arguments. So this proves what the model asks for, but not how the real interactive UI looks. Other harnesses have not been tested this way.
+
+Two more limits follow from this. The `ui-plan` probe proves the plan comes first and nothing changes, but not the real `EnterPlanMode` tool, which the model did not call in print mode. The `rich-markdown` probe checks the text the model wrote, not how a terminal displays it.
 
 ## Your own components
 

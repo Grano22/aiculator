@@ -1015,3 +1015,33 @@ func TestDemoTemplateInstalls(t *testing.T) {
 		t.Fatal("the OpenCode copy does not name its own tool")
 	}
 }
+
+// A snippet holding a fence as long as the page's own would close it early, and the rest
+// of the snippet would become live page content. A strict docs build does not notice.
+func TestDemoPageFencesOutlastItsSnippets(t *testing.T) {
+	page, err := os.ReadFile("../../docs/guides/template-demo.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fence := regexp.MustCompile("(?m)^ *(`{3,})")
+	longest := func(text string) int {
+		n := 0
+		for _, m := range fence.FindAllStringSubmatch(text, -1) {
+			n = max(n, len(m[1]))
+		}
+		return n
+	}
+	files, _ := filepath.Glob("../../docs/snippets/demo.*.md")
+	if len(files) == 0 {
+		t.Fatal("no snippets found")
+	}
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, want := longest(string(page)), longest(string(b)); got <= want {
+			t.Errorf("%s has a fence of %d, and the page's longest is %d", filepath.Base(f), want, got)
+		}
+	}
+}

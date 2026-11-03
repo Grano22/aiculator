@@ -52,12 +52,19 @@ sequenceDiagram
     actor U as You
     participant M as Orchestrator
     participant S as Subagents
+    Note over M: Keeps a live task list throughout
+    M->>U: Free text: what is it called?
+    U-->>M: faster-checkout
     M->>U: Single choice: which approach?
     U-->>M: Smallest change
+    M->>U: Previews: which API style?
+    U-->>M: Options object
     M->>U: Checkboxes: which checks?
     U-->>M: Unit tests, lint
     M->>U: Tabs: rollout and docs
     U-->>M: Both answered
+    M->>U: Plan: approve before any change
+    U-->>M: Approved
     M->>S: Stage 1: research (up to 3 at once)
     S-->>M: Findings with file paths
     Note over M: Checks each result before moving on
@@ -66,6 +73,8 @@ sequenceDiagram
     M->>S: Stage 3: review, by a fresh subagent
     S-->>M: Real problems found
     M->>U: Is this ready to ship?
+    U-->>M: Yes
+    M->>U: Yes or no: delete the merged branch?
     U-->>M: Yes
     Note over M: Keeps the Progress section true throughout
 ```
@@ -96,39 +105,39 @@ sequenceDiagram
 
 ## What it renders to
 
-The same template, per harness. Compare the "Step A" section across these tabs: each names what that harness really has.
+The same template, per harness. Compare "Track the work" and "Step F" across these tabs: each names what that harness really has.
 
 === ":simple-claude: Claude Code"
 
-    Names `AskUserQuestion` and its `multiSelect` setting.
+    Names `AskUserQuestion`, `TaskCreate` and `EnterPlanMode`.
 
-    ````markdown title="aiculator template --render demo --for claude"
+    `````markdown title="aiculator template --render demo --for claude"
     --8<-- "demo.claude.md"
-    ````
+    `````
 
 === ":material-code-tags: OpenCode"
 
-    Names the `question` tool.
+    Names `question` and `todowrite`. Its tool docs list no plan mode, so the plan is a numbered list.
 
-    ````markdown title="aiculator template --render demo --for opencode"
+    `````markdown title="aiculator template --render demo --for opencode"
     --8<-- "demo.opencode.md"
-    ````
+    `````
 
 === ":material-pi: Pi"
 
-    Pi has no built-in question tool, so the numbered-list fallback does the work.
+    No built-in tool is named for Pi, so the numbered lists and checklists do the work.
 
-    ````markdown title="aiculator template --render demo --for pi"
+    `````markdown title="aiculator template --render demo --for pi"
     --8<-- "demo.pi.md"
-    ````
+    `````
 
 === ":material-share-variant-outline: Shared"
 
     One copy through links, so it cannot know the harness, and names all the tools.
 
-    ````markdown title="aiculator template --render demo"
+    `````markdown title="aiculator template --render demo"
     --8<-- "demo.shared.md"
-    ````
+    `````
 
 ## Every feature, and what it does
 
@@ -144,7 +153,7 @@ The same template, per harness. Compare the "Step A" section across these tabs: 
 
     ---
 
-    A list, checkboxes or a tabbed form, using the harness's real tool.
+    A list, checkboxes, tabs, yes or no, free text or previews, using the harness's real tool.
 
 -   :material-sitemap-outline:{ .lg .middle } **Subagent flows**
 
@@ -170,6 +179,18 @@ The same template, per harness. Compare the "Step A" section across these tabs: 
 
     Text a model keeps true. A re-render keeps what it wrote.
 
+-   :material-clipboard-check-outline:{ .lg .middle } **Task lists and plans**
+
+    ---
+
+    A live task list, and a plan the user approves first.
+
+-   :material-language-markdown-outline:{ .lg .middle } **Rich Markdown**
+
+    ---
+
+    Rules for 19 Markdown forms, adjusted for terminals.
+
 </div>
 
 === "Jinja2"
@@ -181,17 +202,20 @@ The same template, per harness. Compare the "Step A" section across these tabs: 
     | `{# ... #}` | Throughout | A comment that never reaches the skill |
     | `{% macro %}` | `check_row` | A reusable piece, called from a loop |
     | `{% if %}` | The first line | Differs per harness |
-    | `{% for %}` | "Step B" and "Checks to run" | Repeats for each item |
+    | `{% for %}` | "Step D" and "Checks to run" | Repeats for each item |
     | `{% include %}` | House style | Shared text from another file |
-    | `capitalize` | "Step B" | A filter, written after a pipe inside `{{ }}` |
+    | `capitalize` | "Step D" | A filter, written after a pipe inside `{{ }}` |
 
 === "Questions"
 
     | Component | Where | The model is told to |
     |---|---|---|
-    | `<AskOne>` | Step A | Ask for exactly one choice |
-    | `<AskMany>` | Step B | Offer checkboxes, with `min` for at least one |
-    | `<AskTabs>` and `<Tab>` | Step C | Ask everything in one call |
+    | `<AskText>` | Step A | Ask for the user's own words |
+    | `<AskOne>` | Step B | Ask for exactly one choice |
+    | `<AskPreview>` | Step C | Show an example of each option |
+    | `<AskMany>` | Step D | Offer checkboxes, with `min` for at least one |
+    | `<AskTabs>` and `<Tab>` | Step E | Ask everything in one call |
+    | `<AskConfirm>` | Step H | Get a yes or no before a risky action |
 
     Each also says what to do with no question tool, and what a subagent should do instead of asking. Set that with `subagent="..."`.
 
@@ -199,17 +223,28 @@ The same template, per harness. Compare the "Step A" section across these tabs: 
 
     | Component | Where | The model is told to |
     |---|---|---|
-    | `<Subagents>` | Before step D | Use subagents only in these cases |
-    | `<SubagentFlow>` and `<Stage>` | Step D | Orchestrate stages, checking each result |
-    | `<Backoff>` | After step D | Limit commands, and retry on this schedule |
+    | `<TodoList>` | "Track the work" | Keep a live task list |
+    | `<PlanMode>` | Step F | Get a plan approved before changing anything |
+    | `<Subagents>` | Before step G | Use subagents only in these cases |
+    | `<SubagentFlow>` and `<Stage>` | Step G | Orchestrate stages, checking each result |
+    | `<Backoff>` | After step G | Limit commands, and retry on this schedule |
     | `<Flow>` and `<Step>` | "Ship it" | Follow steps in order, one at a time |
     | `<OutputFormat>` | Near the end | Use this format in every reply |
+
+=== "Rich Markdown"
+
+    | Component | Where | The model is told to |
+    |---|---|---|
+    | `<RichMarkdown>` | "How to format your replies" | Follow the rules for each form, with `only` choosing which ones |
+    | `<Render>` | "File references" | Follow one rule, with your own advice added as the tag's content |
+
+    Set `surface` to `terminal` or `rich`. Try `--set surface=rich` to see diagrams and collapsible sections change. See [Forcing rich Markdown](templates.md#forcing-rich-markdown) for all 19 kinds.
 
 === "Navigation and rules"
 
     | Component | Where | Effect |
     |---|---|---|
-    | `<Toc />` | Top | Contents with exact line numbers and anchors |
+    | `<Toc depth="2" />` | Top | Contents with exact line numbers and anchors, for `##` sections only |
     | `<Anchor>` | "Checks to run" | A searchable marker |
     | `<Directive>` | Top | A rule the model can cite by name |
     | `<Note>` | Top | A callout |
@@ -239,7 +274,7 @@ The same template, per harness. Compare the "Step A" section across these tabs: 
     They are left alone. The `<Flow>` in a code fence or in inline code stays exactly as written, so a skill can show examples of them.
 
 ??? warning "Do these force a model to behave?"
-    No. They are instructions, and a model can still ignore text. On a real model the question types, the subagent flow and live sections all worked as intended, which you can check with `scripts/gate_ui_templates.sh`. Anything that must hold needs a real check, such as a task's `--check` command.
+    No. They are instructions, and a model can still ignore text. On a real model the question types, task lists, plans, formatting rules, the subagent flow and live sections all worked as intended, which you can check with `scripts/gate_ui_templates.sh`. Anything that must hold needs a real check, such as a task's `--check` command.
 
 ## Make your own
 
