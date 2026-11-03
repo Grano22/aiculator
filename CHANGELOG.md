@@ -24,4 +24,5 @@ First version: a swarm that runs coding tasks across harnesses and verifies the 
 - **Templates:** `aiculator template` renders Jinja2 and MDX-style templates into skills, with components for subagent rules, retries, output formats and flows.
 - **MCP config:** `aiculator mcp add`, `print` and `remove`, for any harness or config file, and for custom servers.
 - **Verification:** TLA+ and Alloy models, Porcupine, fuzzing, and a 100-crash `kill -9` test.
+- **License:** released under the MIT License.
 - **Automation:** CI, CodeQL, Dependabot, Snyk, release builds for 8 platforms, and versioned docs.

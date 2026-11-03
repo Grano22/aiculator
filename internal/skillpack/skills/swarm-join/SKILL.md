@@ -1,6 +1,7 @@
 ---
 name: swarm-join
 description: Joins this already-open coding session to the project's agent swarm as a worker, so it takes tasks, works in isolated worktrees and submits them for verification. Use only when the user explicitly asks to join the swarm, work the queue, take swarm tasks or become a worker.
+license: MIT
 compatibility: Requires git and the aiculator binary on PATH, with a server running for this project (aiculator up). Works through MCP tools when present and through shell commands otherwise.
 allowed-tools: mcp__swarm__wait_for_task mcp__swarm__claim mcp__swarm__heartbeat mcp__swarm__progress mcp__swarm__submit mcp__swarm__fail mcp__swarm__release mcp__swarm__review_verdict mcp__swarm__situation Bash(aiculator work:*) Read Write Edit
 disable-model-invocation: true

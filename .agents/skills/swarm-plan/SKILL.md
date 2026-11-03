@@ -1,6 +1,7 @@
 ---
 name: swarm-plan
 description: Turns a spec into a task graph for the agent swarm from an open coding session, keeping waiting workers informed while planning. Use when the user asks to plan work for the swarm, split a spec into swarm tasks, or feed the queue.
+license: MIT
 compatibility: Requires the aiculator binary on PATH, with a server running for this project (aiculator up).
 allowed-tools: mcp__swarm__plan_begin mcp__swarm__plan_update mcp__swarm__plan_add mcp__swarm__plan_commit mcp__swarm__situation Bash(aiculator plan:*) Bash(aiculator situation) Read
 argument-hint: "[spec or path to a spec]"

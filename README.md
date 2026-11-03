@@ -173,4 +173,4 @@ To release, keep `CHANGELOG.md` current, then run `scripts/release.sh --bump min
 
 Harnesses and sandboxes run as separate programs and are not linked. Each has its own license and terms of use.
 
-This project itself has no license file yet, so no one else has rights to use it until you choose one.
+Aiculator itself is released under the [MIT License](LICENSE).

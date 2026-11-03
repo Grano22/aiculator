@@ -1,6 +1,7 @@
 ---
 name: swarm-operate
 description: Operates the agent swarm from an open coding session, starting the server, adding tasks, launching harness workers, checking status and handling parked tasks. Use when the user asks to start the swarm, add a task, launch or scale workers, see swarm status, or unpark a task.
+license: MIT
 compatibility: Requires git and the aiculator binary on PATH. Launching a harness needs that harness installed and logged in.
 allowed-tools: Bash(aiculator:*)
 argument-hint: "[what to do]"
