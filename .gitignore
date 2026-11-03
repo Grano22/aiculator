@@ -1,6 +1,93 @@
+# Operating systems
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*~
+.directory
+.fuse_hidden*
+.nfs*
+
+# Editors and IDEs
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+*.swp
+*.swo
+*.sublime-workspace
+.history/
+.fleet/
+.zed/
+
+# Go: binaries and build output
 /bin/
-/.swarm/
-/.tools/
 /dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go: test and profile output. Fuzz corpora in testdata/ stay tracked on purpose.
+*.test
+*.out
+*.prof
+*.pprof
+coverage.*
+*.cover
+*.coverprofile
+cover.html
+/cmd/aiculator/aiculator
+/cmd/fakeagent/fakeagent
+
+# Go: local workspace and dependency copies
+go.work
+go.work.sum
+/vendor/
+
+# Aiculator: the server's state, including tokens and the signing key
+.swarm/
+
+# Formal tools, downloaded by scripts/formal_tools.sh
+/.tools/
+states/
+*_TTrace_*.tla
+*_TTrace_*.bin
+spec/tla/*.toolbox/
+spec/alloy/*/
+
+# Docs
 /site/
 /.venv/
+__pycache__/
+*.py[cod]
+
+# Node, used only for the screenshot scripts
+node_modules/
+
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.local.json
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
