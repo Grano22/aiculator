@@ -249,7 +249,11 @@ func (d Docker) Args(dir string, writes []string, network bool, env, argv []stri
 			out = append(out, "-e", e)
 		}
 	}
-	return append(append(out, d.Image), argv...)
+	// Some utility images (including alpine/git) define a non-shell
+	// entrypoint. Clear it so argv is always the command requested by the
+	// caller rather than arguments to the image's default executable.
+	out = append(out, "--entrypoint", "", d.Image)
+	return append(out, argv...)
 }
 
 // Command implements Sandbox.

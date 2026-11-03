@@ -195,6 +195,9 @@ func downCmd() *cobra.Command {
 			}
 			for range 100 {
 				if !healthy(url) {
+					if !waitForPathRemoval(filepath.Join(dataDir, "pid"), 30*time.Second) {
+						return errors.New("the server stopped responding but did not finish shutting down")
+					}
 					fmt.Println("stopped")
 					return nil
 				}
@@ -202,6 +205,19 @@ func downCmd() *cobra.Command {
 			}
 			return errors.New("the server did not stop")
 		},
+	}
+}
+
+func waitForPathRemoval(path string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for {
+		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+			return true
+		}
+		if time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(25 * time.Millisecond)
 	}
 }
 

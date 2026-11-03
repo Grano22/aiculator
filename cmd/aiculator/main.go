@@ -129,6 +129,7 @@ func serve(ctx context.Context, o serveOpts) error {
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return err
 	}
+	defer os.Remove(filepath.Join(dataDir, "pid"))
 	authority, err := auth.LoadOrCreate(filepath.Join(dataDir, "signing.key"))
 	if err != nil {
 		return err
