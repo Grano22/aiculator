@@ -2,8 +2,8 @@
 
 Each release runs `.github/workflows/packages.yml`. Every channel installs the real package first, then publishes it if the release is not a prerelease and the channel's secrets are set. A channel with no secrets is skipped with a notice, and one channel failing does not stop the others.
 
-!!! warning "Nothing is published yet"
-    These channels need the one-time setup below. Until a channel has published, the install commands for it will not work.
+!!! info "Current status"
+    Homebrew, Scoop, apt, dnf and apk are live. WinGet is waiting on the review of its first pull request. Chocolatey and the Arch User Repository need the setup below, so their install commands do not work yet.
 
 ## Channels
 
@@ -29,8 +29,10 @@ gh repo create Grano22/homebrew-aiculator --public --add-readme
 gh repo create Grano22/scoop-aiculator --public --add-readme
 gh repo create Grano22/aiculator-packages --public --add-readme
 gh api -X POST repos/Grano22/aiculator-packages/pages \
-  -f build_type=legacy -f 'source[branch]=main' -f 'source[path]=/'
+  -f build_type=legacy -f 'source[branch]=master' -f 'source[path]=/'
 ```
+
+The Pages source for `aiculator-packages` must be **Deploy from a branch**, on `master` at `/`, which is what `build_type=legacy` sets. With the **GitHub Actions** source, a publish succeeds but the URLs return 404.
 
 ### Tokens
 
@@ -46,7 +48,7 @@ Generate these on a trusted machine. They have no passphrase, because CI has to 
 export GNUPGHOME=$(mktemp -d)
 gpg --batch --passphrase '' --quick-generate-key "Aiculator packages" ed25519 sign 5y
 gpg --batch --armor --export-secret-keys | gh secret set PACKAGE_GPG_KEY -R Grano22/aiculator
-openssl genrsa 4096 | gh secret set APK_SIGNING_KEY -R Grano22/aiculator
+openssl genrsa 4096 | openssl pkcs8 -topk8 -nocrypt | gh secret set APK_SIGNING_KEY -R Grano22/aiculator
 ssh-keygen -t ed25519 -N '' -C aiculator-aur -f aur_ed25519
 gh secret set AUR_SSH_KEY -R Grano22/aiculator < aur_ed25519
 ```
