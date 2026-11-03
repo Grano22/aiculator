@@ -366,3 +366,11 @@ func (s *Server) Instrument(next http.Handler) http.Handler {
 		c.Count(observe.SeriesAPI, time.Now(), 1)
 	})
 }
+
+// ViewerOnly guards a handler with a viewer or admin token, for plugins.
+func (s *Server) ViewerOnly(next http.Handler) http.Handler {
+	return s.authed(canView, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) { next.ServeHTTP(w, r) })
+}
+
+// WriteJSON answers with a JSON body, for plugins.
+func WriteJSON(w http.ResponseWriter, v any) { writeJSON(w, http.StatusOK, v) }

@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +17,9 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/Grano22/aiculator/internal/api"
+	"github.com/Grano22/aiculator/internal/client"
+	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/swarm"
 )
 
@@ -501,5 +508,215 @@ func TestManifestFromTheDocs(t *testing.T) {
 	}
 	if m.Name != "my-harness" || len(m.Command) != 2 || m.PassEnv[0] != "MY_API_KEY" || !m.RealHome || m.WritePaths[0] != "~/.my-harness" || m.DeniedTools[0] != "fetch" {
 		t.Fatalf("manifest: %+v", m)
+	}
+}
+
+func TestWebDashboardAndViewerToken(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	if out := p.run("plugin"); !strings.Contains(out, "webdash") || !strings.Contains(out, "compiled in") {
+		t.Fatalf("plugin list: %s", out)
+	}
+	link := strings.TrimSpace(p.run("web", "--no-open"))
+	base, token, ok := strings.Cut(link, "/plugins/webdash/#token=")
+	if !ok || token == "" {
+		t.Fatalf("link: %s", link)
+	}
+	ctx := context.Background()
+	anon, viewer := client.New(base, ""), client.New(base, token)
+	var se *client.StatusError
+
+	// The page itself holds no data, but the data needs the token.
+	if err := anon.Get(ctx, "/plugins/webdash/app.js", nil); err != nil && !strings.Contains(err.Error(), "invalid character") {
+		t.Fatalf("assets should be open: %v", err)
+	}
+	if err := anon.Get(ctx, "/v1/observe", nil); !errors.As(err, &se) || se.Code != 401 {
+		t.Fatalf("data without a token: %v", err)
+	}
+	var snap struct {
+		Ready  bool `json:"ready"`
+		Probes []struct {
+			Name string `json:"name"`
+		} `json:"probes"`
+	}
+	if err := viewer.Get(ctx, "/v1/observe", &snap); err != nil || !snap.Ready || len(snap.Probes) < 4 {
+		t.Fatalf("viewer: %v %+v", err, snap)
+	}
+	// Read-only means read-only: it cannot add tasks, mint tokens or take work.
+	if err := viewer.Post(ctx, "/v1/tasks", engine.TaskSpec{Title: "x"}, nil); !errors.As(err, &se) || se.Code != 403 {
+		t.Fatalf("viewer added a task: %v", err)
+	}
+	if err := viewer.Post(ctx, "/v1/tokens", api.TokenReq{Agent: "x", Tier: 1}, nil); !errors.As(err, &se) || se.Code != 403 {
+		t.Fatalf("viewer minted a token: %v", err)
+	}
+	if err := viewer.Post(ctx, "/v1/agent/wait", api.WaitReq{}, nil); !errors.As(err, &se) || se.Code != 403 {
+		t.Fatalf("viewer took work: %v", err)
+	}
+	if err := viewer.Post(ctx, "/v1/tasks/x/cancel", map[string]string{}, nil); !errors.As(err, &se) || se.Code != 403 {
+		t.Fatalf("viewer canceled: %v", err)
+	}
+	var statuses []struct {
+		Name    string `json:"name"`
+		Running bool   `json:"running"`
+	}
+	if err := viewer.Get(ctx, "/v1/plugins", &statuses); err != nil || len(statuses) != 1 || !statuses[0].Running {
+		t.Fatalf("statuses: %v %+v", err, statuses)
+	}
+	// Prometheus and readiness.
+	req, _ := http.NewRequest(http.MethodGet, base+"/metrics", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if !strings.Contains(string(body), "aiculator_probe_ok{probe=\"store\"} 1") {
+		t.Fatalf("metrics: %s", body)
+	}
+	if err := anon.Get(ctx, "/v1/readyz", nil); err != nil {
+		t.Fatalf("readiness should be open: %v", err)
+	}
+}
+
+func TestTopPrintsAFrameAndJSON(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	p.run("task", "add", "--id", "seen", "--title", "A visible task", "--check", "true")
+	name := strings.TrimSpace(p.run("work", "join", "--tier", "1"))
+	p.run("work", "wait", "--agent", name, "--hold", "1s")
+	out := p.run("top", "--once")
+	for _, want := range []string{"READY", "claimed 1", "A visible task", "Latency", "Probes", name} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "\x1b") {
+		t.Error("escape codes written to a pipe")
+	}
+	if out := p.run("top", "--once", "--view", "agents"); !strings.Contains(out, name) {
+		t.Errorf("agents view: %s", out)
+	}
+	var s struct {
+		Agents []struct {
+			ID string `json:"id"`
+		} `json:"agents"`
+	}
+	if err := json.Unmarshal([]byte(p.run("top", "--json")), &s); err != nil || len(s.Agents) != 1 {
+		t.Fatalf("json: %v %+v", err, s)
+	}
+	if out, err := p.tryIn(p.root, "top", "--once", "--view", "nope"); err == nil {
+		t.Fatalf("bad view accepted: %s", out)
+	}
+}
+
+// aiculator events follows task changes live, and any program can read it.
+func TestEventsCommandStreams(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	cmd := exec.Command(p.bin, "events")
+	cmd.Dir = p.root
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = cmd.Process.Kill(); _ = cmd.Wait() }()
+	got := make(chan string, 1)
+	go func() {
+		sc := bufio.NewScanner(stdout)
+		sc.Buffer(nil, 1<<20)
+		for sc.Scan() {
+			if strings.Contains(sc.Text(), `"id":"ev1"`) {
+				got <- sc.Text()
+				return
+			}
+		}
+	}()
+	time.Sleep(300 * time.Millisecond) // Let it connect; the stream starts from now.
+	p.run("task", "add", "--id", "ev1", "--title", "x", "--check", "true")
+	select {
+	case line := <-got:
+		if !strings.Contains(line, `"state":`) {
+			t.Fatalf("line: %s", line)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("no event arrived")
+	}
+}
+
+func TestExternalPluginOnPath(t *testing.T) {
+	p := newProject(t)
+	dir := t.TempDir()
+	script := "#!/bin/sh\necho \"external args=$* data=$AICULATOR_DATA\"\nexit 7\n"
+	if err := os.WriteFile(filepath.Join(dir, "aiculator-greet"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A program must not be able to replace a built-in.
+	if err := os.WriteFile(filepath.Join(dir, "aiculator-task"), []byte("#!/bin/sh\necho HIJACKED\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	run := func(args ...string) (string, error) {
+		c := exec.Command(p.bin, args...)
+		c.Dir = p.root
+		c.Env = append(os.Environ(), "PATH="+dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+		out, err := c.CombinedOutput()
+		return string(out), err
+	}
+	out, err := run("greet", "a", "b")
+	var ee *exec.ExitError
+	if !errors.As(err, &ee) || ee.ExitCode() != 7 || !strings.Contains(out, "external args=a b") || !strings.Contains(out, "data=") {
+		t.Fatalf("external: %v %s", err, out)
+	}
+	if out, _ := run("task", "--help"); strings.Contains(out, "HIJACKED") {
+		t.Fatal("a program on PATH replaced a built-in command")
+	}
+	if out, _ := run("plugin"); !strings.Contains(out, "greet") || !strings.Contains(out, "on PATH") {
+		t.Fatalf("list: %s", out)
+	}
+	// A program in the project is not on PATH, so cloning a repository adds no command.
+	if err := os.WriteFile(filepath.Join(p.root, "aiculator-evil"), []byte("#!/bin/sh\necho EVIL\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out, _ := run("evil"); strings.Contains(out, "EVIL") {
+		t.Fatal("ran a program from the project directory")
+	}
+}
+
+func buildWithTags(t *testing.T, tags string) string {
+	t.Helper()
+	bin := filepath.Join(t.TempDir(), "aiculator")
+	if out, err := exec.Command("go", "build", "-tags", tags, "-o", bin, ".").CombinedOutput(); err != nil {
+		t.Fatalf("build: %v\n%s", err, out)
+	}
+	return bin
+}
+
+func TestBuildTagsChooseThePlugins(t *testing.T) {
+	bare := buildWithTags(t, "noweb")
+	out, err := exec.Command(bare, "plugin").CombinedOutput()
+	if err != nil || strings.Contains(string(out), "webdash") {
+		t.Fatalf("noweb still has the dashboard: %v %s", err, out)
+	}
+	if out, _ := exec.Command(bare, "web", "--no-open").CombinedOutput(); !strings.Contains(string(out), "unknown command") {
+		t.Fatalf("noweb still has the command: %s", out)
+	}
+	// The rest of the binary must not depend on the plugin.
+	if out, err := exec.Command(bare, "top", "--help").CombinedOutput(); err != nil {
+		t.Fatalf("top without the plugin: %v %s", err, out)
+	}
+
+	withHello := buildWithTags(t, "example_hello")
+	p := newProject(t)
+	p.bin = withHello
+	p.run("up")
+	if out := p.run("plugin"); !strings.Contains(out, "hello") || !strings.Contains(out, "webdash") {
+		t.Fatalf("plugin list: %s", out)
+	}
+	p.run("task", "add", "--id", "h1", "--title", "x", "--check", "true")
+	if out := p.run("hello"); !strings.Contains(out, "0 tasks are done") {
+		t.Fatalf("hello: %s", out)
 	}
 }

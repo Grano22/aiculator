@@ -784,7 +784,7 @@ func workCmd() *cobra.Command {
 
 	var lease uint64
 	var note string
-	var cost int64
+	var cost, tokens int64
 	var pass bool
 	leased := func(use, short, path string) *cobra.Command {
 		sub := &cobra.Command{
@@ -795,7 +795,7 @@ func workCmd() *cobra.Command {
 					return err
 				}
 				var t any
-				q := api.LeaseReq{TaskID: taskID, Lease: lease, Note: note, Cost: cost, Pass: pass}
+				q := api.LeaseReq{TaskID: taskID, Lease: lease, Note: note, Cost: cost, Tokens: tokens, Pass: pass}
 				if err := c.Post(cmd.Context(), path, q, &t); err != nil {
 					return err
 				}
@@ -805,7 +805,8 @@ func workCmd() *cobra.Command {
 		sub.Flags().StringVar(&taskID, "task", "", "task id")
 		sub.Flags().Uint64Var(&lease, "lease", 0, "lease number from wait")
 		sub.Flags().StringVar(&note, "note", "", "note saved for later attempts")
-		sub.Flags().Int64Var(&cost, "cost", 0, "cost so far, in micro-dollars")
+		sub.Flags().Int64Var(&cost, "cost", 0, "cost since your last report, in micro-dollars")
+		sub.Flags().Int64Var(&tokens, "tokens", 0, "tokens used since your last report")
 		return sub
 	}
 	verdict := leased("verdict", "Approve (--pass) or reject another agent's work", "/v1/agent/verdict")

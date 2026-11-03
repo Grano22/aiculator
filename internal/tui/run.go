@@ -87,10 +87,7 @@ func Run(ctx context.Context, fetch Fetch, interval time.Duration, color bool) e
 		snap, o.Stale = got, ""
 	}
 	paint := func() {
-		o.Width, o.Height = 100, 40
-		if w, h, err := term.GetSize(int(out.Fd())); err == nil {
-			o.Width, o.Height = w, h
-		}
+		o.Width, o.Height = ScreenSize(term.GetSize(int(out.Fd())))
 		draw(out, Render(snap, o), o.Width)
 	}
 	refresh()
@@ -116,6 +113,15 @@ func Run(ctx context.Context, fetch Fetch, interval time.Duration, color bool) e
 			paint()
 		}
 	}
+}
+
+// ScreenSize falls back to a usable size. Some terminals report 0x0 with no error, which
+// taken at face value would cut every line to nothing and draw a blank screen.
+func ScreenSize(w, h int, err error) (int, int) {
+	if err != nil || w <= 0 || h <= 0 {
+		return 100, 40
+	}
+	return w, h
 }
 
 // handleKey applies one key and reports whether to quit. In raw mode Ctrl-C arrives as

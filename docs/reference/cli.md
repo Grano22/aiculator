@@ -33,6 +33,21 @@ aiculator drive [flags]
       --url string           server URL (default "http://127.0.0.1:7777")
 ```
 
+## `aiculator events`
+
+Stream every task change as JSON lines
+
+```text
+aiculator events
+```
+
+**Examples**
+
+```text
+  aiculator events
+  aiculator events | jq -r 'select(.state == "done") | .id'
+```
+
 ## `aiculator harness`
 
 List supported harnesses and how each connects
@@ -240,6 +255,20 @@ aiculator plan update [flags]
       --expected stringArray   tasks expected, as TIER=COUNT
       --phase string           what the planner is doing
       --ttl duration           lease length (default 1m0s)
+```
+
+## `aiculator plugin`
+
+List plugins, both compiled in and on PATH
+
+Plugins compiled into this binary add commands, server routes and event handlers.
+Build one in with a blank import in cmd/aiculator; the web dashboard is one, and go build
+-tags noweb leaves it out.
+
+Any program on PATH named aiculator-NAME also runs as aiculator NAME.
+
+```text
+aiculator plugin
 ```
 
 ## `aiculator serve`
@@ -467,6 +496,32 @@ aiculator token [flags]
       --ttl int        lifetime in seconds; 0 never expires
 ```
 
+## `aiculator top`
+
+Live terminal dashboard: flow, throughput, latency, jitter, probes, liveness and usage
+
+A live view of the swarm. Keys: 1-5 or tab switch views, arrows or j and k scroll,
+p pauses, q quits.
+
+Without a terminal, such as in a pipe, it prints one frame and exits.
+Rates reset when the server restarts. Task states and usage totals do not.
+
+```text
+aiculator top [flags]
+```
+
+**Flags**
+
+```text
+      --color               with --once: keep color even in a pipe
+      --interval duration   how often to refresh (default 1s)
+      --json                print the raw snapshot as JSON and exit
+      --no-color            no color; NO_COLOR also works
+      --once                print one frame and exit
+      --view string         with --once: overview, tasks, agents, flow or usage (default "overview")
+      --width int           with --once: width in columns
+```
+
 ## `aiculator unjoin`
 
 Remove the swarm's MCP config and skill links from harnesses
@@ -494,6 +549,25 @@ aiculator up [flags]
 
 ```text
       --sandbox string   sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
+```
+
+## `aiculator web`
+
+Open the web dashboard
+
+Opens the live dashboard in your browser, using a read-only token that expires.
+
+The dashboard is compiled into this binary; go build -tags noweb leaves it out.
+
+```text
+aiculator web [flags]
+```
+
+**Flags**
+
+```text
+      --no-open        print the link and do not open a browser
+      --ttl duration   how long the link works (default 12h0m0s)
 ```
 
 ## `aiculator work`
@@ -535,10 +609,11 @@ aiculator work fail [flags]
 **Flags**
 
 ```text
-      --cost int      cost so far, in micro-dollars
+      --cost int      cost since your last report, in micro-dollars
       --lease uint    lease number from wait
       --note string   note saved for later attempts
       --task string   task id
+      --tokens int    tokens used since your last report
 ```
 
 ## `aiculator work heartbeat`
@@ -552,10 +627,11 @@ aiculator work heartbeat [flags]
 **Flags**
 
 ```text
-      --cost int      cost so far, in micro-dollars
+      --cost int      cost since your last report, in micro-dollars
       --lease uint    lease number from wait
       --note string   note saved for later attempts
       --task string   task id
+      --tokens int    tokens used since your last report
 ```
 
 ## `aiculator work join`
@@ -586,10 +662,11 @@ aiculator work progress [flags]
 **Flags**
 
 ```text
-      --cost int      cost so far, in micro-dollars
+      --cost int      cost since your last report, in micro-dollars
       --lease uint    lease number from wait
       --note string   note saved for later attempts
       --task string   task id
+      --tokens int    tokens used since your last report
 ```
 
 ## `aiculator work release`
@@ -603,10 +680,11 @@ aiculator work release [flags]
 **Flags**
 
 ```text
-      --cost int      cost so far, in micro-dollars
+      --cost int      cost since your last report, in micro-dollars
       --lease uint    lease number from wait
       --note string   note saved for later attempts
       --task string   task id
+      --tokens int    tokens used since your last report
 ```
 
 ## `aiculator work situation`
@@ -628,10 +706,11 @@ aiculator work submit [flags]
 **Flags**
 
 ```text
-      --cost int      cost so far, in micro-dollars
+      --cost int      cost since your last report, in micro-dollars
       --lease uint    lease number from wait
       --note string   note saved for later attempts
       --task string   task id
+      --tokens int    tokens used since your last report
 ```
 
 ## `aiculator work verdict`
@@ -645,11 +724,12 @@ aiculator work verdict [flags]
 **Flags**
 
 ```text
-      --cost int      cost so far, in micro-dollars
+      --cost int      cost since your last report, in micro-dollars
       --lease uint    lease number from wait
       --note string   note saved for later attempts
       --pass          approve; leave out to reject
       --task string   task id
+      --tokens int    tokens used since your last report
 ```
 
 ## `aiculator work wait`

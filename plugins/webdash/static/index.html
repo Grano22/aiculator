@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aiculator dashboard</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"></span>
+    <h1>Aiculator</h1>
+    <span id="version" class="muted"></span>
+  </div>
+  <div class="meta">
+    <span id="planner" class="pill info" hidden></span>
+    <span id="ready" class="pill">Connecting</span>
+    <span id="uptime" class="muted"></span>
+    <button id="pause" type="button">Pause</button>
+  </div>
+</header>
+<div id="banner" class="banner" role="alert" hidden></div>
+<main>
+  <section class="kpis" aria-label="Key numbers">
+    <div class="kpi"><span class="label">Done per minute</span><strong id="k-done">-</strong><span id="s-done" class="spark green"></span></div>
+    <div class="kpi"><span class="label">Grants per minute</span><strong id="k-grants">-</strong><span id="s-grants" class="spark"></span></div>
+    <div class="kpi"><span class="label">Commits per second</span><strong id="k-commits">-</strong><span id="s-commits" class="spark"></span></div>
+    <div class="kpi"><span class="label">Agents waiting</span><strong id="k-waiting">-</strong><span id="k-oldest" class="muted small"></span></div>
+    <div class="kpi"><span class="label">Tokens used</span><strong id="k-tokens">-</strong><span id="k-spent" class="muted small"></span></div>
+    <div class="kpi"><span class="label">Zombies caught</span><strong id="k-zombies">-</strong><span id="k-failed" class="muted small"></span></div>
+  </section>
+
+  <section class="card wide">
+    <h2>Flow</h2>
+    <ol id="pipeline" class="pipeline"></ol>
+    <p id="off-path" class="muted small"></p>
+  </section>
+
+  <div class="columns">
+    <section class="card">
+      <h2>Latency</h2>
+      <div class="scroll"><table id="latency"><thead><tr><th>Operation</th><th class="n">Count</th><th class="n">p50</th><th class="n">p90</th><th class="n">p99</th><th class="n">Max</th><th class="n">Jitter</th></tr></thead><tbody></tbody></table></div>
+    </section>
+    <section class="card">
+      <h2>Health probes</h2>
+      <ul id="probes" class="probes"></ul>
+    </section>
+  </div>
+
+  <section class="card wide">
+    <h2>Tasks in progress or needing attention <span id="task-count" class="muted"></span></h2>
+    <div class="scroll"><table id="tasks"><thead><tr><th>Health</th><th>State</th><th class="n">Tier</th><th>ID</th><th>Owner</th><th class="n">Lease left</th><th class="n">Progress left</th><th class="n">Tries</th><th>Title</th></tr></thead><tbody></tbody></table></div>
+    <p id="tasks-empty" class="empty" hidden>Nothing in progress.</p>
+  </section>
+
+  <div class="columns">
+    <section class="card">
+      <h2>Agents</h2>
+      <div class="scroll"><table id="agents"><thead><tr><th>Agent</th><th class="n">Tier</th><th>State</th><th>Task</th><th class="n">Seen</th><th class="n">Tokens</th><th class="n">Done</th><th class="n">Failed</th></tr></thead><tbody></tbody></table></div>
+      <p id="agents-empty" class="empty" hidden>No agents yet. Connect one with <code>aiculator join</code>.</p>
+    </section>
+    <section class="card">
+      <h2>Usage and budgets</h2>
+      <div class="scroll"><table id="tiers"><thead><tr><th>Tier</th><th class="n">Tasks</th><th class="n">Tokens</th><th class="n">Spent</th><th class="n">Budget</th></tr></thead><tbody></tbody></table></div>
+      <h3>Tightest budgets</h3>
+      <ul id="budgets" class="budgets"></ul>
+      <p id="budgets-empty" class="empty" hidden>No task has a budget.</p>
+    </section>
+  </div>
+
+  <div class="columns">
+    <section class="card">
+      <h2>Moves between states</h2>
+      <ul id="edges" class="edges"></ul>
+      <p id="edges-empty" class="empty" hidden>None yet.</p>
+    </section>
+    <section class="card">
+      <h2>Live changes</h2>
+      <ol id="feed" class="feed"></ol>
+      <p id="feed-empty" class="empty">Waiting for the next change.</p>
+    </section>
+  </div>
+  <p class="muted small foot">Rates reset when the server restarts. Task states and usage totals do not.</p>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

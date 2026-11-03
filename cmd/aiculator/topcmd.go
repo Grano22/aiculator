@@ -23,6 +23,8 @@ func topCmd() *cobra.Command {
 		interval     time.Duration
 		once, asJSON bool
 		noColor      bool
+		forceColor   bool
+		width        int
 		viewName     string
 	)
 	cmd := &cobra.Command{
@@ -63,11 +65,11 @@ Rates reset when the server restarts. Task states and usage totals do not.`,
 				if err != nil {
 					return err
 				}
-				w, h := 120, 60
-				if tw, _, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
-					w = tw
+				w, _ := tui.ScreenSize(term.GetSize(int(os.Stdout.Fd())))
+				if width > 0 {
+					w = width
 				}
-				fmt.Println(tui.Render(s, tui.Options{View: view, Width: w, Height: h, Color: color && tty, Plain: true}))
+				fmt.Println(tui.Render(s, tui.Options{View: view, Width: w, Height: 60, Color: forceColor || (color && tty), Plain: true}))
 				return nil
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
@@ -80,6 +82,8 @@ Rates reset when the server restarts. Task states and usage totals do not.`,
 	f.BoolVar(&once, "once", false, "print one frame and exit")
 	f.BoolVar(&asJSON, "json", false, "print the raw snapshot as JSON and exit")
 	f.BoolVar(&noColor, "no-color", false, "no color; NO_COLOR also works")
+	f.BoolVar(&forceColor, "color", false, "with --once: keep color even in a pipe")
+	f.IntVar(&width, "width", 0, "with --once: width in columns")
 	f.StringVar(&viewName, "view", "overview", "with --once: overview, tasks, agents, flow or usage")
 	return cmd
 }

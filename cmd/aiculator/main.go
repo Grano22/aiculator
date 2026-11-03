@@ -56,7 +56,11 @@ func findDataDir() string {
 }
 
 func main() {
-	if err := rootCmd().Execute(); err != nil {
+	root := rootCmd()
+	if handled, code := runExternal(root, os.Args[1:]); handled {
+		os.Exit(code)
+	}
+	if err := root.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -73,7 +77,8 @@ func rootCmd() *cobra.Command {
 	}
 	root.PersistentFlags().StringVar(&dataDir, "data", ".swarm", "state directory; found by searching upward when not set")
 	root.AddCommand(serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
-		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), genDocsCmd())
+		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), pluginCmd(), genDocsCmd())
+	addPluginCommands(root)
 	return root
 }
 

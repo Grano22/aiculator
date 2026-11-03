@@ -201,3 +201,15 @@ func TestFormatting(t *testing.T) {
 		t.Error("empty spark")
 	}
 }
+
+func TestZeroSizedTerminalStillDraws(t *testing.T) {
+	if w, h := ScreenSize(0, 0, nil); w != 100 || h != 40 {
+		t.Fatalf("got %dx%d", w, h)
+	}
+	if w, h := ScreenSize(80, 24, nil); w != 80 || h != 24 {
+		t.Fatalf("got %dx%d", w, h)
+	}
+	if w, _ := ScreenSize(80, 24, fmt.Errorf("no tty")); w != 100 {
+		t.Fatal("an error should use the fallback")
+	}
+}
