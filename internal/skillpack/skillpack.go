@@ -60,6 +60,12 @@ func (o Options) base() string {
 	return home
 }
 
+// Base is the directory the scope points at: the project, or home when global.
+func (o Options) Base() string { return o.base() }
+
+// Expand resolves a user-supplied path within the scope's project and home.
+func (o Options) Expand(p string) string { return o.expand(p) }
+
 func (o Options) canonical() string { return filepath.Join(o.base(), filepath.FromSlash(CanonicalDir)) }
 
 func (o Options) expand(p string) string {

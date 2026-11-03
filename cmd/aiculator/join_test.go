@@ -409,3 +409,45 @@ func (p *project) read(rel string) string {
 	}
 	return string(b)
 }
+
+func TestTemplateCommands(t *testing.T) {
+	p := newProject(t)
+	if out := p.run("template", "--list"); !strings.Contains(out, "agent-discipline") {
+		t.Fatalf("list: %s", out)
+	}
+	if out := p.run("template", "--render", "agent-discipline", "--set", "retries=1"); !strings.Contains(out, "| 2 | 2s |") || strings.Contains(out, "| 3 |") {
+		t.Fatalf("render: %s", out)
+	}
+	if p.exists(".agents") {
+		t.Fatal("render wrote files")
+	}
+	p.run("template", "--new", "my-rules")
+	if !p.exists(".agents/templates/my-rules.md.j2") {
+		t.Fatal("new: no file")
+	}
+	// The starter's description holds a TODO, which is a warning and not an error.
+	p.run("template", "--install", "my-*", "agent-*", "--harness", "claude")
+	for _, rel := range []string{".claude/skills/my-rules/SKILL.md", ".claude/skills/agent-discipline/SKILL.md"} {
+		if !p.exists(rel) {
+			t.Errorf("%s is missing", rel)
+		}
+	}
+	p.run("template", "--check")
+	tpl := filepath.Join(p.root, ".agents/templates/my-rules.md.j2")
+	b, _ := os.ReadFile(tpl)
+	if err := os.WriteFile(tpl, append(b, []byte("\nchanged\n")...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := p.tryIn(p.root, "template", "--check"); err == nil || !strings.Contains(out, "my-rules") {
+		t.Fatalf("stale not caught: %v %s", err, out)
+	}
+	p.run("template", "--install", "my-rules", "--per-harness", "--harness", "opencode")
+	if !p.exists(".opencode/skills/my-rules/SKILL.md") {
+		t.Error("per-harness: no copy in the harness's own directory")
+	}
+	custom := filepath.Join(t.TempDir(), "out")
+	p.run("template", "--install", "agent-*", "--per-harness", "--harness", "none", "--path", custom)
+	if _, err := os.Stat(filepath.Join(custom, "agent-discipline/SKILL.md")); err != nil {
+		t.Errorf("custom path: %v", err)
+	}
+}
