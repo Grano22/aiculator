@@ -202,6 +202,7 @@ jobs:
         shell: pwsh
         run: |
           if (Get-Command winget -ErrorAction SilentlyContinue) {
+            winget --version
             winget validate --manifest packaging\winget
             if ($LASTEXITCODE -ne 0) { exit 1 }
           } else {

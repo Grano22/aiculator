@@ -109,7 +109,9 @@ def scoop(r):
 
 def winget(r):
     ident = f"{OWNER}.Aiculator"
-    schema = "1.12.0"
+    # Not the newest: winget compares the header with the schema it has bundled, so a client
+    # or wingetcreate older than this version would reject the manifest.
+    schema = "1.10.0"
     common = f"PackageIdentifier: {ident}\nPackageVersion: {r.version}\n"
     end = lambda kind: f"ManifestType: {kind}\nManifestVersion: {schema}\n"
     # winget validate warns without this header, and a warning makes it exit non-zero.

@@ -63,7 +63,7 @@ class RenderTest(unittest.TestCase):
     def test_winget_files_declare_their_schema(self):
         for name, kind in (("yaml", "version"), ("installer.yaml", "installer"), ("locale.en-US.yaml", "defaultLocale")):
             first = self.read(f"winget/Grano22.Aiculator.{name}").splitlines()[0]
-            self.assertIn(f"winget-manifest.{kind}.1.12.0.schema.json", first)
+            self.assertIn(f"winget-manifest.{kind}.1.10.0.schema.json", first)
 
     def test_pkgbuild_enters_only_the_directory(self):
         self.assertIn('_linux_"*/\n', self.read("aur/PKGBUILD"))
