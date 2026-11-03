@@ -1637,9 +1637,9 @@
 
 <h1 id="package-managers">Package managers<a class="headerlink" href="#package-managers" title="Permanent link">&para;</a></h1>
 <p>Each release runs <code>.github/workflows/packages.yml</code>. Every channel installs the real package first, then publishes it if the release is not a prerelease and the channel's secrets are set. A channel with no secrets is skipped with a notice, and one channel failing does not stop the others.</p>
-<div class="admonition warning">
-<p class="admonition-title">Nothing is published yet</p>
-<p>These channels need the one-time setup below. Until a channel has published, the install commands for it will not work.</p>
+<div class="admonition info">
+<p class="admonition-title">Current status</p>
+<p>Homebrew, Scoop, apt, dnf and apk are live. WinGet is waiting on the review of its first pull request. Chocolatey and the Arch User Repository need the setup below, so their install commands do not work yet.</p>
 </div>
 <h2 id="channels">Channels<a class="headerlink" href="#channels" title="Permanent link">&para;</a></h2>
 <table>
@@ -1698,8 +1698,9 @@
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>gh<span class="w"> </span>repo<span class="w"> </span>create<span class="w"> </span>Grano22/scoop-aiculator<span class="w"> </span>--public<span class="w"> </span>--add-readme
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>gh<span class="w"> </span>repo<span class="w"> </span>create<span class="w"> </span>Grano22/aiculator-packages<span class="w"> </span>--public<span class="w"> </span>--add-readme
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>gh<span class="w"> </span>api<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>repos/Grano22/aiculator-packages/pages<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>-f<span class="w"> </span><span class="nv">build_type</span><span class="o">=</span>legacy<span class="w"> </span>-f<span class="w"> </span><span class="s1">'source[branch]=main'</span><span class="w"> </span>-f<span class="w"> </span><span class="s1">'source[path]=/'</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>-f<span class="w"> </span><span class="nv">build_type</span><span class="o">=</span>legacy<span class="w"> </span>-f<span class="w"> </span><span class="s1">'source[branch]=master'</span><span class="w"> </span>-f<span class="w"> </span><span class="s1">'source[path]=/'</span>
 </code></pre></div>
+<p>The Pages source for <code>aiculator-packages</code> must be <strong>Deploy from a branch</strong>, on <code>master</code> at <code>/</code>, which is what <code>build_type=legacy</code> sets. With the <strong>GitHub Actions</strong> source, a publish succeeds but the URLs return 404.</p>
 <h3 id="tokens">Tokens<a class="headerlink" href="#tokens" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>PACKAGING_TOKEN</code>:</strong> a fine-grained token, limited to the three repositories above, with <strong>Contents: read and write</strong>.</li>
@@ -1711,7 +1712,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">GNUPGHOME</span><span class="o">=</span><span class="k">$(</span>mktemp<span class="w"> </span>-d<span class="k">)</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>gpg<span class="w"> </span>--batch<span class="w"> </span>--passphrase<span class="w"> </span><span class="s1">''</span><span class="w"> </span>--quick-generate-key<span class="w"> </span><span class="s2">"Aiculator packages"</span><span class="w"> </span>ed25519<span class="w"> </span>sign<span class="w"> </span>5y
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>gpg<span class="w"> </span>--batch<span class="w"> </span>--armor<span class="w"> </span>--export-secret-keys<span class="w"> </span><span class="p">|</span><span class="w"> </span>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>PACKAGE_GPG_KEY<span class="w"> </span>-R<span class="w"> </span>Grano22/aiculator
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>openssl<span class="w"> </span>genrsa<span class="w"> </span><span class="m">4096</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APK_SIGNING_KEY<span class="w"> </span>-R<span class="w"> </span>Grano22/aiculator
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>openssl<span class="w"> </span>genrsa<span class="w"> </span><span class="m">4096</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>openssl<span class="w"> </span>pkcs8<span class="w"> </span>-topk8<span class="w"> </span>-nocrypt<span class="w"> </span><span class="p">|</span><span class="w"> </span>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>APK_SIGNING_KEY<span class="w"> </span>-R<span class="w"> </span>Grano22/aiculator
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>ssh-keygen<span class="w"> </span>-t<span class="w"> </span>ed25519<span class="w"> </span>-N<span class="w"> </span><span class="s1">''</span><span class="w"> </span>-C<span class="w"> </span>aiculator-aur<span class="w"> </span>-f<span class="w"> </span>aur_ed25519
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>gh<span class="w"> </span>secret<span class="w"> </span><span class="nb">set</span><span class="w"> </span>AUR_SSH_KEY<span class="w"> </span>-R<span class="w"> </span>Grano22/aiculator<span class="w"> </span>&lt;<span class="w"> </span>aur_ed25519
 </code></pre></div>
