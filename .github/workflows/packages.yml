@@ -323,26 +323,22 @@ jobs:
         run: |
           gh auth setup-git
           gh repo clone "$PACKAGES" "$RUNNER_TEMP/site"
-      - name: Make throwaway keys for a dry run
-        if: steps.mode.outputs.live != 'true'
-        run: |
-          export GNUPGHOME="$RUNNER_TEMP/throwaway-gnupg"
-          mkdir -m 700 "$GNUPGHOME"
-          gpg --batch --quiet --passphrase '' --quick-generate-key "Aiculator dry run" ed25519 sign never
-          {
-            echo 'PACKAGE_GPG_KEY<<KEYEOF'
-            gpg --batch --armor --export-secret-keys
-            echo 'KEYEOF'
-            echo 'APK_SIGNING_KEY<<KEYEOF'
-            openssl genrsa 2048 2>/dev/null
-            echo 'KEYEOF'
-          } >> "$GITHUB_ENV"
-          gpgconf --kill all
       - name: Build the repositories (dry run keys)
         if: steps.mode.outputs.live != 'true'
         env:
           TAG: ${{ needs.prepare.outputs.tag }}
-        run: scripts/packaging/linux_repo.sh "$TAG" packaging "$RUNNER_TEMP/assets" "$RUNNER_TEMP/site"
+        run: |
+          # Throwaway keys, held only in this step. Anything in GITHUB_ENV is printed in the
+          # log of each later step, and only real secrets are masked there.
+          export GNUPGHOME="$RUNNER_TEMP/throwaway-gnupg"
+          mkdir -m 700 "$GNUPGHOME"
+          gpg --batch --quiet --passphrase '' --quick-generate-key "Aiculator dry run" ed25519 sign never
+          PACKAGE_GPG_KEY=$(gpg --batch --armor --export-secret-keys)
+          APK_SIGNING_KEY=$(openssl genrsa 2048 2>/dev/null)
+          export PACKAGE_GPG_KEY APK_SIGNING_KEY
+          gpgconf --kill all
+          unset GNUPGHOME
+          scripts/packaging/linux_repo.sh "$TAG" packaging "$RUNNER_TEMP/assets" "$RUNNER_TEMP/site"
       - name: Build the repositories
         if: steps.mode.outputs.live == 'true'
         env:

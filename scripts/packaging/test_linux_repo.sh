@@ -12,7 +12,7 @@ python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$SITE" > /dev/null 
 SERVER=$!
 trap 'kill "$SERVER" 2>/dev/null || true' EXIT
 for _ in $(seq 40); do
-  curl -fsS -o /dev/null "$URL/aiculator.asc" && break
+  curl -fsS -o /dev/null "$URL/aiculator.asc" 2>/dev/null && break
   sleep 0.25
 done
 
@@ -21,8 +21,10 @@ check() { # name image script
   docker run --rm --network host -e URL="$URL" -e VERSION="$VERSION" "$2" sh -euc "$3"
 }
 
-# shellcheck disable=SC2016 # These run inside the containers.
-check apt debian:stable-slim '
+# These scripts run inside the containers.
+# Not a slim image, because those strip /usr/share/doc and the license check needs it.
+# shellcheck disable=SC2016
+check apt debian:stable '
   apt-get update -qq
   apt-get install -qq -y --no-install-recommends curl ca-certificates > /dev/null
   mkdir -p /etc/apt/keyrings

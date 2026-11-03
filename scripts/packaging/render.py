@@ -112,6 +112,8 @@ def winget(r):
     schema = "1.12.0"
     common = f"PackageIdentifier: {ident}\nPackageVersion: {r.version}\n"
     end = lambda kind: f"ManifestType: {kind}\nManifestVersion: {schema}\n"
+    # winget validate warns without this header, and a warning makes it exit non-zero.
+    head = lambda kind: f"# yaml-language-server: $schema=https://aka.ms/winget-manifest.{kind}.{schema}.schema.json\n"
 
     def installer(goos_arch, winget_arch):
         return (
@@ -124,13 +126,15 @@ def winget(r):
         )
 
     return {
-        f"{ident}.yaml": common + "DefaultLocale: en-US\n" + end("version"),
-        f"{ident}.installer.yaml": common
+        f"{ident}.yaml": head("version") + common + "DefaultLocale: en-US\n" + end("version"),
+        f"{ident}.installer.yaml": head("installer")
+        + common
         + "InstallerType: zip\nNestedInstallerType: portable\nInstallers:\n"
         + installer("amd64", "x64")
         + installer("arm64", "arm64")
         + end("installer"),
-        f"{ident}.locale.en-US.yaml": common
+        f"{ident}.locale.en-US.yaml": head("defaultLocale")
+        + common
         + f"PackageLocale: en-US\nPublisher: {OWNER}\nPublisherUrl: https://github.com/{OWNER}\n"
         + f"PackageName: Aiculator\nPackageUrl: {REPO}\nLicense: MIT\nLicenseUrl: {REPO}/blob/{r.tag}/LICENSE\n"
         + f"ShortDescription: {json.dumps(SUMMARY)}\nTags:\n  - ai\n  - agents\n  - cli\n  - swarm\n"
@@ -201,7 +205,8 @@ sha256sums_x86_64=('{r.sha("linux", "amd64")}')
 sha256sums_aarch64=('{r.sha("linux", "arm64")}')
 
 package() {{
-  cd "aiculator_v${{pkgver}}_linux_"*
+  # The trailing slash skips the downloaded archive, which has the same prefix.
+  cd "aiculator_v${{pkgver}}_linux_"*/
   install -Dm755 aiculator "$pkgdir/usr/bin/aiculator"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/aiculator-bin/LICENSE"
   install -Dm644 THIRD_PARTY_NOTICES.md "$pkgdir/usr/share/licenses/aiculator-bin/THIRD_PARTY_NOTICES.md"

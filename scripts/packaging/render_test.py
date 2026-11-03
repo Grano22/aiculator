@@ -60,6 +60,14 @@ class RenderTest(unittest.TestCase):
         self.assertIn('description: "', self.read("nfpm/amd64.yaml"))
         self.assertIn('ShortDescription: "', self.read("winget/Grano22.Aiculator.locale.en-US.yaml"))
 
+    def test_winget_files_declare_their_schema(self):
+        for name, kind in (("yaml", "version"), ("installer.yaml", "installer"), ("locale.en-US.yaml", "defaultLocale")):
+            first = self.read(f"winget/Grano22.Aiculator.{name}").splitlines()[0]
+            self.assertIn(f"winget-manifest.{kind}.1.12.0.schema.json", first)
+
+    def test_pkgbuild_enters_only_the_directory(self):
+        self.assertIn('_linux_"*/\n', self.read("aur/PKGBUILD"))
+
     def test_bad_input_is_refused(self):
         for tag in ("1.2.3", "v1.2", "v1.2.3;rm -rf /", "$(id)"):
             with self.assertRaises(ValueError, msg=tag):
