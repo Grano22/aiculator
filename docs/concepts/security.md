@@ -14,7 +14,7 @@
 | Use the network | Workers yes, because models need it. Checks no. |
 
 !!! note "How well each sandbox is tested"
-    Seatbelt was attacked for real, including escapes through symlinks. For bubblewrap and Docker, only the arguments have been checked so far.
+    Seatbelt and bubblewrap are attacked for real in the test suite, including escapes through symlinks. For Docker, only the arguments have been checked so far.
 
 ## Identity
 

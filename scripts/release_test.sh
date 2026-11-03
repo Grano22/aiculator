@@ -69,4 +69,10 @@ dd EVENT=push REF_TYPE=tag REF_NAME=v1.2.3-rc.1 | grep -q 'mike deploy --push 1.
 if dd EVENT=push REF_TYPE=tag REF_NAME=v1.2.3-rc.1 | grep -q latest; then fail "a prerelease moved latest"; fi
 dd EVENT=push REF_TYPE=branch REF_NAME=master | grep -q 'mike deploy --push dev$' || fail "master docs"
 dd EVENT=workflow_dispatch INPUT_VERSION=2.0 INPUT_ALIAS=stable | grep -q '2.0 stable' || fail "manual docs"
+# The size budget stops a build, and leaves no archive behind.
+if MAX_ARCHIVE_MIB=1 "$ROOT/scripts/build_release.sh" v0.0.0 linux amd64 "$D/size" >/dev/null 2>"$D/err"; then fail "the archive budget did not stop the build"; fi
+grep -q 'size budget exceeded' "$D/err" || fail "no budget message"
+[ -z "$(ls "$D/size" 2>/dev/null)" ] || fail "an over-budget archive was left behind"
+if MAX_BINARY_MIB=1 "$ROOT/scripts/build_release.sh" v0.0.0 linux amd64 "$D/size" >/dev/null 2>&1; then fail "the binary budget did not stop the build"; fi
+"$ROOT/scripts/build_release.sh" v0.0.0 linux amd64 "$D/size" | grep -q 'archive=' || fail "a normal build should pass"
 echo "release tests passed"

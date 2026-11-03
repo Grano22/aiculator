@@ -8,6 +8,7 @@
 - Sandboxing, agent tokens and secret hiding
 - Crash tests, formal models and fuzzing
 - CI, releases and docs
+- Performance budgets and a package size budget
 
 ## Tested on real harnesses
 
@@ -31,8 +32,7 @@ The other harnesses are configured from their docs or a community table. Use `./
 ## Not yet tried
 
 - Windows and FreeBSD builds compile, but have not been run.
-- bubblewrap and Docker sandboxes have had only their arguments checked.
-- The GitHub workflows pass a linter and their scripts are tested, but they have not run on GitHub.
+- The Docker sandbox has had only its arguments checked.
 
 ## Roadmap
 

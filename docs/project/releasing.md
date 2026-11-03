@@ -52,6 +52,17 @@ Check an archive's provenance with:
 gh attestation verify aiculator_v1.2.3_linux_amd64.tar.gz --repo OWNER/REPO
 ```
 
+## Size budget
+
+`scripts/build_release.sh` fails if a binary or an archive goes over budget, so neither CI nor a release can ship past it.
+
+| Package | Budget | Current |
+|---|---|---|
+| Binary | 30 MiB | About 25 to 28 MiB |
+| Archive | 11 MiB | 8.9 to 10.3 MiB |
+
+The template engine accounts for about 5.4 MiB of the binary, because real Jinja2 brings text-handling and JSON libraries with it. To raise a limit, change it in the script on purpose and say why in the commit.
+
 ## Docs
 
 | Trigger | Publishes as |
