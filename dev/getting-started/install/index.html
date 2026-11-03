@@ -235,7 +235,7 @@
   
     
   
-  Home
+  Showcase
 
       </a>
     </li>
@@ -403,7 +403,7 @@
   <span class="md-ellipsis">
     
   
-    Home
+    Showcase
   
 
     
@@ -834,6 +834,62 @@
     
   
     MCP config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/dashboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
   
 
     
@@ -1371,8 +1427,11 @@
 </div>
 <h2 id="from-source">From source<a class="headerlink" href="#from-source" title="Permanent link">&para;</a></h2>
 <p>You need Go at the version in <code>go.mod</code>, and git.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">CGO_ENABLED</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>go<span class="w"> </span>build<span class="w"> </span>-trimpath<span class="w"> </span>-ldflags<span class="o">=</span><span class="s1">'-s -w'</span><span class="w"> </span>-o<span class="w"> </span>bin/aiculator<span class="w"> </span>./cmd/aiculator
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">/bin:</span><span class="nv">$PATH</span><span class="s2">"</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>go<span class="w"> </span>install<span class="w"> </span>github.com/Grano22/aiculator/cmd/aiculator@latest
+</code></pre></div>
+<p>Or from a checkout:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">CGO_ENABLED</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>go<span class="w"> </span>build<span class="w"> </span>-trimpath<span class="w"> </span>-ldflags<span class="o">=</span><span class="s1">'-s -w'</span><span class="w"> </span>-o<span class="w"> </span>bin/aiculator<span class="w"> </span>./cmd/aiculator
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">"</span><span class="nv">$PWD</span><span class="s2">/bin:</span><span class="nv">$PATH</span><span class="s2">"</span>
 </code></pre></div>
 <h2 id="put-it-on-your-path">Put it on your PATH<a class="headerlink" href="#put-it-on-your-path" title="Permanent link">&para;</a></h2>
 <p>Skills call <code>aiculator</code> by name, so agents can only use them if it is on your <code>PATH</code>.</p>
@@ -1436,7 +1495,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home">
+          <a href="../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Showcase">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1446,7 +1505,7 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Home
+                Showcase
               </div>
             </div>
           </a>

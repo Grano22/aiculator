@@ -235,7 +235,7 @@
   
     
   
-  Home
+  Showcase
 
       </a>
     </li>
@@ -403,7 +403,7 @@
   <span class="md-ellipsis">
     
   
-    Home
+    Showcase
   
 
     
@@ -738,6 +738,62 @@
     
   
     MCP config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/dashboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
   
 
     
@@ -1410,6 +1466,7 @@
 </div>
 <h2 id="identity">Identity<a class="headerlink" href="#identity" title="Permanent link">&para;</a></h2>
 <p>Agent tokens are signed with ed25519. Tier and identity come from the token, so an agent cannot claim a higher tier or act as another agent. No token can be issued for the swarm's own <code>system:</code> identities.</p>
+<p>Viewer tokens are read-only and expire, for dashboards and scrapers. See <a href="../../guides/dashboards/#security">Dashboards</a>.</p>
 <h2 id="verification-rules">Verification rules<a class="headerlink" href="#verification-rules" title="Permanent link">&para;</a></h2>
 <p>These are enforced by the state machine and modeled in TLA+:</p>
 <ul>
