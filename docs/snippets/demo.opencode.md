@@ -13,22 +13,23 @@ metadata:
 
 ## Contents
 
-- Step A: choose an approach: line 45, anchor `choose-approach`
-- Step B: choose the checks: line 67, anchor `choose-checks`
-- Step C: settle the details: line 90, anchor `choose-settings`
-- Subagents: line 112, anchor `subagents`
-- Step D: build it: research, build, review: line 123, anchor `build-flow`
-  - Stage 1: Research: line 135, anchor `research`
-  - Stage 2: Build: line 146, anchor `build`
-  - Stage 3: Review: line 155, anchor `review`
-- Commands: timeouts and retries: line 167, anchor `backoff`
-- Checks to run: line 184, anchor `checks`
-- Flow: ship it: line 191, anchor `ship-flow`
-  - Step 1: Confirm: line 199, anchor `confirm`
-  - Step 2: Ship: line 208, anchor `ship`
-- Output format: line 215, anchor `output-format`
-- Progress: line 226, anchor `progress`
-- Release notes: line 240, anchor `changelog`
+- Track the work: line 46, anchor `track-work`
+- Step A: name the feature: line 70, anchor `name-feature`
+- Step B: choose an approach: line 85, anchor `choose-approach`
+- Step C: choose the API style: line 107, anchor `choose-api`
+- Step D: choose the checks: line 128, anchor `choose-checks`
+- Step E: settle the details: line 151, anchor `choose-settings`
+- Step F: get the plan approved: line 173, anchor `approve-plan`
+- Subagents: line 190, anchor `subagents`
+- Step G: build it: research, build, review: line 201, anchor `build-flow`
+- Commands: timeouts and retries: line 245, anchor `backoff`
+- Checks to run: line 262, anchor `checks`
+- Flow: ship it: line 269, anchor `ship-flow`
+- Step H: clean up: line 293, anchor `delete-branch`
+- Output format: line 309, anchor `output-format`
+- Progress: line 320, anchor `progress`
+- Release notes: line 334, anchor `changelog`
+- How to format your replies: line 345, anchor `formatting`
 
 Rendered for OpenCode, whose question tool is `question`.
 
@@ -42,7 +43,46 @@ House style for the checkout service: small commits, plain language, and a test 
 
 > **CUSTOM COMPONENT:** This one comes from `components/DemoBadge.md`, next to this template.
 
-## Step A: choose an approach
+## Track the work
+<!-- anchor: track-work -->
+
+Keep a visible task list for this work, so that the user can see where things stand without asking.
+
+Use the `todowrite` tool to create and update the list.
+
+- Create the list before you start, with one item per step the user would recognize.
+- Mark an item in progress when you begin it, and done as soon as it is finished, never in batches at the end.
+- Keep exactly one item in progress at a time.
+- If the plan changes, change the list in the same step.
+
+Start with these items:
+
+- Settle the details with the user
+- Get the plan approved
+- Build and review it
+- Open the pull request
+
+Two exceptions:
+
+- **If you have no task list tool:** keep a Markdown checklist (`- [ ]` and `- [x]`) and repeat it whenever it changes.
+- **If you are a subagent:** keep your list short, and include its final state in your report.
+
+## Step A: name the feature
+<!-- anchor: name-feature -->
+
+**Ask the user:** What should this feature's flag and branch be called?
+
+This needs the user's own words, such as a name, a path or a description, which a list of options cannot offer.
+
+Use the `question` tool, which lets the user type their own answer.
+
+Give an example of the form you want: faster-checkout
+
+- Ask for one thing at a time, and say what you will do with the answer.
+- If you can find the answer yourself, do that instead of asking.
+- **If you are a subagent:** you cannot reach the user. Report what you need, and why.
+
+## Step B: choose an approach
 <!-- anchor: choose-approach -->
 
 **Ask the user:** How should I build this feature?
@@ -64,7 +104,28 @@ Offer these options:
 - **If you have no question tool:** write a numbered list, ask for one number, and end your turn.
 - **If you are a subagent:** you cannot reach the user. Use the smallest change that works, and say so in your report.
 
-## Step B: choose the checks
+## Step C: choose the API style
+<!-- anchor: choose-api -->
+
+**Ask the user:** Which API style reads best here?
+
+The options look different and the user has to see them to choose, such as layouts, code styles or output formats. Show each one.
+
+Use the `question` tool. Each question has a header, the question text and a list of options, and the user can also type their own answer.
+If the tool has a preview field, put each option's example there.
+
+Offer these options:
+
+- Options object: `pay({ amount, currency })`
+- Plain arguments: `pay(amount, currency)`
+
+- Make each preview real: a code snippet, a small ASCII mockup or a sample of the output.
+- Keep previews about the same length, so that they compare fairly.
+- **If the tool has no previews:** put each option in your reply, under its own label with its example in a code block, and then ask which one the user wants.
+- After asking, stop and wait.
+- **If you are a subagent:** choose the option that best fits the task, and report your choice with its example.
+
+## Step D: choose the checks
 <!-- anchor: choose-checks -->
 
 **Ask the user:** Which checks should I run before review?
@@ -87,7 +148,7 @@ Offer these options:
 - **If you have no question tool, or it has no multi-select:** write a numbered list, ask for all the numbers that apply, separated by commas, and end your turn.
 - **If you are a subagent:** you cannot reach the user. Choose only what the task clearly requires, and report those choices to the agent that started you.
 
-## Step C: settle the details
+## Step E: settle the details
 <!-- anchor: choose-settings -->
 
 Ask related questions together in a **single call**, so that they appear as tabs the user can move between before submitting. Do not ask them one at a time, and do not ask them in your reply.
@@ -109,6 +170,23 @@ Ask these:
 - **If you have no question tool:** write the questions as numbered sections with lettered options, ask for answers in the form `1: a, 2: b c`, and end your turn.
 - **If you are a subagent:** you cannot reach the user. Answer each one with the recommended option, and report your choices to the agent that started you.
 
+## Step F: get the plan approved
+<!-- anchor: approve-plan -->
+
+Do not change anything until the user has approved a plan.
+
+Write your plan as a numbered list in your reply, then stop and wait for approval.
+
+The plan must cover:
+
+- The answers from steps A to E
+- The checks you will run, and in what order
+
+- Say which files will change, how you will verify the result, and what could go wrong.
+- If the user asks for changes, revise the plan and ask again. Do not start on a partial approval.
+- **If you have no plan mode:** write the plan as a numbered list, ask for approval, and end your turn.
+- **If you are a subagent:** you cannot get approval, so report your plan and change nothing, unless your task says to make the changes.
+
 ## Subagents
 <!-- anchor: subagents -->
 
@@ -120,7 +198,7 @@ Decide per piece of work, using these rules. If neither rule applies, do the wor
 
 If your harness has no way to run subagents, do the work in order yourself and say so once.
 
-## Step D: build it: research, build, review
+## Step G: build it: research, build, review
 <!-- anchor: build-flow -->
 
 You are the orchestrator. Run the stages below in order, and delegate each one to a subagent. Keep your own work to coordinating and checking results, so that your context stays clear.
@@ -146,7 +224,7 @@ Find the code this feature touches.
 ### Stage 2: Build
 <!-- anchor: build -->
 
-Make the change the user chose in step A.
+Make the change the user chose in step B.
 
 **Output:** The changes made, and how they were checked
 
@@ -212,6 +290,22 @@ Open the pull request.
 
 **As a subagent:** Do not ship. Only the agent that started you does that.
 
+## Step H: clean up
+<!-- anchor: delete-branch -->
+
+**Ask the user:** Delete the merged feature branch?
+
+Ask this as a yes or no choice, and do not continue until you have the answer.
+
+Use the `question` tool. Each question has a header, the question text and a list of options, and the user can also type their own answer.
+Offer two options: the action, named specifically, and a way to decline.
+
+- Name what will happen in the option itself, such as "Delete 3 branches", not just "Yes".
+- Say what cannot be undone.
+- Silence is not a yes. If the answer is unclear, ask again.
+- **If you have no question tool:** ask for a clear yes or no, and end your turn.
+- **If you are a subagent:** do not take the action. Report that it needs confirmation.
+
 ## Output format
 <!-- anchor: output-format -->
 
@@ -247,3 +341,152 @@ It lives in `RELEASE_NOTES.md`, between the marker comments `<!-- dynamic:change
 - Change only what lies between the markers, and leave the markers themselves in place.
 - Replace what is out of date instead of adding to it, so that this always reads as the present state and never as a history.
 - If you are a subagent, report what should change to the agent that started you, unless you were told to edit it.
+
+## How to format your replies
+<!-- anchor: formatting -->
+
+Choose the form that makes each thing easiest to read, using the rules below. Do not decorate: a short answer in a plain sentence is often best, and formatting should never replace a clear explanation.
+
+This output goes to a terminal. Assume code blocks and tables work, and that diagrams, images, collapsible sections and LaTeX may not.
+
+### Code
+<!-- anchor: render-code -->
+
+Put all code in a fenced block with a language, so that it is highlighted and easy to copy. Never indent it instead. Say which file it belongs to on the line above.
+
+````markdown
+In `internal/calc.go`:
+
+```go
+func add(a, b int) int { return a + b }
+```
+````
+
+### Names in text
+<!-- anchor: render-inline -->
+
+Put file names, commands, flags, functions and values in `inline code`. Use **bold** only for the one thing the reader must not miss, *italics* rarely, and ~~strikethrough~~ only for something explicitly withdrawn.
+
+### Commands
+<!-- anchor: render-shell -->
+
+Give commands in a `sh` block that can be pasted as it is: no `$` prompt, and one step per line. Show their output in a separate `text` block. Say beforehand if a command changes anything.
+
+```sh
+go test ./...
+```
+
+### Changes
+<!-- anchor: render-diff -->
+
+To show a change to code, use a `diff` block with just enough context to place it.
+
+```diff
+-func add(a, b int) int { return a - b }
++func add(a, b int) int { return a + b }
+```
+
+### Tables
+<!-- anchor: render-table -->
+
+Use a table to compare items across two or more attributes. Keep cells to a few words, put explanations in the text around it, and right-align numbers. Do not use a table for a plain list, or for one row.
+
+```markdown
+| Option | Speed | Cost |
+|---|--:|--:|
+| A | 12 ms | $3 |
+| B | 40 ms | $1 |
+```
+
+### Lists
+<!-- anchor: render-list -->
+
+Use a numbered list when order matters, and bullets when it does not. Keep items parallel and short. A list of one item should be a sentence, and do not nest deeper than two levels.
+
+### Checklists
+<!-- anchor: render-checklist -->
+
+Show progress or remaining steps as a checklist.
+
+```markdown
+- [x] Add the endpoint
+- [ ] Write the tests
+```
+
+### Headings
+<!-- anchor: render-headings -->
+
+Use `##` and `###` to divide longer answers into parts a reader can scan. Do not skip levels. A short answer needs no heading, and it should open with the answer, not with a heading.
+
+### Callouts
+<!-- anchor: render-callout -->
+
+Set off a warning or key note as a quote, starting with a bold label. Use this only for what the reader must not miss, and rarely.
+
+```markdown
+> **Warning:** This deletes the production table.
+```
+
+### Quotes
+<!-- anchor: render-quote -->
+
+Quote errors, logs and documents exactly. Use a `text` code block for machine output, and a `>` quote for what a person or document said.
+
+### File trees
+<!-- anchor: render-tree -->
+
+Show a directory layout in a `text` block, using box-drawing characters.
+
+```text
+cmd/
+├── main.go
+└── serve.go
+```
+
+### Links
+<!-- anchor: render-link -->
+
+Write links as `[what it is](https://example.com)`, with text that says where they go, not "here". Only link to URLs you have actually seen, and do not invent them.
+
+### Diagrams
+<!-- anchor: render-diagram -->
+
+A terminal may show Mermaid as plain source, so draw flows as ASCII in a `text` block. Use a Mermaid block only when the user asks, or when the answer is going into a document that renders it.
+
+```text
+Request --> Valid? --yes--> Save
+              |
+              no--> Reject
+```
+
+### Images
+<!-- anchor: render-image -->
+
+A terminal may not show images, so give the file's path and say what it shows. Do not rely on an image to carry the point.
+
+### Collapsible sections
+<!-- anchor: render-details -->
+
+A terminal may show `<details>` tags as plain text, so do not use them. Leave optional material out and offer it, or put it at the end under its own heading.
+
+### Math
+<!-- anchor: render-math -->
+
+A terminal may show LaTeX as plain source, so write formulas in plain text or a code block, such as `p99 = sorted[n * 99 / 100]`.
+
+### Footnotes and sources
+<!-- anchor: render-footnote -->
+
+A terminal may not render footnotes, so put an aside in its own short sentence, and cite sources as links at the point they are used.
+
+### Horizontal rules
+<!-- anchor: render-rule -->
+
+Use a `---` rule only between truly separate parts of a reply. Headings usually do this better.
+
+### File references
+<!-- anchor: render-fileref -->
+
+Refer to code as `path/to/file.go:42`, with the line number, because many harnesses make this clickable. Use the path from the project root, and do not wrap it in a link.
+
+In this demo, cite the checkout code this way in every review finding.

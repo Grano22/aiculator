@@ -536,7 +536,7 @@ func TestAllBundledTemplatesPassLintForEveryHarness(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(list) < 6 {
+	if len(list) < 12 {
 		t.Fatalf("only %d bundled templates", len(list))
 	}
 	for _, tp := range list {
@@ -602,6 +602,132 @@ func TestDemoUsesEveryComponent(t *testing.T) {
 			if i.Level == skillpack.LevelError || i.Level == skillpack.LevelWarn {
 				t.Errorf("%s: %s", i.Level, i.Msg)
 			}
+		}
+	}
+}
+
+var renderKinds = []string{"code", "inline", "shell", "diff", "table", "list", "checklist", "headings", "callout", "quote", "fileref", "tree", "link", "diagram", "image", "details", "math", "footnote", "rule"}
+
+func TestRenderCoversEveryKindOnBothSurfaces(t *testing.T) {
+	for _, kind := range renderKinds {
+		for _, surface := range []string{"terminal", "rich"} {
+			root := project(t)
+			put(t, root, ".agents/templates/k.mdx", fmt.Sprintf(validFM, "k")+`<Render kind="`+kind+`" surface="`+surface+`">Extra advice.</Render>`+"\n")
+			out := render(t, root, "k", Context{})
+			if !strings.Contains(out, "<!-- anchor: render-"+kind+" -->") || !strings.Contains(out, "Extra advice.") {
+				t.Errorf("%s/%s:\n%s", kind, surface, out)
+			}
+		}
+	}
+	root := project(t)
+	put(t, root, ".agents/templates/k.mdx", fmt.Sprintf(validFM, "k")+`<Render kind="nonsense" />`+"\n")
+	s := NewSet(root, nil)
+	tp, _ := s.Get("k")
+	if _, err := s.Render(tp, Context{}); err == nil {
+		t.Fatal("an unknown kind rendered silently")
+	}
+}
+
+func TestRichMarkdownAdaptsToTheSurface(t *testing.T) {
+	root := project(t)
+	term := render(t, root, "rich-markdown", Context{})
+	rich := render(t, root, "rich-markdown", Context{Vars: map[string]string{"surface": "rich"}})
+	for _, kind := range renderKinds {
+		if !strings.Contains(term, "anchor: render-"+kind) {
+			t.Errorf("rich-markdown leaves out %s", kind)
+		}
+	}
+	if !strings.Contains(rich, "```mermaid") || strings.Contains(term, "```mermaid") {
+		t.Error("only the rich surface should get a Mermaid example")
+	}
+	if !strings.Contains(term, "A terminal may show") || !strings.Contains(rich, "[!WARNING]") || strings.Contains(term, "[!WARNING]") {
+		t.Error("the rules should differ by surface")
+	}
+	// Component names in the examples must survive, since they sit in code.
+	if !strings.Contains(term, "## Contents") || !strings.Contains(term, "### Code: line") && !strings.Contains(term, "- Code: line") {
+		t.Errorf("contents list:\n%.600s", term)
+	}
+}
+
+func TestToolComponentsNameTheRightToolPerHarness(t *testing.T) {
+	root := project(t)
+	cases := []struct {
+		template, harness string
+		wants, rejects    []string
+	}{
+		{"ui-todos", "claude", []string{"`TaskCreate`", "`TaskUpdate`", "must be switched on"}, []string{"`write_todos`"}},
+		{"ui-todos", "gemini", []string{"`write_todos`"}, []string{"`TaskCreate`"}},
+		{"ui-todos", "opencode", []string{"`todowrite`"}, []string{"`TaskCreate`"}},
+		{"ui-plan", "claude", []string{"`EnterPlanMode`", "`ExitPlanMode`"}, []string{"`enter_plan_mode`"}},
+		{"ui-plan", "gemini", []string{"`enter_plan_mode`", "`exit_plan_mode`"}, []string{"`EnterPlanMode`"}},
+		{"ui-plan", "opencode", []string{"numbered list in your reply"}, []string{"EnterPlanMode", "enter_plan_mode"}},
+		{"ui-confirm", "gemini", []string{`type: "yesno"`}, nil},
+		{"ui-confirm", "claude", []string{"`multiSelect: false`", "Delete 3"}, nil},
+		{"ui-text", "gemini", []string{`type: "text"`, "my-service"}, nil},
+		{"ui-text", "opencode", []string{"`question` tool", "type their own"}, nil},
+		{"ui-text", "pi", []string{"Ask in your reply"}, []string{"`ask_user`"}},
+		{"ui-preview", "claude", []string{"`preview` field", "single-choice"}, nil},
+	}
+	for _, c := range cases {
+		out := render(t, root, c.template, forHarness(c.harness))
+		for _, w := range c.wants {
+			if !strings.Contains(out, w) {
+				t.Errorf("%s for %s: missing %q in:\n%s", c.template, c.harness, w, out)
+			}
+		}
+		for _, r := range c.rejects {
+			if strings.Contains(out, r) {
+				t.Errorf("%s for %s: should not mention %q", c.template, c.harness, r)
+			}
+		}
+	}
+	shared := render(t, root, "ui-plan", Context{})
+	if !strings.Contains(shared, "`EnterPlanMode`") || !strings.Contains(shared, "`enter_plan_mode`") {
+		t.Errorf("the shared copy should name both:\n%s", shared)
+	}
+}
+
+// In Claude Code a skill's allowed-tools skip the permission prompt, and the prompt on
+// ExitPlanMode is the user's approval of the plan.
+func TestPlanTemplateDoesNotPreApproveItsOwnApproval(t *testing.T) {
+	out := render(t, project(t), "ui-plan", forHarness("claude"))
+	if strings.Contains(out, "allowed-tools") {
+		t.Fatalf("ui-plan must not list allowed-tools:\n%.500s", out)
+	}
+}
+
+func TestRichMarkdownCanCoverASubset(t *testing.T) {
+	root := project(t)
+	put(t, root, ".agents/templates/k.mdx", fmt.Sprintf(validFM, "k")+`<RichMarkdown only="code, diff" />`+"\n")
+	out := render(t, root, "k", Context{})
+	if !strings.Contains(out, "render-code") || !strings.Contains(out, "render-diff") || strings.Contains(out, "render-table") {
+		t.Fatalf("subset:\n%s", out)
+	}
+	put(t, root, ".agents/templates/k.mdx", fmt.Sprintf(validFM, "k")+`<RichMarkdown only="code,nonsense" />`+"\n")
+	s := NewSet(root, nil)
+	tp, _ := s.Get("k")
+	if _, err := s.Render(tp, Context{}); err == nil {
+		t.Fatal("an unknown kind rendered silently")
+	}
+}
+
+func TestTocDepthListsOnlyTopSections(t *testing.T) {
+	root := project(t)
+	put(t, root, ".agents/templates/k.mdx", fmt.Sprintf(validFM, "k")+"<Toc depth=\"2\" />\n\n## Top\n\n### Inner\n\n## Last\n")
+	out := render(t, root, "k", Context{})
+	if strings.Contains(out, "- Inner") || strings.Contains(out, "  - ") {
+		t.Fatalf("depth 2 listed an inner section:\n%s", out)
+	}
+	lines := strings.Split(out, "\n")
+	for _, name := range []string{"Top", "Last"} {
+		var n int
+		for _, l := range lines {
+			if _, err := fmt.Sscanf(l, "- "+name+": line %d", &n); err == nil {
+				break
+			}
+		}
+		if n == 0 || lines[n-1] != "## "+name {
+			t.Errorf("%s: line %d is wrong:\n%s", name, n, out)
 		}
 	}
 }

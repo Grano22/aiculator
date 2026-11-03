@@ -278,9 +278,9 @@ func keepDynamic(body string, keep map[string]string) string {
 
 func harnessVars(h *harness.Harness) map[string]any {
 	if h == nil {
-		return map[string]any{"id": "generic", "name": "your harness", "has_mcp": false, "reads_agents": true, "has_acp": false, "question_tool": ""}
+		return map[string]any{"id": "generic", "name": "your harness", "has_mcp": false, "reads_agents": true, "has_acp": false, "question_tool": "", "todo_tool": "", "plan_enter": "", "plan_exit": ""}
 	}
-	return map[string]any{"id": h.ID, "name": h.Name, "has_mcp": h.MCP != harness.MCPNone, "reads_agents": h.ReadsAgents, "has_acp": len(h.ACP) > 0, "question_tool": h.QuestionTool}
+	return map[string]any{"id": h.ID, "name": h.Name, "has_mcp": h.MCP != harness.MCPNone, "reads_agents": h.ReadsAgents, "has_acp": len(h.ACP) > 0, "question_tool": h.QuestionTool, "todo_tool": h.TodoTool, "plan_enter": h.PlanEnter, "plan_exit": h.PlanExit}
 }
 
 var templateBlock = regexp.MustCompile(`(?m)^template:[ \t]*\n((?:[ \t]+.*\n|[ \t]*\n)*)`)
@@ -535,7 +535,7 @@ func (s *Set) component(owner, name string, props, vars map[string]any, depth in
 }
 
 var (
-	tocTag     = regexp.MustCompile(`<Toc\s*/>`)
+	tocTag     = regexp.MustCompile(`<Toc(?:\s+depth="([0-9]+)")?\s*/>`)
 	headingRE  = regexp.MustCompile(`^(#{2,3})\s+(.+?)\s*$`)
 	anchorLine = regexp.MustCompile(`^<!-- anchor: ([^ ]+) -->$`)
 	blankRuns  = regexp.MustCompile(`\n{3,}`)
@@ -574,10 +574,13 @@ func scanHeadings(text string) []tocEntry {
 	return out
 }
 
-func renderToc(entries []tocEntry) string {
+func renderToc(entries []tocEntry, depth int) string {
 	var b strings.Builder
 	b.WriteString("## Contents\n\n")
 	for _, e := range entries {
+		if e.level > depth {
+			continue
+		}
 		b.WriteString(strings.Repeat("  ", e.level-2))
 		fmt.Fprintf(&b, "- %s: line %d", e.title, e.line)
 		if e.label != "" {
@@ -596,16 +599,21 @@ func finish(fm, body string) string {
 	if fm != "" {
 		head = fm + "\n\n"
 	}
-	loc := tocTag.FindStringIndex(body)
+	loc := tocTag.FindStringSubmatchIndex(body)
 	if loc == nil {
 		return head + strings.TrimRight(body, "\n") + "\n"
 	}
 	assemble := func(toc string) string {
 		return head + strings.TrimRight(body[:loc[0]]+toc+body[loc[1]:], "\n") + "\n"
 	}
+	// depth="2" lists only the top sections, which keeps a long skill's list short.
+	depth := 3
+	if loc[2] >= 0 && body[loc[2]:loc[3]] == "2" {
+		depth = 2
+	}
 	// The table's own length shifts the lines after it, so measure, then fill in.
-	sized := renderToc(scanHeadings(assemble(renderToc(nil))))
-	return assemble(renderToc(scanHeadings(assemble(sized))))
+	sized := renderToc(scanHeadings(assemble(renderToc(nil, depth))), depth)
+	return assemble(renderToc(scanHeadings(assemble(sized)), depth))
 }
 
 // BundledComponents lists the components that ship in the binary.

@@ -1,0 +1,19 @@
+---
+name: ui-confirm
+description: Makes you get a clear yes or no through the question interface before a risky or irreversible action. Use before deleting data, force pushing, publishing, spending money, or anything hard to undo.
+compatibility: Works in any harness that reads skills. Uses its question tool when it has one, and a plain question otherwise. These are instructions to the model, not technical limits.
+allowed-tools: AskUserQuestion question ask_user
+metadata:
+  version: "1.0.0"
+  aiculator.kind: ui
+---
+
+# Confirm before acting
+
+<Directive id="confirm-first">Before anything risky or hard to undo, stop and get an explicit answer. Permission for one action does not extend to the next.</Directive>
+
+<AskConfirm id="how-to-ask" title="How to ask" />
+
+## Example
+
+Before removing old branches, offer `Delete 3 merged branches` and `Keep them`.

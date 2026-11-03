@@ -8,7 +8,12 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ### Added
 
+- **Templates for rich output:** new components `<TodoList>`, `<PlanMode>`, `<AskConfirm>`, `<AskText>`, `<AskPreview>`, `<Render>` and `<RichMarkdown>`, with templates `ui-confirm`, `ui-text`, `ui-preview`, `ui-todos`, `ui-plan` and `rich-markdown`. They name each harness's real tool, and `rich-markdown` covers 19 Markdown forms, with terminal fallbacks for those a terminal may not show.
 - **Template demo:** `.agent/template/demo.mdx` uses every template feature in one realistic workflow, with a docs page that shows its real source and rendered output.
+
+### Changed
+
+- `.gitignore` now covers Go, operating system, editor and secret files, and `.DS_Store` is no longer tracked.
 
 ## [0.3.0] - 2026-11-03
 

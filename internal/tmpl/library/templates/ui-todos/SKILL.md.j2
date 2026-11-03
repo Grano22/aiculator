@@ -1,0 +1,13 @@
+---
+name: ui-todos
+description: Makes you keep a live task list while you work, so that progress stays visible. Use for work with three or more steps, or when the user asks to track progress or see a checklist.
+compatibility: Works in any harness that reads skills. Uses its task list tool when it has one, and a Markdown checklist otherwise. These are instructions to the model, not technical limits.
+allowed-tools: TaskCreate TaskUpdate TaskList TodoWrite todowrite write_todos
+metadata:
+  version: "1.0.0"
+  aiculator.kind: ui
+---
+
+# Live task list
+
+<TodoList id="how-to-track" title="How to track the work" />

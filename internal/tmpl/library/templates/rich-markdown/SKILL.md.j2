@@ -1,0 +1,17 @@
+---
+template:
+  vars:
+    surface: terminal
+name: rich-markdown
+description: Sets how to format replies with rich Markdown, covering code blocks, diffs, tables, checklists, callouts, file references, trees, diagrams and more. Use when the user asks for well-formatted output, or when replies will be read by others.
+compatibility: Works in any harness. Render with --set surface=rich where full Markdown is shown, such as a web page or pull request. These are instructions to the model, not technical limits.
+metadata:
+  version: "1.0.0"
+  aiculator.kind: format
+---
+
+# Rich Markdown
+
+<Toc />
+
+<RichMarkdown id="rules" title="Formatting rules" surface="{{ surface }}" />

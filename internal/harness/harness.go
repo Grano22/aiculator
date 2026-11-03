@@ -69,6 +69,8 @@ type Harness struct {
 	GlobalMCPFile string
 	// QuestionTool is the built-in tool for asking the user, from the harness's docs.
 	QuestionTool string
+	// TodoTool, PlanEnter and PlanExit come from the harness's docs too.
+	TodoTool, PlanEnter, PlanExit string
 	// CLIAdd is the harness's own command for adding a server, when confirmed.
 	CLIAdd []string
 	Source Source
@@ -128,7 +130,7 @@ const npm = "~/.npm"
 
 var registry = []Harness{
 	{
-		ID: "claude", Name: "Claude Code", Bins: []string{"claude"}, QuestionTool: "AskUserQuestion",
+		ID: "claude", Name: "Claude Code", Bins: []string{"claude"}, QuestionTool: "AskUserQuestion", TodoTool: "TaskCreate", PlanEnter: "EnterPlanMode", PlanExit: "ExitPlanMode",
 		ACP:       []string{"npx", "-y", "@agentclientprotocol/claude-agent-acp@0.100.0"},
 		PassEnv:   []string{"ANTHROPIC_API_KEY"},
 		Env:       []string{"CLAUDE_CODE_TMPDIR={private}"},
@@ -147,7 +149,7 @@ var registry = []Harness{
 		Note: "Codex reads .codex/config.toml only in projects you have marked as trusted.",
 	},
 	{
-		ID: "gemini", Name: "Gemini CLI", Bins: []string{"gemini"}, QuestionTool: "ask_user",
+		ID: "gemini", Name: "Gemini CLI", Bins: []string{"gemini"}, QuestionTool: "ask_user", TodoTool: "write_todos", PlanEnter: "enter_plan_mode", PlanExit: "exit_plan_mode",
 		ACP:       []string{"npx", "-y", "@google/gemini-cli@0.66.0", "--acp"},
 		PassEnv:   []string{"GEMINI_API_KEY", "GOOGLE_API_KEY"},
 		StateDirs: []string{"~/.gemini", npm},
@@ -155,7 +157,7 @@ var registry = []Harness{
 		MCP: MCPServersJSON, MCPFile: ".gemini/settings.json", GlobalMCPFile: "~/.gemini/settings.json", Source: SourceDocs,
 	},
 	{
-		ID: "opencode", Name: "OpenCode", Bins: []string{"opencode"}, QuestionTool: "question",
+		ID: "opencode", Name: "OpenCode", Bins: []string{"opencode"}, QuestionTool: "question", TodoTool: "todowrite",
 		ACP:       []string{"opencode", "acp"},
 		PassEnv:   []string{"ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY"},
 		StateDirs: []string{"~/.config/opencode", "~/.local/share/opencode", "~/.local/state/opencode", "~/.cache/opencode"},

@@ -316,3 +316,16 @@ func TestQuestionToolsAreOnlyThoseConfirmedByDocs(t *testing.T) {
 		}
 	}
 }
+
+func TestTodoAndPlanToolsAreOnlyThoseConfirmedByDocs(t *testing.T) {
+	todos := map[string]string{"claude": "TaskCreate", "gemini": "write_todos", "opencode": "todowrite"}
+	plans := map[string][2]string{"claude": {"EnterPlanMode", "ExitPlanMode"}, "gemini": {"enter_plan_mode", "exit_plan_mode"}}
+	for _, h := range All() {
+		if h.TodoTool != todos[h.ID] {
+			t.Errorf("%s: todo tool %q", h.ID, h.TodoTool)
+		}
+		if [2]string{h.PlanEnter, h.PlanExit} != plans[h.ID] {
+			t.Errorf("%s: plan tools %q %q", h.ID, h.PlanEnter, h.PlanExit)
+		}
+	}
+}

@@ -6,6 +6,7 @@ template:
     timeout: 120s
     max_subagents: 3
     checks: [unit tests, lint, security scan]
+    surface: terminal
 name: demo
 description: Demonstrates every template feature by walking through shipping a feature, with questions, subagents, retries and a live status section. Use when the user asks to see the demo template or how the template features work.
 compatibility: Works in any harness that reads skills. These are instructions to the model, not technical limits.
@@ -19,7 +20,7 @@ metadata:
 
 # Ship a feature in {{ project }}
 
-<Toc />
+<Toc depth="2" />
 
 {# A condition: this differs per harness when rendered with --per-harness. #}
 {% if harness.question_tool %}
@@ -39,19 +40,33 @@ Rendered for {{ harness.name }}, so the questions below fall back to numbered li
 
 <DemoBadge label="Custom component">This one comes from `components/DemoBadge.md`, next to this template.</DemoBadge>
 
-<AskOne id="choose-approach" title="Step A: choose an approach" question="How should I build this feature?" subagent="Use the smallest change that works, and say so in your report.">
+<TodoList id="track-work" title="Track the work">
+- Settle the details with the user
+- Get the plan approved
+- Build and review it
+- Open the pull request
+</TodoList>
+
+<AskText id="name-feature" title="Step A: name the feature" question="What should this feature's flag and branch be called?" placeholder="faster-checkout" />
+
+<AskOne id="choose-approach" title="Step B: choose an approach" question="How should I build this feature?" subagent="Use the smallest change that works, and say so in your report.">
 - Smallest change (Recommended): touch as little as possible
 - Refactor first: clean the area up, then add the feature
 - Feature flag: ship it switched off
 </AskOne>
 
-<AskMany id="choose-checks" title="Step B: choose the checks" question="Which checks should I run before review?" min="1">
+<AskPreview id="choose-api" title="Step C: choose the API style" question="Which API style reads best here?">
+- Options object: `pay({ amount, currency })`
+- Plain arguments: `pay(amount, currency)`
+</AskPreview>
+
+<AskMany id="choose-checks" title="Step D: choose the checks" question="Which checks should I run before review?" min="1">
 {% for check in checks %}
 - {{ check | capitalize }}
 {% endfor %}
 </AskMany>
 
-<AskTabs id="choose-settings" title="Step C: settle the details">
+<AskTabs id="choose-settings" title="Step E: settle the details">
 <Tab header="Rollout" question="How should it roll out?">
 All at once (Recommended), or gradually
 </Tab>
@@ -61,15 +76,20 @@ README, or the changelog, or the API reference
 </Tab>
 </AskTabs>
 
+<PlanMode id="approve-plan" title="Step F: get the plan approved">
+- The answers from steps A to E
+- The checks you will run, and in what order
+</PlanMode>
+
 <Subagents use="when" max="{{ max_subagents }}" when="the work splits into independent parts, or needs broad searching" not_when="the steps depend on each other" />
 
-<SubagentFlow id="build-flow" title="Step D: build it" name="research, build, review">
+<SubagentFlow id="build-flow" title="Step G: build it" name="research, build, review">
 <Stage n="1" title="Research" id="research" parallel="{{ max_subagents }}" output="Short findings with file paths, and no changes to any file" done="you could explain the change, with evidence for each claim">
 Find the code this feature touches.
 </Stage>
 
 <Stage n="2" title="Build" id="build" output="The changes made, and how they were checked" done="the code is changed and the tests pass">
-Make the change the user chose in step A.
+Make the change the user chose in step B.
 </Stage>
 
 <Stage n="3" title="Review" id="review" agent="a fresh subagent that did not write the code" output="Real problems, each with a file, a line and why it matters" done="each problem is fixed, or you have explained why it stays">
@@ -93,6 +113,8 @@ Look for bugs in the changes.
 <Step n="2" title="Ship" id="ship" subagent="Do not ship. Only the agent that started you does that.">Open the pull request.</Step>
 </Flow>
 
+<AskConfirm id="delete-branch" title="Step H: clean up" question="Delete the merged feature branch?" />
+
 <OutputFormat>
 Done: what changed
 Checked: what you ran and the result
@@ -102,3 +124,8 @@ Next: what remains, or "nothing"
 <DynamicSection id="progress" title="Progress" update="after each step above" keep="the current step, and anything blocking it">Not started.</DynamicSection>
 
 <DynamicSection id="changelog" title="Release notes" file="RELEASE_NOTES.md" update="whenever the plan changes" />
+
+{# Every rule except one comes from RichMarkdown, and that one is used alone, with extra advice. #}
+<RichMarkdown id="formatting" title="How to format your replies" surface="{{ surface }}" only="code,inline,shell,diff,table,list,checklist,headings,callout,quote,tree,link,diagram,image,details,math,footnote,rule" />
+
+<Render kind="fileref" surface="{{ surface }}">In this demo, cite the checkout code this way in every review finding.</Render>

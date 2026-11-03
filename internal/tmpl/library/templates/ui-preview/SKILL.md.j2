@@ -1,0 +1,15 @@
+---
+name: ui-preview
+description: Makes you show each option as a visible example when the user must compare them, such as layouts, code styles or output formats. Use when options are easier to judge by seeing them.
+compatibility: Works in any harness that reads skills. Uses previews when its question tool offers them, and labeled code blocks otherwise. These are instructions to the model, not technical limits.
+allowed-tools: AskUserQuestion question ask_user
+metadata:
+  version: "1.0.0"
+  aiculator.kind: ui
+---
+
+# Questions with previews
+
+<Directive id="show-dont-describe">When options differ in how they look, show them. Do not only describe them.</Directive>
+
+<AskPreview id="how-to-ask" title="How to ask" />

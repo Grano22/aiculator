@@ -1,0 +1,13 @@
+---
+name: ui-text
+description: Makes you ask for free-form input the right way when options cannot cover the answer. Use when you need a name, a path, a URL, or a description only the user can provide.
+compatibility: Works in any harness that reads skills. Uses a text input when its question tool has one, and a plain question otherwise. These are instructions to the model, not technical limits.
+allowed-tools: AskUserQuestion question ask_user
+metadata:
+  version: "1.0.0"
+  aiculator.kind: ui
+---
+
+# Free-text questions
+
+<AskText id="how-to-ask" title="How to ask" placeholder="my-service" />
