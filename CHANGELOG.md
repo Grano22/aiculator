@@ -6,6 +6,8 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-03
+
 ### Added
 
 - **Package manager publishing:** a release now installs and tests packages for Homebrew, Scoop, Chocolatey, WinGet, the Arch User Repository, and signed apt, dnf and apk repositories. It publishes each one whose secrets are set, and skips the rest.
