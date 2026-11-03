@@ -1045,3 +1045,23 @@ func TestDemoPageFencesOutlastItsSnippets(t *testing.T) {
 		}
 	}
 }
+
+// Anything run after down, such as a new up or removing .swarm, must not meet a server
+// that is still writing. The HTTP endpoint closes before the store has finished.
+func TestDownReturnsOnlyAfterTheServerExits(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	p.run("task", "add", "--id", "d1", "--title", "x", "--check", "true")
+	b, err := os.ReadFile(filepath.Join(p.root, ".swarm", "pid"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.run("down")
+	if processAlive(pid) {
+		t.Fatalf("down returned while server %d was still running", pid)
+	}
+}
