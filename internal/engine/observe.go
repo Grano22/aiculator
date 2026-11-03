@@ -103,7 +103,9 @@ func (e *Engine) Observe(ctx context.Context) (observe.Snapshot, error) {
 			s.Usage.Spent += t.Spent
 			s.Usage.Budgeted += t.Budget
 			if t.Budget > 0 && !t.State.Terminal() {
-				tight = append(tight, observe.BudgetLine{ID: t.ID, Title: t.Title, Spent: t.Spent, Budget: t.Budget, State: string(t.State)})
+				if t.Spent > 0 { // A budget nothing has touched is not worth a row.
+					tight = append(tight, observe.BudgetLine{ID: t.ID, Title: t.Title, Spent: t.Spent, Budget: t.Budget, State: string(t.State)})
+				}
 				if t.Spent >= t.Budget {
 					s.Usage.OverBudget++
 				}

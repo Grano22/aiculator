@@ -450,7 +450,7 @@ func (f *frame) usage(s observe.Snapshot) {
 	f.add("")
 	f.section("Tightest budgets")
 	if len(s.Usage.Tightest) == 0 {
-		f.add(f.paint(dim, "no task has a budget"))
+		f.add(f.paint(dim, "no budgeted task has spent anything yet"))
 	} else {
 		barW := 20
 		for _, b := range s.Usage.Tightest {
