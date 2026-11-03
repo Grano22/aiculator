@@ -117,6 +117,15 @@ func TestDockerArgs(t *testing.T) {
 	if slices.Contains(a, "PATH=/secret") {
 		t.Error("host PATH passed into the container")
 	}
+	// The default image's entrypoint must not take the command as its arguments.
+	i := slices.Index(a, "--entrypoint")
+	img := slices.Index(a, "img")
+	if i < 0 || i+1 >= len(a) || a[i+1] != "" || img < i {
+		t.Errorf("the entrypoint is not cleared before the image: %v", a)
+	}
+	if !slices.Equal(a[img+1:], []string{"sh"}) {
+		t.Errorf("the command should follow the image: %v", a)
+	}
 }
 
 func TestOpenRefusesSilentNoSandbox(t *testing.T) {

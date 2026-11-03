@@ -129,7 +129,12 @@ func serve(ctx context.Context, o serveOpts) error {
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return err
 	}
-	defer os.Remove(filepath.Join(dataDir, "pid"))
+	// The design relies on a single writer, so a second server must not start here.
+	unlock, err := lockDataDir(dataDir)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	authority, err := auth.LoadOrCreate(filepath.Join(dataDir, "signing.key"))
 	if err != nil {
 		return err
@@ -195,6 +200,7 @@ func serve(ctx context.Context, o serveOpts) error {
 	if err := atomicWrite(filepath.Join(dataDir, "pid"), []byte(strconv.Itoa(os.Getpid())), 0o600); err != nil {
 		return err
 	}
+	defer os.Remove(filepath.Join(dataDir, "pid"))
 	log.Info("swarm listening", "url", url)
 
 	select {

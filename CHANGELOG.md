@@ -18,6 +18,8 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 ### Fixed
 
 - `aiculator down` now waits for the server process to exit. It used to return when the health endpoint closed, while the store could still be writing to `.swarm`.
+- A second server on the same data directory is now refused. It used to start, and two writers could share one store.
+- The Docker sandbox clears the image's entrypoint, so commands run as given. The default `alpine/git` image would otherwise pass them to `git`. Custom images that rely on an entrypoint for setup no longer run it.
 
 ## [0.3.0] - 2026-11-03
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -1064,4 +1065,72 @@ func TestDownReturnsOnlyAfterTheServerExits(t *testing.T) {
 	if processAlive(pid) {
 		t.Fatalf("down returned while server %d was still running", pid)
 	}
+}
+
+func TestSecondServerOnTheSameDataIsRefused(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	data := filepath.Join(p.root, ".swarm")
+	before, err := os.ReadFile(filepath.Join(data, "pid"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr, err := os.ReadFile(filepath.Join(data, "addr"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, p.bin, "serve", "--data", data, "--addr", "127.0.0.1:0", "--repo", p.root)
+	cmd.Dir = p.root
+	cmd.Env = append(os.Environ(), "HOME="+p.home)
+	out, err := cmd.CombinedOutput()
+	if err == nil || !strings.Contains(string(out), "another server is already using") {
+		t.Fatalf("second server: %v\n%s", err, out)
+	}
+	// It must leave the running server's files alone, so that down can still find it.
+	for name, want := range map[string][]byte{"pid": before, "addr": addr} {
+		got, err := os.ReadFile(filepath.Join(data, name))
+		if err != nil || !bytes.Equal(got, want) {
+			t.Errorf("%s changed: %q %v", name, got, err)
+		}
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(before)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.run("down")
+	if processAlive(pid) {
+		t.Fatal("down did not stop the first server")
+	}
+	// The lock goes with the server.
+	p.run("up")
+}
+
+// The server can die while down waits, without removing its pid file.
+func TestDownSucceedsWhenTheServerDiesWhileWaiting(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	b, err := os.ReadFile(filepath.Join(p.root, ".swarm", "pid"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.AfterFunc(50*time.Millisecond, func() { _ = proc.Kill() })
+	start := time.Now()
+	if out, err := p.tryIn(p.root, "down"); err != nil {
+		t.Fatalf("down failed: %v\n%s", err, out)
+	}
+	if took := time.Since(start); took > 15*time.Second {
+		t.Fatalf("down took %s", took)
+	}
+	// A killed server releases its lock, so the project can start again.
+	p.run("up")
 }
