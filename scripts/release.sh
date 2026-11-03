@@ -56,7 +56,8 @@ TAG="v$VERSION"
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && die "$TAG already exists"
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [ "$BRANCH" = master ] || [ "$ALLOW" = 1 ] || die "on $BRANCH, not master; pass --allow-branch to override"
-[ -z "$(git status --porcelain)" ] || die "the working tree has uncommitted changes"
+# Untracked files stay out: only CHANGELOG.md is committed, and CI builds from the tag.
+[ -z "$(git status --porcelain --untracked-files=no)" ] || die "the working tree has uncommitted changes"
 grep -q '^## \[Unreleased\]' CHANGELOG.md || die "CHANGELOG.md has no [Unreleased] section"
 NOTES=$(awk '/^## \[/ { if (u) exit; if (index($0, "## [Unreleased]") == 1) { u = 1; next } } u { print }' CHANGELOG.md | sed -e '/./,$!d')
 [ -n "$NOTES" ] || die "the [Unreleased] section is empty, so there is nothing to release"
