@@ -2,90 +2,102 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/concepts/architecture/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/concepts/security/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/concepts/tasks/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/concepts/verification/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/getting-started/install/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/getting-started/quickstart/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
+    </url>
+    <url>
+         <loc>https://Grano22.github.io/aiculator/dev/guides/connectors/</loc>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/guides/dashboards/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/guides/debugging/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/guides/join/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/guides/mcp/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/guides/planning/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/guides/plugins/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
+    </url>
+    <url>
+         <loc>https://Grano22.github.io/aiculator/dev/guides/realms/</loc>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/guides/skills/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
+    </url>
+    <url>
+         <loc>https://Grano22.github.io/aiculator/dev/guides/task-data/</loc>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/guides/template-demo/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/guides/templates/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/guides/workers/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/project/packaging/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/project/releasing/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/project/status/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/reference/cli/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
     <url>
          <loc>https://Grano22.github.io/aiculator/dev/reference/harnesses/</loc>
-         <lastmod>2026-11-03</lastmod>
+         <lastmod>2026-11-04</lastmod>
     </url>
 </urlset>
