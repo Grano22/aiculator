@@ -8,6 +8,7 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ### Added
 
+- **`aiculator init`:** sets a project up step by step, asking which installed harnesses to use, whether to install the skills, whether to add MCP config and at which tier, and whether to start the server. It writes nothing until every answer is in, and `--yes` takes the defaults for a script.
 - **Labels and aging steps:** tasks can carry labels, and priority can jump after a wait, per task or across the server, with `--aging 1h=5,4h=20`. `aiculator task amend` changes what a task says without touching its progress.
 - **Properties, blobs and foreign resources:** tasks can carry structured data, files, and references to things elsewhere, which are fetched once and kept. These live outside the task record, so they add nothing to a commit.
 - **Connectors:** `aiculator import` loads tasks once from Jira, Notion, Excel or CSV, with configurable field mapping, including rules for an Eisenhower matrix. Tested against local servers built from the vendors' API docs, not yet against live accounts.

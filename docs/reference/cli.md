@@ -120,6 +120,37 @@ aiculator import SOURCE [flags]
       --update          bring items that were imported before up to date
 ```
 
+## `aiculator init`
+
+Set this project up, step by step: harnesses, skills, MCP config and the server
+
+Asks what you want, then does it: which installed harnesses to set up, whether to
+install the swarm's skills, whether to add the MCP config, and whether to start the server.
+
+Nothing is written until the last question is answered, so backing out with Ctrl-C leaves
+the project as it was. Running it again is safe, and keeps what is already there.
+
+For a script, --yes takes every default, and flags answer single questions.
+
+```text
+aiculator init [flags]
+```
+
+**Flags**
+
+```text
+      --all-harnesses    also offer harnesses that were not found on this machine
+      --dry-run          say what would be done, and do nothing
+      --harness string   set these up without asking: installed, all, or comma-separated ids
+      --no-mcp           do not add MCP config
+      --no-skills        do not install the skills
+      --no-start         do not start the server
+      --planner          also allow these sessions to plan
+      --sandbox string   sandbox for the server: auto, seatbelt, bwrap, docker or none (default "auto")
+      --tier int         tier for MCP sessions: 1 standard, 2 advanced, 3 ultra (default 1)
+  -y, --yes              take every default and ask nothing
+```
+
 ## `aiculator join`
 
 Connect installed harnesses to the swarm: server, skills and MCP config

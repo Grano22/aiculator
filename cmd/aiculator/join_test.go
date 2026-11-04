@@ -1384,3 +1384,154 @@ func readFileT(t *testing.T, path string) string {
 	}
 	return string(b)
 }
+
+// initProject runs init with answers on standard input, with only these harnesses found.
+func (p *project) init(stdin string, args ...string) (string, error) {
+	p.t.Helper()
+	dir := p.t.TempDir()
+	for _, name := range []string{"claude", "opencode"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+			p.t.Fatal(err)
+		}
+	}
+	git, err := exec.LookPath("git")
+	if err != nil {
+		p.t.Fatal(err)
+	}
+	c := exec.Command(p.bin, append([]string{"init"}, args...)...)
+	c.Dir = p.root
+	c.Stdin = strings.NewReader(stdin)
+	c.Env = append(os.Environ(), "HOME="+p.home, "PATH="+dir+string(os.PathListSeparator)+filepath.Dir(git),
+		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
+	out, err := c.CombinedOutput()
+	return string(out), err
+}
+
+func exists(p string) bool {
+	_, err := os.Stat(p)
+	return err == nil
+}
+
+func TestInitAsksAndDoesOnlyWhatWasChosen(t *testing.T) {
+	p := newProject(t)
+	// Harness, tier and start come from flags. Answers: skills yes, MCP yes.
+	out, err := p.init("y\ny\n", "--no-start", "--harness", "claude", "--tier", "2")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if !exists(filepath.Join(p.root, ".mcp.json")) || !exists(filepath.Join(p.root, ".agents/skills/swarm-join/SKILL.md")) {
+		t.Errorf("not set up:\n%s", out)
+	}
+	if exists(filepath.Join(p.root, "opencode.json")) {
+		t.Errorf("a harness that was not chosen was set up:\n%s", out)
+	}
+	cfg := readFileT(t, filepath.Join(p.root, ".mcp.json"))
+	if !strings.Contains(cfg, `"2"`) {
+		t.Errorf("tier: %s", cfg)
+	}
+	if !strings.Contains(out, "aiculator up") {
+		t.Errorf("it should say how to start the server:\n%s", out)
+	}
+}
+
+func TestInitDecliningMCPAndSkills(t *testing.T) {
+	p := newProject(t)
+	// Harness from a flag. Answers: skills no, MCP no, start no.
+	out, err := p.init("n\nn\nn\n", "--harness", "claude")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	for _, q := range []string{"skills", "MCP config", "Start the server"} {
+		if !strings.Contains(out, q) {
+			t.Errorf("it did not ask about %s:\n%s", q, out)
+		}
+	}
+	for _, f := range []string{".mcp.json", ".agents", ".claude", ".swarm"} {
+		if exists(filepath.Join(p.root, f)) {
+			t.Errorf("%s was created after saying no:\n%s", f, out)
+		}
+	}
+	// Skills yes, MCP no, start no.
+	if out, err = p.init("y\nn\nn\n", "--harness", "claude"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if !exists(filepath.Join(p.root, ".agents/skills/swarm-join")) || exists(filepath.Join(p.root, ".mcp.json")) {
+		t.Errorf("skills only:\n%s", out)
+	}
+}
+
+func TestInitWritesNothingUntilEveryAnswerIsIn(t *testing.T) {
+	p := newProject(t)
+	before, _ := os.ReadDir(p.root)
+	out, err := p.init("y\n", "--harness", "claude") // Input ends after the first answer.
+	if err == nil || !strings.Contains(out, "--yes") {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if after, _ := os.ReadDir(p.root); len(after) != len(before) {
+		t.Errorf("files appeared:\n%s", out)
+	}
+}
+
+func TestInitYesTakesDefaultsAndIsSafeToRepeat(t *testing.T) {
+	p := newProject(t)
+	for range 2 {
+		out, err := p.init("", "--yes")
+		if err != nil {
+			t.Fatalf("%v\n%s", err, out)
+		}
+		if strings.Contains(out, "?") && strings.Contains(out, "(Y/n)") {
+			t.Errorf("--yes asked a question:\n%s", out)
+		}
+	}
+	if !exists(filepath.Join(p.root, ".mcp.json")) || !exists(filepath.Join(p.root, "opencode.json")) || !exists(filepath.Join(p.root, ".swarm/addr")) {
+		t.Errorf("--yes should set up every harness found and start the server")
+	}
+	if cfg := readFileT(t, filepath.Join(p.root, ".mcp.json")); strings.Count(cfg, `"swarm"`) != 1 {
+		t.Errorf("repeating it duplicated config: %s", cfg)
+	}
+}
+
+func TestInitDryRunChangesNothing(t *testing.T) {
+	p := newProject(t)
+	before, _ := os.ReadDir(p.root)
+	out, err := p.init("", "--yes", "--dry-run", "--harness", "claude")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if !strings.Contains(out, "Nothing was changed") || !strings.Contains(out, ".mcp.json") {
+		t.Errorf("%s", out)
+	}
+	if after, _ := os.ReadDir(p.root); len(after) != len(before) {
+		t.Errorf("a dry run wrote files: %s", out)
+	}
+}
+
+func TestInitInAFolderWithNoRepository(t *testing.T) {
+	p := newProject(t)
+	plain := t.TempDir()
+	p.root = plain
+	// --yes must not turn a folder into a repository on its own.
+	out, err := p.init("", "--yes", "--harness", "claude")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if exists(filepath.Join(plain, ".git")) || exists(filepath.Join(plain, ".swarm/addr")) {
+		t.Errorf("--yes made a repository or started a server:\n%s", out)
+	}
+	if !strings.Contains(out, "at least one commit") {
+		t.Errorf("it should say what is missing:\n%s", out)
+	}
+	// Asked, and answered yes: repository, skills, MCP config, tier 1, no server.
+	plain2 := t.TempDir()
+	p.root = plain2
+	out, err = p.init("y\ny\ny\n1\nn\n", "--harness", "claude")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if !exists(filepath.Join(plain2, ".git")) {
+		t.Errorf("no repository:\n%s", out)
+	}
+	if log, err := exec.Command("git", "-C", plain2, "log", "--oneline").Output(); err != nil || !strings.Contains(string(log), "Initial commit") {
+		t.Errorf("no first commit: %s %v", log, err)
+	}
+}

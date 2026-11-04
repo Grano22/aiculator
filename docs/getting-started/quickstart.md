@@ -4,17 +4,25 @@ This takes a repository from nothing to one finished, verified task.
 
 ## 1. Connect the project
 
-Run this in a git repository with at least one commit:
+Run this in your project:
 
 ```sh
-aiculator join --tier 1
+aiculator init
 ```
 
-It does three things, and writes no secrets:
+It asks a few questions, and writes nothing until you have answered them all:
 
-- Starts a local server, keeping its data in `.swarm/`, which is excluded from git.
-- Installs the bundled skills into `.agents/skills`.
-- Adds the swarm's MCP server to the config of each harness it finds.
+- Which installed harnesses should use the swarm.
+- Whether to install the swarm's skills.
+- Whether to add MCP config, and at which tier.
+- Whether to start the server now.
+
+If the folder has no git repository or no commits yet, it offers to create them, because the swarm's worktrees need a commit to start from.
+
+No secrets are written, and running it again is safe. The server keeps its data in `.swarm/`, which is excluded from git.
+
+!!! tip "In a script"
+    `aiculator init --yes` takes every default without asking. It won't create a git repository unless you agree to, so run it in one that has a commit. To answer single questions, use `--harness claude,opencode`, `--no-skills`, `--no-mcp`, `--no-start` and `--tier 2`. Add `--dry-run` to see what would happen. `aiculator join` does the same setup, and also asks nothing.
 
 ## 2. Add a task
 

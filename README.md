@@ -30,7 +30,7 @@ CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o bin/aiculator ./cmd/aiculat
 export PATH="$PWD/bin:$PATH"     # The skills call aiculator by name.
 
 cd /path/to/your/repo
-aiculator join --tier 1          # Server, skills and MCP config for every installed harness
+aiculator init                   # Asks which harnesses, skills and MCP config you want
 aiculator task add --title "Add a health endpoint" \
   --spec "Add GET /healthz returning 200." --check "go test ./..."
 aiculator task ls

@@ -255,6 +255,91 @@ func selfCommand() string {
 	return self
 }
 
+// setupPlan is what join and init have decided to do.
+type setupPlan struct {
+	harnesses          []harness.Harness
+	skills, mcp, start bool
+	tier               int
+	planner            bool
+	sandbox            string
+}
+
+// runSetup does the writing for join and init. Each step can be run again safely.
+func runSetup(p setupPlan) error {
+	hs, tier := p.harnesses, p.tier
+	if p.start {
+		if _, err := startServer(p.sandbox); err != nil {
+			return err
+		}
+	}
+	root := projectRoot()
+	if p.skills {
+		acts, err := skillpack.Install(skillpack.Options{Root: root, Patterns: []string{"swarm-*"}, Harnesses: hs})
+		if err != nil {
+			return err
+		}
+		for _, a := range acts {
+			if a.What == "conflict" || a.What == "invalid" {
+				fmt.Printf("warning: %s for %s: %s\n", a.Skill, a.Target, a.Detail)
+			}
+		}
+		fmt.Printf("Skills are in %s. Edit them only there.\n\n", skillpack.CanonicalDir)
+	}
+	args := []string{"mcp", "--auto", "--tier", strconv.Itoa(tier)}
+	if p.planner {
+		args = append(args, "--planner")
+	}
+	backups := filepath.Join(dataDir, "backups")
+	for _, h := range hs {
+		route := "shell (no restart needed)"
+		if !p.skills {
+			route = "no skills installed"
+		}
+		if p.mcp && h.MCP != harness.MCPNone {
+			e := harness.Entry{Command: selfCommand(), Args: append(args, "--harness", h.ID)}
+			r, err := h.WriteMCP(root, e, backups)
+			if err != nil {
+				fmt.Printf("%-10s could not write its MCP config: %v\n", h.ID, err)
+				continue
+			}
+			if r.Path != "" {
+				route = "MCP in " + h.MCPFile + " after a restart"
+				if p.skills {
+					route += "; shell works now"
+				}
+			}
+		}
+		fmt.Printf("%-10s %s\n", h.ID, route)
+		if h.Source != harness.SourceDocs {
+			fmt.Printf("%-10s paths come from a community table, not %s's docs; run aiculator skill --list to check\n", "", h.Name)
+		}
+		if h.Note != "" {
+			fmt.Printf("%-10s %s\n", "", h.Note)
+		}
+	}
+	fmt.Println()
+	if p.skills {
+		fmt.Printf("In a NEW session, ask it to use the swarm-join skill (/swarm-join in Claude Code).\n")
+		fmt.Printf("In a session ALREADY OPEN, paste this; it needs no restart:\n\n")
+		fmt.Printf("  Read %s/swarm-join/SKILL.md and follow it. Join as tier %d.\n\n", skillpack.CanonicalDir, tier)
+	} else if p.mcp {
+		fmt.Println("Restart your harness, and ask it to use the swarm's wait_for_task tool.")
+		fmt.Println()
+	}
+	if !p.start {
+		fmt.Println("The server is not running. Start it with: aiculator up")
+	}
+	if !p.skills && !p.mcp {
+		fmt.Println("No harness was connected. To add that later, run aiculator init again.")
+	}
+	if selfCommand() != "aiculator" {
+		fmt.Printf("Note: aiculator is not on PATH. The skills call it by name, so add %s to PATH.\n", filepath.Dir(selfCommand()))
+	}
+	fmt.Println("A joined session runs outside the sandbox, under its harness's own permissions.")
+	fmt.Println("For sandboxed workers, use aiculator drive.")
+	return nil
+}
+
 func joinCmd() *cobra.Command {
 	var (
 		list, sb string
@@ -277,58 +362,7 @@ harnesses that need it, and registers the MCP bridge. No secrets are written.`,
 			if len(hs) == 0 {
 				return errors.New("no known harness found on PATH; name one with --harness, or see aiculator harness")
 			}
-			if !noStart {
-				if _, err := startServer(sb); err != nil {
-					return err
-				}
-			}
-			root := projectRoot()
-			acts, err := skillpack.Install(skillpack.Options{Root: root, Patterns: []string{"swarm-*"}, Harnesses: hs})
-			if err != nil {
-				return err
-			}
-			for _, a := range acts {
-				if a.What == "conflict" || a.What == "invalid" {
-					fmt.Printf("warning: %s for %s: %s\n", a.Skill, a.Target, a.Detail)
-				}
-			}
-			args := []string{"mcp", "--auto", "--tier", strconv.Itoa(tier)}
-			if planner {
-				args = append(args, "--planner")
-			}
-			backups := filepath.Join(dataDir, "backups")
-			fmt.Printf("Skills are in %s. Edit them only there.\n\n", skillpack.CanonicalDir)
-			for _, h := range hs {
-				route := "shell (no restart needed)"
-				if h.MCP != harness.MCPNone {
-					e := harness.Entry{Command: selfCommand(), Args: append(args, "--harness", h.ID)}
-					r, err := h.WriteMCP(root, e, backups)
-					if err != nil {
-						fmt.Printf("%-10s could not write its MCP config: %v\n", h.ID, err)
-						continue
-					}
-					route = "MCP in " + h.MCPFile + " after a restart; shell works now"
-					if r.Path == "" {
-						route = "shell (no restart needed)"
-					}
-				}
-				fmt.Printf("%-10s %s\n", h.ID, route)
-				if h.Source != harness.SourceDocs {
-					fmt.Printf("%-10s paths come from a community table, not %s's docs; run aiculator skill --list to check\n", "", h.Name)
-				}
-				if h.Note != "" {
-					fmt.Printf("%-10s %s\n", "", h.Note)
-				}
-			}
-			fmt.Printf("\nIn a NEW session, ask it to use the swarm-join skill (/swarm-join in Claude Code).\n")
-			fmt.Printf("In a session ALREADY OPEN, paste this; it needs no restart:\n\n")
-			fmt.Printf("  Read %s/swarm-join/SKILL.md and follow it. Join as tier %d.\n\n", skillpack.CanonicalDir, tier)
-			if selfCommand() != "aiculator" {
-				fmt.Printf("Note: aiculator is not on PATH. The skills call it by name, so add %s to PATH.\n", filepath.Dir(selfCommand()))
-			}
-			fmt.Println("A joined session runs outside the sandbox, under its harness's own permissions.")
-			fmt.Println("For sandboxed workers, use aiculator drive.")
-			return nil
+			return runSetup(setupPlan{harnesses: hs, skills: true, mcp: true, start: !noStart, tier: tier, planner: planner, sandbox: sb})
 		},
 	}
 	f := cmd.Flags()
