@@ -6,6 +6,8 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-04
+
 ### Added
 
 - **Realms:** every project becomes a named realm when its server starts. `aiculator realm ls`, `aiculator top --all` and `aiculator web --all` show all projects, with their tasks and agents, and `--realm NAME` acts on one from any folder. Each keeps its own server and store. Sessions stay in one realm unless started with `--realm-switch`.
