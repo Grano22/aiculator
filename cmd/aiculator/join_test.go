@@ -1197,3 +1197,71 @@ func TestPropsBlobsAndResourcesFromTheCLI(t *testing.T) {
 		t.Errorf("a file URL was accepted: %s", out)
 	}
 }
+
+func TestImportFromASpreadsheet(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	src, err := os.ReadFile("../../internal/connect/testdata/eisenhower.xlsx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p.root, "plan.xlsx"), src, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(p.root, ".agents"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	cfg := `
+sources:
+  - name: plan
+    kind: xlsx
+    path: plan.xlsx
+    sheet: Tasks
+    fields:
+      key: ID
+      title: Task
+      spec: Notes
+      priority:
+        rules:
+          - when: {Urgent: "yes", Important: "yes"}
+            value: 100
+        default: 1
+      props:
+        due: Due
+`
+	if err := os.WriteFile(filepath.Join(p.root, ".agents/sources.yaml"), []byte(cfg), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out := p.run("import", "plan", "--dry-run")
+	if !strings.Contains(out, "plan-E-1") || !strings.Contains(out, "Nothing was changed") {
+		t.Errorf("dry run: %s", out)
+	}
+	if ls := p.run("task", "ls"); strings.Contains(ls, "plan-E-1") {
+		t.Errorf("a dry run created tasks: %s", ls)
+	}
+	out = p.run("import", "plan")
+	if !strings.Contains(out, "5 created") {
+		t.Errorf("import: %s", out)
+	}
+	show := p.run("task", "show", "plan-E-1")
+	for _, want := range []string{`"priority": 100`, `"source": "plan"`, `"external": "E-1"`, "Customers are affected"} {
+		if !strings.Contains(show, want) {
+			t.Errorf("missing %s in %s", want, show)
+		}
+	}
+	if m := p.run("task", "meta", "plan-E-1"); !strings.Contains(m, "2026-11-10") {
+		t.Errorf("meta: %s", m)
+	}
+	if out := p.run("import", "plan"); !strings.Contains(out, "0 created") || !strings.Contains(out, "5 unchanged") {
+		t.Errorf("a second import should change nothing: %s", out)
+	}
+	if out := p.run("source", "ls"); !strings.Contains(out, "plan") || !strings.Contains(out, "import only") {
+		t.Errorf("source ls: %s", out)
+	}
+	if out := p.run("source", "check", "plan"); !strings.Contains(out, "reachable") {
+		t.Errorf("source check: %s", out)
+	}
+	if out, err := p.tryIn(p.root, "import", "nope"); err == nil || !strings.Contains(out, "plan") {
+		t.Errorf("an unknown source should list the real ones: %v %s", err, out)
+	}
+}

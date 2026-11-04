@@ -14,7 +14,21 @@ import (
 
 func canWriteMeta(c auth.Claims) bool { return c.Admin || c.Planner }
 
+// ImportReq is a batch of mapped tasks from another system.
+type ImportReq struct {
+	Items  []swarm.ImportItem `json:"items"`
+	Update bool               `json:"update,omitempty"`
+}
+
 func (s *Server) metaRoutes(m *http.ServeMux) {
+	m.HandleFunc("POST /v1/import", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		q, ok := decode[ImportReq](w, r)
+		if !ok {
+			return
+		}
+		res, err := s.S.Import(r.Context(), q.Items, q.Update)
+		reply(w, res, err)
+	}))
 	m.HandleFunc("GET /v1/tasks/{id}/meta", s.authed(anyone, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
 		v, err := s.S.GetMeta(r.Context(), r.PathValue("id"))
 		reply(w, v, err)

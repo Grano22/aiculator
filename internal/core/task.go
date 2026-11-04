@@ -4,11 +4,13 @@
 package core
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"maps"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -154,6 +156,29 @@ func AgingBoost(steps []AgingStep, waited time.Duration) (boost int, next time.D
 		boost = s.Boost
 	}
 	return boost, 0
+}
+
+// ParseAging reads steps written as wait=boost, such as 1h=5 or 30m=10, and sorts them by
+// time. Config files and command lines both use this form.
+func ParseAging(items []string) ([]AgingStep, error) {
+	out := make([]AgingStep, 0, len(items))
+	for _, it := range items {
+		after, boost, ok := strings.Cut(it, "=")
+		if !ok {
+			return nil, fmt.Errorf("aging step %q: use a form such as 1h=5", it)
+		}
+		d, err := time.ParseDuration(after)
+		if err != nil || d < time.Second {
+			return nil, fmt.Errorf("aging step %q: bad wait", it)
+		}
+		b, err := strconv.Atoi(boost)
+		if err != nil {
+			return nil, fmt.Errorf("aging step %q: bad boost", it)
+		}
+		out = append(out, AgingStep{AfterSec: int64(d / time.Second), Boost: b})
+	}
+	slices.SortFunc(out, func(a, b AgingStep) int { return cmp.Compare(a.AfterSec, b.AfterSec) })
+	return out, nil
 }
 
 // Limits on what a task record may carry. They keep commits fast, and keep priority

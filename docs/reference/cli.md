@@ -99,6 +99,27 @@ List supported harnesses and how each connects
 aiculator harness
 ```
 
+## `aiculator import`
+
+Load tasks once from a configured source, such as Jira, Notion or a spreadsheet
+
+Reads a source named in .agents/sources.yaml, once, and creates a task for each item.
+Importing again is safe: an item that was imported before is left alone, or brought up to date with --update.
+
+```text
+aiculator import SOURCE [flags]
+```
+
+**Flags**
+
+```text
+      --config string   sources file; .agents/sources.yaml if empty
+      --dry-run         show what would be imported, and change nothing
+      --limit int       stop after this many items; 0 means all
+      --query string    use this query instead of the configured one: JQL for Jira, a JSON filter for Notion
+      --update          bring items that were imported before up to date
+```
+
 ## `aiculator join`
 
 Connect installed harnesses to the swarm: server, skills and MCP config
@@ -418,6 +439,36 @@ aiculator skill [--install PATTERN...] [flags]
       --purge                with --uninstall, also delete from .agents/skills
       --source strings       also read skills from this directory
       --uninstall strings    remove skills matching these patterns from harnesses
+```
+
+## `aiculator source`
+
+List and check the configured sources
+
+```text
+aiculator source
+```
+
+**Flags**
+
+```text
+      --config string   sources file; .agents/sources.yaml if empty
+```
+
+## `aiculator source check`
+
+Check a source's settings and credentials by reading from it
+
+```text
+aiculator source check NAME
+```
+
+## `aiculator source ls`
+
+List the configured sources
+
+```text
+aiculator source ls
 ```
 
 ## `aiculator task`

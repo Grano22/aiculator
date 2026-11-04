@@ -4,36 +4,12 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/Grano22/aiculator/internal/core"
 )
-
-// parseAging reads steps such as 1h=5 or 30m=10, and sorts them by time.
-func parseAging(items []string) ([]core.AgingStep, error) {
-	out := make([]core.AgingStep, 0, len(items))
-	for _, it := range items {
-		after, boost, ok := strings.Cut(it, "=")
-		if !ok {
-			return nil, fmt.Errorf("aging step %q: use a form such as 1h=5", it)
-		}
-		d, err := time.ParseDuration(after)
-		if err != nil || d < time.Second {
-			return nil, fmt.Errorf("aging step %q: bad wait", it)
-		}
-		b, err := strconv.Atoi(boost)
-		if err != nil {
-			return nil, fmt.Errorf("aging step %q: bad boost", it)
-		}
-		out = append(out, core.AgingStep{AfterSec: int64(d / time.Second), Boost: b})
-	}
-	slices.SortFunc(out, func(a, b core.AgingStep) int { return int(a.AfterSec - b.AfterSec) })
-	return out, nil
-}
 
 // parseLabels reads k=v pairs. An empty value removes the label when amending.
 func parseLabels(items []string) (map[string]string, error) {
@@ -78,7 +54,7 @@ func amendCmd() *cobra.Command {
 				return err
 			}
 			if f.Changed("aging") {
-				steps, err := parseAging(aging)
+				steps, err := core.ParseAging(aging)
 				if err != nil {
 					return err
 				}

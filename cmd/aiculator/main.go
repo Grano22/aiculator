@@ -80,7 +80,7 @@ func rootCmd() *cobra.Command {
 	addLoggingFlags(root)
 	// Declared here so that cobra does not claim -v for it, since -v is the verbosity.
 	root.Flags().Bool("version", false, "print the version")
-	root.AddCommand(serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
+	root.AddCommand(importCmd(), sourceCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
 		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), pluginCmd(), debugCmd(), logsCmd(), genDocsCmd())
 	addPluginCommands(root)
 	return root
@@ -102,7 +102,7 @@ func serveCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			aging, err := parseAging(agingArgs)
+			aging, err := core.ParseAging(agingArgs)
 			if err != nil {
 				return err
 			}
@@ -276,7 +276,7 @@ func taskCmd() *cobra.Command {
 			if s.Labels, err = parseLabels(labelArgs); err != nil {
 				return err
 			}
-			if s.Aging, err = parseAging(agingArgs); err != nil {
+			if s.Aging, err = core.ParseAging(agingArgs); err != nil {
 				return err
 			}
 			if !cmd.Flags().Changed("aging") {

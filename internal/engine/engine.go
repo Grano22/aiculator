@@ -733,6 +733,49 @@ func (e *Engine) AddTask(ctx context.Context, s TaskSpec) (core.Task, error) {
 	})
 }
 
+// AddResult is the outcome for one task of a batch.
+type AddResult struct {
+	Task core.Task
+	Err  error
+}
+
+// AddMany creates a batch in one writer turn, so that it costs one wake-up for waiting
+// agents and not one each. Keep batches small enough not to hold up claims.
+func (e *Engine) AddMany(ctx context.Context, specs []TaskSpec) ([]AddResult, error) {
+	return do(ctx, e, func() ([]AddResult, error) {
+		out := make([]AddResult, len(specs))
+		for i, s := range specs {
+			t, err := e.buildTask(s, 0)
+			if err == nil {
+				for _, d := range t.Deps {
+					if e.tasks[d] == nil {
+						err = fmt.Errorf("%w: unknown dependency %s", ErrInvalid, d)
+						break
+					}
+				}
+			}
+			if err == nil {
+				t, err = e.create(t)
+			}
+			out[i] = AddResult{t, err}
+		}
+		return out, nil
+	})
+}
+
+// Existing returns which of these tasks exist, in one writer turn.
+func (e *Engine) Existing(ctx context.Context, ids []string) (map[string]core.Task, error) {
+	return do(ctx, e, func() (map[string]core.Task, error) {
+		out := make(map[string]core.Task, len(ids))
+		for _, id := range ids {
+			if ent := e.tasks[id]; ent != nil {
+				out[id] = ent.task.Clone()
+			}
+		}
+		return out, nil
+	})
+}
+
 // Get returns one task.
 func (e *Engine) Get(ctx context.Context, id string) (core.Task, error) {
 	return do(ctx, e, func() (core.Task, error) {
