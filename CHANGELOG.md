@@ -6,8 +6,6 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
-## [0.5.0] - 2026-11-04
-
 ### Added
 
 - **Realms:** every project becomes a named realm when its server starts. `aiculator realm ls`, `aiculator top --all` and `aiculator web --all` show all projects, with their tasks and agents, and `--realm NAME` acts on one from any folder. Each keeps its own server and store. Sessions stay in one realm unless started with `--realm-switch`.
@@ -28,6 +26,11 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 - A repository nested inside another no longer uses the outer one's server. Tasks added there went to the wrong project, and agents would have worked in the wrong repository. A stray `.swarm` in the home directory no longer claims every folder below it.
 - A project no longer takes another project's server for its own when its old address reaches one after a crash, and no longer fails to start when its old port is taken.
 - Replaying the event log could miss the newest events on a busy machine, because the wait for it to catch up could finish too early.
+- A clean stop of the synchronizer could leave an unsent change stuck for 15 seconds after a restart, because it could be handed back to the worker that was shutting down.
+
+## [0.5.0] - 2026-11-04
+
+This tag failed its checks before anything was built, so it was never published. Its changes are in 0.5.1.
 
 ## [0.4.0] - 2026-11-03
 

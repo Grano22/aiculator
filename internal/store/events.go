@@ -213,5 +213,13 @@ func (s *Store) FollowTasks(ctx context.Context, durable string, filter []byte, 
 	if err != nil {
 		return nil, fmt.Errorf("consume %s: %w", durable, err)
 	}
-	return cc.Stop, nil
+	// Stop returns once no more can arrive, so that handing work back after it cannot deliver
+	// that work to the follower that is going away.
+	return func() {
+		cc.Stop()
+		select {
+		case <-cc.Closed():
+		case <-time.After(5 * time.Second):
+		}
+	}, nil
 }

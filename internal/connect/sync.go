@@ -142,8 +142,8 @@ func Start(ctx context.Context, c *Config, svc *swarm.Service, o Options) *Synce
 	return y
 }
 
-// Close stops syncing and waits. Unsent changes are still unacknowledged, so the next start
-// picks them up again.
+// Close stops syncing and waits. Unsent changes are handed back, so the next start picks
+// them up again.
 func (y *Syncer) Close() {
 	y.cancel()
 	y.wg.Wait()
@@ -178,11 +178,19 @@ func (w *worker) start(ctx context.Context, wg *sync.WaitGroup) {
 				w.setErr(err)
 				log.Error("sync cannot follow commits", "source", w.src.Name, "err", err)
 			} else {
+				pushed := make(chan struct{})
+				wg.Go(func() {
+					defer close(pushed)
+					w.pushLoop(ctx)
+				})
+				// The order matters. Handed back while the old subscription is still open, a
+				// change could be delivered straight back to this worker, and sit there.
 				wg.Go(func() {
 					<-ctx.Done()
 					stop()
+					<-pushed
+					w.handBack()
 				})
-				wg.Go(func() { w.pushLoop(ctx) })
 			}
 		}
 	}
@@ -241,10 +249,7 @@ func (w *worker) pushLoop(ctx context.Context) {
 	defer tick.Stop()
 	sem := make(chan struct{}, pushWorkers)
 	var wg sync.WaitGroup
-	defer func() {
-		wg.Wait()
-		w.handBack()
-	}()
+	defer wg.Wait()
 	for {
 		select {
 		case <-ctx.Done():
