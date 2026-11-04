@@ -127,7 +127,11 @@ func startServer(sb string) (string, error) {
 		return "", err
 	}
 	defer logFile.Close()
-	cmd := exec.Command(self, append([]string{"serve", "--data", abs, "--addr", addr, "--repo", root, "--sandbox", sb}, loggingArgs()...)...)
+	args := append([]string{"serve", "--data", abs, "--addr", addr, "--repo", root, "--sandbox", sb}, loggingArgs()...)
+	if len(upAging) > 0 {
+		args = append(args, "--aging", strings.Join(upAging, ","))
+	}
+	cmd := exec.Command(self, args...)
 	cmd.Dir = root
 	cmd.Stdout, cmd.Stderr = logFile, logFile
 	detach(cmd)
@@ -154,6 +158,9 @@ func startServer(sb string) (string, error) {
 	return "", fmt.Errorf("the server did not start in time; see %s", logPath)
 }
 
+// upAging is passed on to the server that up starts.
+var upAging []string
+
 func upCmd() *cobra.Command {
 	var sb string
 	cmd := &cobra.Command{
@@ -169,6 +176,7 @@ func upCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&sb, "sandbox", "auto", "sandbox: auto, seatbelt, bwrap, docker or none")
+	cmd.Flags().StringSliceVar(&upAging, "aging", nil, "raise priority after a wait, as wait=boost, such as 1h=5,4h=20")
 	return cmd
 }
 

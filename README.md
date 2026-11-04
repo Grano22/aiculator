@@ -97,6 +97,12 @@ Use the spec's fields first: `name`, `description`, `license`, `compatibility`, 
 
 `aiculator mcp add` and `aiculator mcp print` add a server to any harness or config file, or print the piece to paste. Both are covered in the docs under `docs/guides/`.
 
+## Tasks from other platforms
+
+Tasks can come from Jira, Notion, Excel or CSV as well as from harnesses. `aiculator import` loads them once, using a field mapping in `.agents/sources.yaml`, and the synchronizer keeps them in step in both directions. It runs beside the core, so a slow remote can't slow a claim. See [Connectors](docs/guides/connectors.md).
+
+Tasks can also carry labels, properties, files and references to things elsewhere, and their priority can rise as they wait. See [Labels, priority and attachments](docs/guides/task-data.md).
+
 ## Harnesses
 
 `aiculator harness` shows all 24 and their state on this machine.
@@ -143,6 +149,8 @@ OpenCode 2 needs one extra step: a running background service does not pick up n
 | `internal/harness` | Registry of harnesses, and MCP config writers |
 | `internal/skillpack` | One-place skills, wildcard install, linter, bundled skills |
 | `internal/tmpl` | Templates, components and rendering |
+| `internal/meta` | Properties, blobs and foreign resources |
+| `internal/connect` | Import and two-way sync with other platforms |
 | `internal/tui` | The terminal dashboard |
 | `pkg/observe` | Public: live metrics |
 | `pkg/plugin` | Public: the plugin API |

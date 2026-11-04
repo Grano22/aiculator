@@ -11,6 +11,8 @@
 - Performance budgets and a package size budget
 - Terminal and web dashboards, metrics and a plugin system
 - Verbosity levels, and templates for question types, subagent flows and live sections
+- Labels, aging steps, properties, blobs and foreign resources
+- Connectors for Jira, Notion, Excel and CSV, with two-way sync
 
 ## Tested on real harnesses
 
@@ -35,6 +37,7 @@ The other harnesses are configured from their docs or a community table. Use `./
 
 - Windows and FreeBSD builds compile, but have not been run.
 - The Docker sandbox has had only its arguments checked.
+- The Jira and Notion connectors have run only against local servers written from each vendor's API documentation, and not against a live account.
 
 ## Roadmap
 

@@ -172,3 +172,44 @@ check BugLeasesUnchecked for 5 but 12 steps
 run SaneStealHappens { some a: Agent, t: Task | eligible[a, t] and a.tier != t.need } for 4
 run SaneReviewHappens { some a: Agent, t: Task | mayReview[a, t] and some t.submitter } for 4
 run SanePlanRuns { commitAccepted[Plan] and #Plan > 1 and some Plan.deps } for 4
+
+// ---- Connectors. A field can reach a task only through the mapping, and what a mapping can
+// write is fixed in connect.Fields. This checks the rule that matters: nothing an outside
+// system controls can reach an attribute the swarm executes or enforces.
+abstract sig Attr {}
+one sig Title, Spec, Priority, TierAttr, Tags, Labels, Props extends Attr {}
+one sig Checks, Touches, Budget, RequireReview, AllowEmpty extends Attr {}
+
+// connect.Fields and connect.Defaults, as they are declared in internal/connect/config.go.
+fun mappable: set Attr { Title + Spec + Priority + TierAttr + Tags + Labels + Props }
+fun configOnly: set Attr { Checks + Touches + Budget + RequireReview + AllowEmpty }
+
+sig Source { items: set Item }
+sig Item { writes: set Attr }
+sig Linked { from: one Item, to: one Task }
+
+pred mappingRules { all i: Item | i.writes in mappable }
+
+assert OutsideDataCannotReachWhatRuns {
+  mappingRules implies no i: Item | some i.writes & configOnly
+}
+check OutsideDataCannotReachWhatRuns for 6
+
+assert BugMappingOpen {
+  no i: Item | some i.writes & configOnly
+}
+check BugMappingOpen for 6
+
+// connect.TaskID is a function of the key, so re-importing finds the same task, and two
+// items never share one. The store key is source and task, so a task has one link each.
+pred linksAreKeyed {
+  all l, m: Linked | l.from = m.from iff l.to = m.to
+}
+
+assert ImportCannotDuplicateOrMerge {
+  linksAreKeyed implies {
+    all i: Item | lone from.i.to
+    all t: Task | lone to.t.from
+  }
+}
+check ImportCannotDuplicateOrMerge for 6

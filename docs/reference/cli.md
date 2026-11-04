@@ -779,6 +779,7 @@ aiculator up [flags]
 **Flags**
 
 ```text
+      --aging strings    raise priority after a wait, as wait=boost, such as 1h=5,4h=20
       --sandbox string   sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
 ```
 

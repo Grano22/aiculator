@@ -1287,6 +1287,8 @@ func TestJiraImportAndRealtimeSyncEndToEnd(t *testing.T) {
 			fmt.Fprintf(w, `{"issues":[{"key":"PROJ-1","fields":{"summary":"From Jira","updated":"2026-11-04T10:00:00.000+0000","status":{"name":%q},"description":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Do the thing"}]}]},"attachment":[{"filename":"a.log","content":"http://%s/att/1","mimeType":"text/plain","size":5}]}}]}`, status, r.Host)
 		case r.URL.Path == "/att/1":
 			_, _ = w.Write([]byte("hello"))
+		case r.URL.Path == "/rest/api/3/issue/PROJ-1":
+			fmt.Fprintf(w, `{"key":"PROJ-1","fields":{"summary":"From Jira","updated":"2026-11-04T10:00:00.000+0000","status":{"name":%q}}}`, status)
 		case strings.HasSuffix(r.URL.Path, "/transitions") && r.Method == "GET":
 			_, _ = w.Write([]byte(`{"transitions":[{"id":"21","to":{"name":"In Progress"}},{"id":"31","to":{"name":"Done"}}]}`))
 		case strings.HasSuffix(r.URL.Path, "/transitions"):

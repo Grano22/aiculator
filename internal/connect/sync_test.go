@@ -533,3 +533,30 @@ func TestSourceThatCannotStartDoesNotStopTheOthers(t *testing.T) {
 		t.Errorf("%+v", st[0])
 	}
 }
+
+// Someone cancels over there just before a push, and the next poll is a long way off.
+func TestPushDoesNotOverwriteARemoteCancel(t *testing.T) {
+	f := fix(t, &SyncConfig{Status: statuses, OnRemote: map[string]string{"Cancelled": "cancel"}, Pull: PullConfig{Mode: "interval", Every: time.Hour}})
+	id := f.imp("K-1", "To Do")
+	f.start()
+	wait(t, "the first read", func() bool {
+		f.fake.mu.Lock()
+		defer f.fake.mu.Unlock()
+		return f.fake.pulls >= 1
+	})
+	time.Sleep(20 * time.Millisecond)
+	f.fake.put("K-1", "title K-1", "Cancelled", "2")
+	if _, err := f.svc.Engine.Wait(bg, agent, 0); err != nil {
+		t.Fatal(err)
+	}
+	wait(t, "the cancel", func() bool {
+		x, err := f.svc.Engine.Get(bg, id)
+		return err == nil && x.State == core.Canceled
+	})
+	f.quiet() // The remote still says Cancelled, and nothing was sent over it.
+	f.fake.mu.Lock()
+	defer f.fake.mu.Unlock()
+	if s := f.fake.items["K-1"].Status; s != "Cancelled" {
+		t.Errorf("the remote now says %s", s)
+	}
+}

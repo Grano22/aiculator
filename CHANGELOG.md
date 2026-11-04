@@ -6,6 +6,17 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+### Added
+
+- **Labels and aging steps:** tasks can carry labels, and priority can jump after a wait, per task or across the server, with `--aging 1h=5,4h=20`. `aiculator task amend` changes what a task says without touching its progress.
+- **Properties, blobs and foreign resources:** tasks can carry structured data, files, and references to things elsewhere, which are fetched once and kept. These live outside the task record, so they add nothing to a commit.
+- **Connectors:** `aiculator import` loads tasks once from Jira, Notion, Excel or CSV, with configurable field mapping, including rules for an Eisenhower matrix. Tested against local servers built from the vendors' API docs, not yet against live accounts.
+- **Synchronizer:** keeps a source in step in both directions, by realtime or interval push, with each change or only the last, and by a single read, polling or signed webhooks. It runs beside the core, so a slow remote can't slow a claim. `spec/tla/Sync.tla` models it.
+
+### Changed
+
+- A heartbeat with 500 agents waiting is about 6 times faster, because it no longer re-matches every waiter, and `core.Apply` no longer copies each list.
+
 ## [0.4.0] - 2026-11-03
 
 ### Added

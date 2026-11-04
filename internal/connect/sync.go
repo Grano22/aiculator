@@ -359,6 +359,27 @@ func (w *worker) send(ctx context.Context, id string, state core.State, committe
 		w.echoes.Add(1)
 		return nil
 	}
+	// Look before writing. Someone may have just canceled this over there, and a poll may
+	// be minutes away, so this keeps a push from overwriting their decision.
+	if w.get != nil && w.direction() == "both" {
+		it, err := w.get.Get(ctx, link.Key)
+		if err != nil {
+			return err
+		}
+		if err := w.apply(ctx, it); err != nil {
+			return err
+		}
+		if w.onRemoteCancels(it.Status) {
+			return nil
+		}
+		if strings.EqualFold(it.Status, want) {
+			w.echoes.Add(1)
+			return nil
+		}
+		if link, rev, err = w.svc.Store.GetLink(w.src.Name, id); err != nil {
+			return err
+		}
+	}
 	if err := w.push.SetStatus(ctx, link.Key, want); err != nil {
 		return err
 	}

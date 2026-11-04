@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"sync/atomic"
@@ -589,5 +590,26 @@ func TestCredentialsGoOnlyToTheConfiguredHost(t *testing.T) {
 	// Plain HTTP to a remote host would expose the token on the network.
 	if _, err := newWebClient(&Source{Name: "x"}, "http://jira.example", nil); err == nil {
 		t.Fatal("an unencrypted URL was accepted")
+	}
+}
+
+// Ties the Alloy model to the code. spec/alloy/swarm.als proves its claim about the attributes
+// listed there, and this fails if the real list of mappable fields ever differs from them.
+func TestMappableFieldsMatchTheFormalModel(t *testing.T) {
+	var got []string
+	typ := reflect.TypeFor[Fields]()
+	for i := range typ.NumField() {
+		got = append(got, strings.Split(typ.Field(i).Tag.Get("yaml"), ",")[0])
+	}
+	slices.Sort(got)
+	// key and status identify an item and read its state. They set nothing on the task.
+	want := []string{"key", "labels", "priority", "props", "spec", "status", "tags", "tier", "title"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("fields %v differ from %v: update spec/alloy/swarm.als, and think about what can now reach a task", got, want)
+	}
+	for _, forbidden := range []string{"checks", "touches", "budget", "require_review", "allow_empty"} {
+		if slices.Contains(got, forbidden) {
+			t.Errorf("%s can be set by an outside system", forbidden)
+		}
 	}
 }

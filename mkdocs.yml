@@ -99,6 +99,8 @@ nav:
       - Join from an open harness: guides/join.md
       - Run sandboxed workers: guides/workers.md
       - Plan work: guides/planning.md
+      - Labels, priority and attachments: guides/task-data.md
+      - "Connectors: import and sync": guides/connectors.md
       - Skills: guides/skills.md
       - Templates: guides/templates.md
       - Template demo: guides/template-demo.md
