@@ -1157,3 +1157,43 @@ func TestLabelsAgingAndAmendFromTheCLI(t *testing.T) {
 		t.Errorf("a bad aging step was accepted: %s", out)
 	}
 }
+
+func TestPropsBlobsAndResourcesFromTheCLI(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	p.run("task", "add", "--id", "m1", "--title", "x")
+	p.run("task", "prop", "m1", "points=5", "team=core", `tags=["a","b"]`, "gone=1")
+	p.run("task", "prop", "m1", "gone=")
+	file := filepath.Join(p.root, "design.txt")
+	if err := os.WriteFile(file, []byte("the design"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	p.run("task", "attach", "m1", file)
+	p.run("task", "resource", "m1", "spec-page", "https://example.com/spec", "--kind", "jira.attachment")
+	out := p.run("task", "meta", "m1")
+	for _, want := range []string{`"points"`, `"value": 5`, `"design.txt"`, `"sha256"`, `"kind": "jira.attachment"`, `"url": "https://example.com/spec"`} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %s in %s", want, out)
+		}
+	}
+	if strings.Contains(out, "gone") {
+		t.Errorf("a removed property is still there: %s", out)
+	}
+	saved := filepath.Join(p.root, "out.txt")
+	p.run("task", "fetch", "m1", "design.txt", "-o", saved)
+	if b, err := os.ReadFile(saved); err != nil || string(b) != "the design" {
+		t.Fatalf("%q %v", b, err)
+	}
+	// The task record itself stays small, whatever is attached.
+	if show := p.run("task", "show", "m1"); strings.Contains(show, "design") || strings.Contains(show, "points") {
+		t.Errorf("metadata leaked into the task record: %s", show)
+	}
+	// A link from outside must not reach the server's own network.
+	p.run("task", "resource", "m1", "inner", "http://127.0.0.1:1/secret")
+	if out, err := p.tryIn(p.root, "task", "fetch", "m1", "inner"); err == nil || !strings.Contains(out, "not reachable") {
+		t.Errorf("fetch of a private address: %v %s", err, out)
+	}
+	if out, err := p.tryIn(p.root, "task", "resource", "m1", "f", "file:///etc/passwd"); err == nil {
+		t.Errorf("a file URL was accepted: %s", out)
+	}
+}

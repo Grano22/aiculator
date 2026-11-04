@@ -52,6 +52,8 @@ type Store struct {
 	kv       jetstream.KeyValue
 	presence jetstream.KeyValue
 	stream   jetstream.Stream
+	dir      string
+	lazy     lazyBuckets
 
 	mu          sync.Mutex
 	projectStop func()
@@ -83,7 +85,7 @@ func Open(ctx context.Context, o Options) (*Store, error) {
 		ns.Shutdown()
 		return nil, fmt.Errorf("nats connect: %w", err)
 	}
-	s := &Store{ns: ns, nc: nc}
+	s := &Store{ns: ns, nc: nc, dir: o.Dir}
 	if err := s.init(ctx); err != nil {
 		s.Close()
 		return nil, err

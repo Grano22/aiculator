@@ -473,6 +473,20 @@ aiculator task amend ID [flags]
       --title string        new title
 ```
 
+## `aiculator task attach`
+
+Store a file as a blob and attach it to a task
+
+```text
+aiculator task attach ID FILE [flags]
+```
+
+**Flags**
+
+```text
+      --name string   property name; the file name if empty
+```
+
 ## `aiculator task cancel`
 
 Cancel a task
@@ -487,6 +501,20 @@ aiculator task cancel ID [flags]
       --note string   reason
 ```
 
+## `aiculator task fetch`
+
+Save an attached file or foreign resource; a resource is downloaded only once
+
+```text
+aiculator task fetch ID NAME [flags]
+```
+
+**Flags**
+
+```text
+  -o, --output string   file to write; standard output if empty
+```
+
 ## `aiculator task ls`
 
 List tasks
@@ -495,12 +523,42 @@ List tasks
 aiculator task ls
 ```
 
+## `aiculator task meta`
+
+Show a task's properties, files and foreign resources
+
+```text
+aiculator task meta ID
+```
+
 ## `aiculator task priority`
 
 Show how a task's priority is worked out right now
 
 ```text
 aiculator task priority ID
+```
+
+## `aiculator task prop`
+
+Set properties; JSON values keep their type, and NAME= removes one
+
+```text
+aiculator task prop ID NAME=VALUE...
+```
+
+## `aiculator task resource`
+
+Attach a foreign object by reference; its bytes are fetched only when asked for
+
+```text
+aiculator task resource ID NAME URL [flags]
+```
+
+**Flags**
+
+```text
+      --kind string   what kind of object this is (default "http")
 ```
 
 ## `aiculator task show`

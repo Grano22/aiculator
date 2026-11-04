@@ -109,3 +109,49 @@ func (c *Client) Post(ctx context.Context, path string, in, out any) error {
 func (c *Client) Get(ctx context.Context, path string, out any) error {
 	return c.Do(ctx, http.MethodGet, path, nil, out)
 }
+
+// Upload sends raw bytes and decodes the JSON answer.
+func (c *Client) Upload(ctx context.Context, path, contentType string, body io.Reader, out any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.URL+path, body)
+	if err != nil {
+		return err
+	}
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+	req.Header.Set("Content-Type", contentType)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode/100 != 2 {
+		return &StatusError{resp.StatusCode, string(data)}
+	}
+	return json.Unmarshal(data, out)
+}
+
+// Download streams a raw answer. The caller closes it.
+func (c *Client) Download(ctx context.Context, path string) (io.ReadCloser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.URL+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode/100 != 2 {
+		defer resp.Body.Close()
+		data, _ := io.ReadAll(resp.Body)
+		return nil, &StatusError{resp.StatusCode, string(data)}
+	}
+	return resp.Body, nil
+}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/meta"
 	"github.com/Grano22/aiculator/internal/store"
 	"github.com/Grano22/aiculator/internal/vlog"
 	"github.com/Grano22/aiculator/internal/work"
@@ -25,6 +26,10 @@ type Service struct {
 	Store  *store.Store
 	Work   *work.Manager // Nil when no repository is configured.
 	log    *slog.Logger
+
+	// Connections finds the downloader for a named connection, when connectors are configured.
+	Connections  func(name string) meta.Downloader
+	plainFetcher meta.Downloader
 
 	bg     context.Context
 	cancel context.CancelFunc
@@ -55,7 +60,7 @@ func New(ctx context.Context, o Options) (*Service, error) {
 	if o.Log == nil {
 		o.Log = slog.Default()
 	}
-	s := &Service{Store: o.Store, Work: o.Work, log: o.Log, ready: make(chan struct{})}
+	s := &Service{Store: o.Store, Work: o.Work, log: o.Log, ready: make(chan struct{}), plainFetcher: meta.NewFetcher(false)}
 	s.bg, s.cancel = context.WithCancel(context.Background())
 	cfg := o.Engine
 	if o.Work != nil {

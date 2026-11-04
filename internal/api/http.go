@@ -14,6 +14,7 @@ import (
 	"github.com/Grano22/aiculator/internal/auth"
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/meta"
 	"github.com/Grano22/aiculator/internal/store"
 	"github.com/Grano22/aiculator/internal/swarm"
 	"github.com/Grano22/aiculator/internal/vlog"
@@ -38,7 +39,7 @@ func status(err error) int {
 	switch {
 	case errors.Is(err, engine.ErrNotFound), errors.Is(err, store.ErrNotFound):
 		return http.StatusNotFound
-	case errors.Is(err, engine.ErrInvalid):
+	case errors.Is(err, engine.ErrInvalid), errors.Is(err, meta.ErrInvalid):
 		return http.StatusBadRequest
 	case errors.Is(err, core.ErrForbidden), errors.Is(err, core.ErrSelfVerify), errors.Is(err, core.ErrTier):
 		return http.StatusForbidden
@@ -326,6 +327,7 @@ func (s *Server) Routes() *http.ServeMux {
 		return map[string]bool{"ok": true}, s.S.Engine.PlanCommit(ctx, c.Agent, q.Epoch)
 	}))
 	s.debugRoutes(m)
+	s.metaRoutes(m)
 	return m
 }
 
@@ -373,7 +375,7 @@ var httpLog = vlog.For("http")
 func (s *Server) Instrument(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
-		timed := path != "/v1/agent/wait" && path != "/v1/events" && path != "/mcp"
+		timed := path != "/v1/agent/wait" && path != "/v1/events" && path != "/mcp" && !strings.HasPrefix(path, "/v1/blobs")
 		start := time.Now()
 		if !httpLog.V(vlog.LevelRequests).Enabled() {
 			next.ServeHTTP(w, r)

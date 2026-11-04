@@ -375,6 +375,7 @@ func taskCmd() *cobra.Command {
 	unpark.Flags().StringVar(&note, "note", "", "reason")
 	unpark.Flags().Int64Var(&addBudget, "add-budget", 0, "budget to add, in micro-dollars")
 	cmd.AddCommand(add, ls, show, cancelCmd, unpark, amendCmd(), priorityCmd())
+	cmd.AddCommand(metaCmds()...)
 	return cmd
 }
 
