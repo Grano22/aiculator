@@ -21,6 +21,30 @@ type ImportReq struct {
 }
 
 func (s *Server) metaRoutes(m *http.ServeMux) {
+	m.HandleFunc("GET /v1/sync", s.authed(canView, func(w http.ResponseWriter, _ *http.Request, _ auth.Claims) {
+		if s.Sync == nil {
+			writeJSON(w, http.StatusOK, []any{})
+			return
+		}
+		writeJSON(w, http.StatusOK, s.Sync.SyncStatus())
+	}))
+	m.HandleFunc("GET /v1/sync/{source}/hook-token", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		if s.Sync == nil {
+			writeJSON(w, http.StatusNotFound, Error{"nothing is being synced"})
+			return
+		}
+		tok, err := s.Sync.HookToken(r.PathValue("source"))
+		reply(w, map[string]string{"token": tok}, err)
+	}))
+	// No bearer token: the other system cannot have one. Each delivery is checked against
+	// its signature instead, before anything in it is believed.
+	m.HandleFunc("POST /v1/hooks/{source}", func(w http.ResponseWriter, r *http.Request) {
+		if s.Sync == nil {
+			writeJSON(w, http.StatusNotFound, Error{"nothing is being synced"})
+			return
+		}
+		s.Sync.ServeHook(w, r, r.PathValue("source"))
+	})
 	m.HandleFunc("POST /v1/import", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
 		q, ok := decode[ImportReq](w, r)
 		if !ok {

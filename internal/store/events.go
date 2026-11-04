@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -151,4 +152,51 @@ func (s *Store) WaitProjected(ctx context.Context) error {
 		case <-time.After(5 * time.Millisecond):
 		}
 	}
+}
+
+// followAckWait is how long after a crash a change that was mid-flight is delivered again.
+// A follower still working on one sees it come back, which must do no harm.
+const followAckWait = 15 * time.Second
+
+// Delivery settles one revision. Ack means it is finished with. Nak hands it back.
+type Delivery struct {
+	Ack, Nak func()
+}
+
+// FollowTasks delivers every committed task revision to a durable consumer, starting from
+// now on the first use, and from where it stopped after that. It reads the bucket's stream
+// directly, so a follower sees a commit as soon as it lands and adds nothing to the commit.
+//
+// Revisions that do not contain filter are acknowledged without being decoded, which is
+// what keeps a follower cheap when most tasks are not its own. A revision that is not
+// acknowledged is delivered again, soon after a crash and at once after Nak.
+func (s *Store) FollowTasks(ctx context.Context, durable string, filter []byte, fn func(t core.Task, seq uint64, d Delivery)) (stop func(), err error) {
+	cons, err := s.js.CreateOrUpdateConsumer(ctx, "KV_"+bucket, jetstream.ConsumerConfig{
+		Durable:       durable,
+		AckPolicy:     jetstream.AckExplicitPolicy,
+		DeliverPolicy: jetstream.DeliverNewPolicy,
+		FilterSubject: "$KV." + bucket + "." + taskPrefix + ">",
+		AckWait:       followAckWait,
+		MaxAckPending: 8192,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("consumer %s: %w", durable, err)
+	}
+	cc, err := cons.Consume(func(m jetstream.Msg) {
+		if len(filter) > 0 && !bytes.Contains(m.Data(), filter) {
+			_ = m.Ack()
+			return
+		}
+		var t core.Task
+		meta, err := m.Metadata()
+		if err != nil || json.Unmarshal(m.Data(), &t) != nil {
+			_ = m.Ack() // Not a task record; holding it would stop nothing but this consumer.
+			return
+		}
+		fn(t, meta.Sequence.Stream, Delivery{Ack: func() { _ = m.Ack() }, Nak: func() { _ = m.Nak() }})
+	}, jetstream.PullMaxMessages(512))
+	if err != nil {
+		return nil, fmt.Errorf("consume %s: %w", durable, err)
+	}
+	return cc.Stop, nil
 }

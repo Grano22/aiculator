@@ -471,6 +471,30 @@ List the configured sources
 aiculator source ls
 ```
 
+## `aiculator sync`
+
+See how connected systems are being kept in step
+
+```text
+aiculator sync
+```
+
+## `aiculator sync hook-token`
+
+Show the token Notion sent when its webhook was set up
+
+```text
+aiculator sync hook-token SOURCE
+```
+
+## `aiculator sync status`
+
+Show each source's sync: what was sent and received, latency and errors
+
+```text
+aiculator sync status
+```
+
 ## `aiculator task`
 
 Manage tasks

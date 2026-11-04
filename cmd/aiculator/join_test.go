@@ -6,14 +6,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1264,4 +1267,118 @@ sources:
 	if out, err := p.tryIn(p.root, "import", "nope"); err == nil || !strings.Contains(out, "plan") {
 		t.Errorf("an unknown source should list the real ones: %v %s", err, out)
 	}
+}
+
+// The whole path against a server that behaves like Jira's documented API: import, an
+// agent takes the task, and the status moves on the other side without any polling.
+func TestJiraImportAndRealtimeSyncEndToEnd(t *testing.T) {
+	var mu sync.Mutex
+	var moved []string
+	status := "To Do"
+	jira := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		if u, p, ok := r.BasicAuth(); !ok || u != "me@example.com" || p != "e2e-token" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		switch {
+		case r.URL.Path == "/rest/api/3/search/jql":
+			fmt.Fprintf(w, `{"issues":[{"key":"PROJ-1","fields":{"summary":"From Jira","updated":"2026-11-04T10:00:00.000+0000","status":{"name":%q},"description":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Do the thing"}]}]},"attachment":[{"filename":"a.log","content":"http://%s/att/1","mimeType":"text/plain","size":5}]}}]}`, status, r.Host)
+		case r.URL.Path == "/att/1":
+			_, _ = w.Write([]byte("hello"))
+		case strings.HasSuffix(r.URL.Path, "/transitions") && r.Method == "GET":
+			_, _ = w.Write([]byte(`{"transitions":[{"id":"21","to":{"name":"In Progress"}},{"id":"31","to":{"name":"Done"}}]}`))
+		case strings.HasSuffix(r.URL.Path, "/transitions"):
+			b, _ := io.ReadAll(r.Body)
+			moved = append(moved, string(b))
+			status = "In Progress"
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer jira.Close()
+	t.Setenv("E2E_JIRA_EMAIL", "me@example.com")
+	t.Setenv("E2E_JIRA_TOKEN", "e2e-token")
+	p := newProject(t)
+	if err := os.MkdirAll(filepath.Join(p.root, ".agents"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	cfg := fmt.Sprintf(`
+sources:
+  - name: jira
+    kind: jira
+    url: %s
+    allow_private: true
+    query: project = PROJ
+    auth: {email_env: E2E_JIRA_EMAIL, token_env: E2E_JIRA_TOKEN}
+    fields:
+      title: summary
+      spec: description
+    sync:
+      status: {claimed: In Progress, running: In Progress, done: Done}
+      pull: {mode: once}
+`, jira.URL)
+	if err := os.WriteFile(filepath.Join(p.root, ".agents/sources.yaml"), []byte(cfg), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	p.run("up")
+	if out := p.run("import", "jira"); !strings.Contains(out, "1 created") {
+		t.Fatalf("import: %s", out)
+	}
+	if show := p.run("task", "show", "jira-PROJ-1"); !strings.Contains(show, "Do the thing") || !strings.Contains(show, `"source": "jira"`) {
+		t.Fatalf("show: %s", show)
+	}
+	if meta := p.run("task", "meta", "jira-PROJ-1"); !strings.Contains(meta, "jira.attachment") {
+		t.Fatalf("meta: %s", meta)
+	}
+	saved := filepath.Join(p.root, "a.log")
+	p.run("task", "fetch", "jira-PROJ-1", "attachment/a.log", "-o", saved)
+	if b, err := os.ReadFile(saved); err != nil || string(b) != "hello" {
+		t.Fatalf("attachment: %q %v", b, err)
+	}
+	token := p.run("token", "--agent", "worker", "--tier", "1")
+	url := strings.TrimSpace(readFileT(t, filepath.Join(p.root, ".swarm/addr")))
+	req, _ := http.NewRequest("POST", url+"/v1/agent/wait", strings.NewReader(`{"hold_ms":0}`))
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if !strings.Contains(string(body), "jira-PROJ-1") || !strings.Contains(string(body), "outside system") {
+		t.Fatalf("wait: %s", body)
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		mu.Lock()
+		n := len(moved)
+		mu.Unlock()
+		if n == 1 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the status never reached Jira")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if moved[0] != `{"transition":{"id":"21"}}` {
+		t.Errorf("transition: %s", moved[0])
+	}
+	if st := p.run("sync", "status"); !strings.Contains(st, `"pushed": 1`) || !strings.Contains(st, "realtime, partial updates") {
+		t.Errorf("sync status: %s", st)
+	}
+}
+
+func readFileT(t *testing.T, path string) string {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
 }

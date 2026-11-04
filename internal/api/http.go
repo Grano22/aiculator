@@ -26,6 +26,16 @@ type Server struct {
 	S       *swarm.Service
 	Auth    *auth.Authority
 	Version string
+	// Sync reports on and receives webhooks for connected systems, when configured.
+	Sync SyncAPI
+}
+
+// SyncAPI is what the routes need from the synchronizer. It is an interface so that this
+// package, which everything depends on, does not depend on connectors.
+type SyncAPI interface {
+	SyncStatus() any
+	ServeHook(w http.ResponseWriter, r *http.Request, source string)
+	HookToken(source string) (string, error)
 }
 
 func usage(q LeaseReq) core.Usage { return core.Usage{Cost: q.Cost, Tokens: q.Tokens} }

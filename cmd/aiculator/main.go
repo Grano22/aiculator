@@ -80,7 +80,7 @@ func rootCmd() *cobra.Command {
 	addLoggingFlags(root)
 	// Declared here so that cobra does not claim -v for it, since -v is the verbosity.
 	root.Flags().Bool("version", false, "print the version")
-	root.AddCommand(importCmd(), sourceCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
+	root.AddCommand(importCmd(), sourceCmd(), syncCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
 		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), pluginCmd(), debugCmd(), logsCmd(), genDocsCmd())
 	addPluginCommands(root)
 	return root
@@ -189,6 +189,11 @@ func serve(ctx context.Context, o serveOpts) error {
 	defer svc.Close()
 
 	srv := &api.Server{S: svc, Auth: authority, Version: version}
+	// Connectors are a side effect, so a bad sources file costs them, not the swarm.
+	if y := startSync(ctx, svc, o.repo, log); y != nil {
+		srv.Sync = y
+		defer y.Close()
+	}
 	mux := srv.Routes()
 	mux.Handle("/mcp", srv.MCPHandler())
 	stopPlugins, err := startPlugins(ctx, srv, mux, log)

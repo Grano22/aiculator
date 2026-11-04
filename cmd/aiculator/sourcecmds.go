@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -22,6 +25,69 @@ func loadSources(path string) (*connect.Config, error) {
 		return connect.Load(abs, filepath.Dir(abs))
 	}
 	return connect.Find(projectRoot())
+}
+
+// startSync reads the sources file and starts whatever has a sync section. It returns nil
+// when there is nothing to do.
+func startSync(ctx context.Context, svc *swarm.Service, repo string, log *slog.Logger) *connect.Syncer {
+	root := repo
+	if root == "" {
+		root = projectRoot()
+	}
+	cfg, err := connect.Find(root)
+	if err != nil {
+		if !errors.Is(err, connect.ErrNoConfig) {
+			log.Error("connectors are off: the sources file has a problem", "err", err)
+		}
+		return nil
+	}
+	svc.Connections = cfg.Downloaders()
+	return connect.Start(ctx, cfg, svc, connect.Options{})
+}
+
+func syncCmd() *cobra.Command {
+	cmd := &cobra.Command{Use: "sync", Short: "See how connected systems are being kept in step"}
+	status := &cobra.Command{
+		Use:   "status",
+		Short: "Show each source's sync: what was sent and received, latency and errors",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			c, err := adminClient()
+			if err != nil {
+				return err
+			}
+			var st []connect.Status
+			if err := c.Get(cmd.Context(), "/v1/sync", &st); err != nil {
+				return err
+			}
+			if len(st) == 0 {
+				fmt.Println("no source has a sync section")
+				return nil
+			}
+			return printJSON(st)
+		},
+	}
+	token := &cobra.Command{
+		Use:   "hook-token SOURCE",
+		Short: "Show the token Notion sent when its webhook was set up",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c, err := adminClient()
+			if err != nil {
+				return err
+			}
+			var out map[string]string
+			if err := c.Get(cmd.Context(), "/v1/sync/"+args[0]+"/hook-token", &out); err != nil {
+				return err
+			}
+			if out["token"] == "" {
+				return errors.New("no token has arrived yet")
+			}
+			fmt.Println(out["token"])
+			return nil
+		},
+	}
+	cmd.AddCommand(status, token)
+	return cmd
 }
 
 func importCmd() *cobra.Command {
