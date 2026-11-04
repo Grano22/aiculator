@@ -8,6 +8,7 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ### Added
 
+- **Realms:** every project becomes a named realm when its server starts. `aiculator realm ls`, `aiculator top --all` and `aiculator web --all` show all projects, with their tasks and agents, and `--realm NAME` acts on one from any folder. Each keeps its own server and store. Sessions stay in one realm unless started with `--realm-switch`.
 - **`aiculator init`:** sets up a machine once, asking which installed harnesses to use, whether to install the skills, and whether to add MCP config. It writes nothing until every answer is in, and `--yes` takes the defaults for a script. `--scoped` sets up one project instead, and can also make its git repository and start the server.
 - **`aiculator join` reuses what exists:** skills and MCP config a harness can already find are left alone, at either level, so after `init` it only has to start the server. On its own, it works as before.
 - **The MCP bridge starts anywhere:** `mcp --auto` now looks for a server when a tool is called. A config for every project no longer shows as a broken server in folders with no swarm, and a server started later is found with no restart.
@@ -34,6 +35,8 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ### Fixed
 
+- A repository nested inside another no longer uses the outer one's server. Tasks added there went to the wrong project, and agents would have worked in the wrong repository. A stray `.swarm` in the home directory no longer claims every folder below it.
+- A project no longer takes another project's server for its own when its old address reaches one after a crash, and no longer fails to start when its old port is taken.
 - `aiculator down` now waits for the server process to exit. It used to return when the health endpoint closed, while the store could still be writing to `.swarm`.
 - A second server on the same data directory is now refused. It used to start, and two writers could share one store.
 - The Docker sandbox clears the image's entrypoint, so commands run as given. The default `alpine/git` image would otherwise pass them to `git`. Custom images that rely on an entrypoint for setup no longer run it.

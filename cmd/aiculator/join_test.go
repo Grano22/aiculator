@@ -64,7 +64,7 @@ func newProject(t *testing.T) *project {
 func (p *project) tryIn(dir string, args ...string) (string, error) {
 	c := exec.Command(p.bin, args...)
 	c.Dir = dir
-	c.Env = append(os.Environ(), "HOME="+p.home)
+	c.Env = append(os.Environ(), "HOME="+p.home, "AICULATOR_REALMS="+filepath.Join(p.home, "realms"))
 	out, err := c.CombinedOutput()
 	return string(out), err
 }
@@ -112,7 +112,7 @@ func TestUnquotedStarThatTheShellExpanded(t *testing.T) {
 	}
 	c := exec.Command("sh", "-c", p.bin+" skill --install * --harness claude")
 	c.Dir = p.root
-	c.Env = append(os.Environ(), "HOME="+p.home)
+	c.Env = append(os.Environ(), "HOME="+p.home, "AICULATOR_REALMS="+filepath.Join(p.home, "realms"))
 	if out, err := c.CombinedOutput(); err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
@@ -239,7 +239,7 @@ func mcpSession(t *testing.T, p *project, args ...string) *mcp.ClientSession {
 	t.Helper()
 	cmd := exec.Command(p.bin, args...)
 	cmd.Dir = p.root
-	cmd.Env = append(os.Environ(), "HOME="+p.home)
+	cmd.Env = append(os.Environ(), "HOME="+p.home, "AICULATOR_REALMS="+filepath.Join(p.home, "realms"))
 	cl := mcp.NewClient(&mcp.Implementation{Name: "fake-harness", Version: "1"}, nil)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
@@ -732,7 +732,7 @@ func TestBuildTagsChooseThePlugins(t *testing.T) {
 func (p *project) runSplit(args ...string) (string, string, error) {
 	c := exec.Command(p.bin, args...)
 	c.Dir = p.root
-	c.Env = append(os.Environ(), "HOME="+p.home)
+	c.Env = append(os.Environ(), "HOME="+p.home, "AICULATOR_REALMS="+filepath.Join(p.home, "realms"))
 	var out, errb strings.Builder
 	c.Stdout, c.Stderr = &out, &errb
 	err := c.Run()
@@ -1086,7 +1086,7 @@ func TestSecondServerOnTheSameDataIsRefused(t *testing.T) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, p.bin, "serve", "--data", data, "--addr", "127.0.0.1:0", "--repo", p.root)
 	cmd.Dir = p.root
-	cmd.Env = append(os.Environ(), "HOME="+p.home)
+	cmd.Env = append(os.Environ(), "HOME="+p.home, "AICULATOR_REALMS="+filepath.Join(p.home, "realms"))
 	out, err := cmd.CombinedOutput()
 	if err == nil || !strings.Contains(string(out), "another server is already using") {
 		t.Fatalf("second server: %v\n%s", err, out)
@@ -1401,7 +1401,7 @@ func (p *project) init(stdin string, args ...string) (string, error) {
 	c := exec.Command(p.bin, append([]string{"init"}, args...)...)
 	c.Dir = p.root
 	c.Stdin = strings.NewReader(stdin)
-	c.Env = append(os.Environ(), "HOME="+p.home, "PATH="+dir+string(os.PathListSeparator)+filepath.Dir(git),
+	c.Env = append(os.Environ(), "HOME="+p.home, "AICULATOR_REALMS="+filepath.Join(p.home, "realms"), "PATH="+dir+string(os.PathListSeparator)+filepath.Dir(git),
 		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
 	out, err := c.CombinedOutput()
 	return string(out), err
@@ -1695,5 +1695,246 @@ func TestAutoBridgeStartsAnywhereAndFindsAServerLater(t *testing.T) {
 	callTool(t, s, "wait_for_task", map[string]any{"hold_seconds": 5}, &g)
 	if g.Task == nil || g.Task.ID != "late" {
 		t.Fatalf("grant: %+v", g)
+	}
+}
+
+func TestMain(m *testing.M) {
+	// Servers started by a test must not appear in the realm list of whoever runs the tests.
+	dir, err := os.MkdirTemp("", "realms")
+	if err != nil {
+		panic(err)
+	}
+	os.Setenv("AICULATOR_REALMS", dir)
+	code := m.Run()
+	os.RemoveAll(dir)
+	os.Exit(code)
+}
+
+func mkRepo(t *testing.T, dir string) string {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"init", "-q", "-b", "main"}, {"-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "root"}} {
+		c := exec.Command("git", args...)
+		c.Dir = dir
+		if out, err := c.CombinedOutput(); err != nil {
+			t.Fatalf("%v: %s", err, out)
+		}
+	}
+	real, err := filepath.EvalSymlinks(dir) // On macOS the temporary folder is behind a link.
+	if err != nil {
+		t.Fatal(err)
+	}
+	return real
+}
+
+// The bug that started this: a repository inside another used the outer one's server, so an
+// agent would have been given the inner project's task in a worktree of the outer one.
+func TestNestedRepositoryIsItsOwnRealm(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	p.run("task", "add", "--id", "outer-task", "--title", "x")
+	outer := p.root
+	inner := mkRepo(t, filepath.Join(outer, "vendor", "inner"))
+	t.Cleanup(func() { _, _ = p.tryIn(inner, "down") })
+	if out, err := p.tryIn(inner, "join", "--harness", "pi"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if out, err := p.tryIn(inner, "task", "add", "--id", "inner-task", "--title", "y"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	innerList, err := p.tryIn(inner, "task", "ls")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(innerList, "inner-task") || strings.Contains(innerList, "outer-task") {
+		t.Errorf("the inner project sees: %s", innerList)
+	}
+	outerList := p.run("task", "ls")
+	if !strings.Contains(outerList, "outer-task") || strings.Contains(outerList, "inner-task") {
+		t.Errorf("the outer project sees: %s", outerList)
+	}
+	// A plain subfolder is still the same project.
+	sub := filepath.Join(outer, "src", "deep")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := p.tryIn(sub, "task", "ls"); err != nil || !strings.Contains(out, "outer-task") {
+		t.Errorf("from a subfolder: %v %s", err, out)
+	}
+}
+
+func TestStrayDataDirectoryInHomeDoesNotClaimEverythingBelow(t *testing.T) {
+	p := newProject(t)
+	if err := os.MkdirAll(filepath.Join(p.home, ".swarm"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	plain := filepath.Join(p.home, "code", "plain")
+	if err := os.MkdirAll(plain, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	out, _ := p.tryIn(plain, "task", "ls")
+	if strings.Contains(out, filepath.Join(p.home, ".swarm")) {
+		t.Errorf("it reached up to the home directory: %s", out)
+	}
+}
+
+// After a crash an address file can point at a port another project now uses. Treating that
+// server as its own would mean a project never starts, and reports the wrong work.
+func TestStaleAddressPointingAtAnotherProjectIsNotTrusted(t *testing.T) {
+	p := newProject(t)
+	other := mkRepo(t, filepath.Join(t.TempDir(), "other"))
+	t.Cleanup(func() { _, _ = p.tryIn(other, "down") })
+	if out, err := p.tryIn(other, "up"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	url := readFileT(t, filepath.Join(other, ".swarm/addr"))
+	if err := os.MkdirAll(filepath.Join(p.root, ".swarm"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p.root, ".swarm/addr"), []byte(url), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	p.run("up")
+	if got := readFileT(t, filepath.Join(p.root, ".swarm/addr")); got == url {
+		t.Fatal("it took another project's server for its own")
+	}
+	p.run("task", "add", "--id", "mine", "--title", "x")
+	if out, _ := p.tryIn(other, "task", "ls"); strings.Contains(out, "mine") {
+		t.Errorf("a task landed in the other project: %s", out)
+	}
+}
+
+func TestRealmsAcrossProjects(t *testing.T) {
+	p := newProject(t)
+	second := mkRepo(t, filepath.Join(t.TempDir(), "Billing API"))
+	t.Cleanup(func() { _, _ = p.tryIn(second, "down") })
+	if out, err := p.tryIn(second, "up"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if out, err := p.tryIn(second, "task", "add", "--id", "bill-1", "--title", "Fix invoices"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	p.run("up")
+	p.run("task", "add", "--id", "shop-1", "--title", "Fix cart")
+	ls := p.run("realm", "ls")
+	if !strings.Contains(ls, "billing-api") || strings.Count(ls, "running") != 2 {
+		t.Fatalf("realm ls: %s", ls)
+	}
+	p.run("realm", "rename", "billing-api", "billing")
+	// Any command can act on a realm from anywhere, and only on that realm.
+	out := p.run("--realm", "billing", "task", "ls")
+	if !strings.Contains(out, "bill-1") || strings.Contains(out, "shop-1") {
+		t.Errorf("--realm: %s", out)
+	}
+	if out, err := p.tryIn(p.root, "--realm", "nope", "task", "ls"); err == nil || !strings.Contains(out, "billing") {
+		t.Errorf("an unknown realm should list the real ones: %v %s", err, out)
+	}
+	all := p.run("top", "--all", "--once", "--width", "160")
+	if !strings.Contains(all, "billing") || !strings.Contains(all, "2 realms, 2 running") {
+		t.Errorf("top --all: %s", all)
+	}
+	// Agents take one task in each, and the view says whose work is where.
+	for _, dir := range []string{p.root, second} {
+		name, err := p.tryIn(dir, "work", "join", "--tier", "1")
+		if err != nil {
+			t.Fatalf("%v\n%s", err, name)
+		}
+		if out, err := p.tryIn(dir, "work", "wait", "--agent", strings.TrimSpace(name)); err != nil {
+			t.Fatalf("%v\n%s", err, out)
+		}
+	}
+	tasks := p.run("top", "--all", "--once", "--view", "tasks", "--width", "160")
+	for _, want := range []string{"bill-1", "shop-1", "billing"} {
+		if !strings.Contains(tasks, want) {
+			t.Errorf("missing %s in: %s", want, tasks)
+		}
+	}
+	if single := p.run("top", "--once", "--width", "160"); !strings.Contains(single, "realm: ") {
+		t.Errorf("one project's view should name its realm: %s", single)
+	}
+	// One going down leaves the others readable, and it stays listed.
+	if out, err := p.tryIn(second, "down"); err != nil {
+		t.Fatalf("%v %s", err, out)
+	}
+	ls = p.run("realm", "ls")
+	if !strings.Contains(ls, "stopped") || strings.Count(ls, "running") != 1 {
+		t.Errorf("after one stopped: %s", ls)
+	}
+	p.run("realm", "forget", "billing")
+	if strings.Contains(p.run("realm", "ls"), "billing") {
+		t.Error("forget left it listed")
+	}
+	if !exists(filepath.Join(second, ".swarm")) {
+		t.Error("forget removed a project's data")
+	}
+}
+
+func TestGrantSaysWhichRealmTheWorkBelongsTo(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	p.run("task", "add", "--id", "g1", "--title", "x", "--allow-empty")
+	s := mcpSession(t, p, "mcp", "--auto", "--tier", "1", "--harness", "fake")
+	var g swarm.Grant
+	callTool(t, s, "wait_for_task", map[string]any{"hold_seconds": 5}, &g)
+	if g.Realm == "" || g.RealmPath != p.root {
+		t.Fatalf("grant: realm %q path %q, project %s", g.Realm, g.RealmPath, p.root)
+	}
+}
+
+func toolNames(t *testing.T, s *mcp.ClientSession) string {
+	t.Helper()
+	var names []string
+	for tool, err := range s.Tools(context.Background(), nil) {
+		if err != nil {
+			t.Fatal(err)
+		}
+		names = append(names, tool.Name)
+	}
+	return strings.Join(names, " ")
+}
+
+func TestSessionStaysInItsRealmUnlessAllowedToMove(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	other := mkRepo(t, filepath.Join(t.TempDir(), "other"))
+	t.Cleanup(func() { _, _ = p.tryIn(other, "down") })
+	if out, err := p.tryIn(other, "up"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if out, err := p.tryIn(other, "task", "add", "--id", "elsewhere", "--title", "x", "--allow-empty"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	p.run("task", "add", "--id", "here", "--title", "x", "--allow-empty")
+
+	pinned := mcpSession(t, p, "mcp", "--auto", "--tier", "1", "--harness", "fake")
+	if names := toolNames(t, pinned); strings.Contains(names, "realm_") {
+		t.Fatalf("a session can see other projects by default: %s", names)
+	}
+
+	s := mcpSession(t, p, "mcp", "--auto", "--realm-switch", "--tier", "1", "--harness", "mover")
+	if names := toolNames(t, s); !strings.Contains(names, "realm_list") || !strings.Contains(names, "realm_use") {
+		t.Fatalf("%s", names)
+	}
+	var g swarm.Grant
+	callTool(t, s, "wait_for_task", map[string]any{"hold_seconds": 5}, &g)
+	if g.Task == nil || g.Task.ID != "here" {
+		t.Fatalf("grant: %+v", g)
+	}
+	// A lease belongs to one realm, so it must not be walked away from.
+	if r := callTool(t, s, "realm_use", map[string]any{"name": "other"}, nil); !r.IsError {
+		t.Fatal("it moved while holding a task")
+	}
+	if r := callTool(t, s, "release", map[string]any{"task_id": "here", "lease": g.Lease}, nil); r.IsError {
+		t.Fatalf("release: %+v", r.Content)
+	}
+	if r := callTool(t, s, "realm_use", map[string]any{"name": "other"}, nil); r.IsError {
+		t.Fatalf("realm_use: %+v", r.Content)
+	}
+	var g2 swarm.Grant
+	callTool(t, s, "wait_for_task", map[string]any{"hold_seconds": 5}, &g2)
+	if g2.Task == nil || g2.Task.ID != "elsewhere" || g2.RealmPath != other {
+		t.Fatalf("after moving: %+v", g2)
 	}
 }

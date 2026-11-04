@@ -41,6 +41,8 @@ type CLI struct {
 	ViewerToken func(ctx context.Context, ttl time.Duration) (url, token string, err error)
 	// Snapshot reads the live dashboard data.
 	Snapshot func(ctx context.Context) (observe.Snapshot, error)
+	// Fleet reads every realm on this machine, as JSON that the caller passes on.
+	Fleet func(ctx context.Context, ttl time.Duration) (any, error)
 }
 
 // Event is a committed task change.

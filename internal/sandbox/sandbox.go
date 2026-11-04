@@ -80,7 +80,7 @@ func SecretHome() []string {
 		return nil
 	}
 	var out []string
-	for _, d := range []string{".ssh", ".aws", ".gnupg", ".kube", ".docker/config.json", ".netrc", ".config/gh", ".config/gcloud"} {
+	for _, d := range []string{".aiculator", ".ssh", ".aws", ".gnupg", ".kube", ".docker/config.json", ".netrc", ".config/gh", ".config/gcloud"} {
 		out = append(out, filepath.Join(home, d))
 	}
 	return out

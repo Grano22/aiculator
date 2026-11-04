@@ -28,6 +28,8 @@ type Server struct {
 	Version string
 	// Sync reports on and receives webhooks for connected systems, when configured.
 	Sync SyncAPI
+	// Instance identifies this server, so a client can tell it from another on the same port.
+	Instance string
 }
 
 // SyncAPI is what the routes need from the synchronizer. It is an interface so that this
@@ -164,7 +166,8 @@ type PlanReq struct {
 func (s *Server) Routes() *http.ServeMux {
 	m := http.NewServeMux()
 	m.HandleFunc("GET /v1/healthz", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+		// Instance is a hash, so this says which server answered without saying where it is.
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "instance": s.Instance})
 	})
 
 	m.HandleFunc("POST /v1/agent/wait", s.authed(isAgent, func(w http.ResponseWriter, r *http.Request, c auth.Claims) {

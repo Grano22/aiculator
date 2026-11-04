@@ -222,6 +222,7 @@ aiculator mcp [flags]
       --auto             find the local server and get a token by itself
       --harness string   harness id, used in the agent's name
       --planner          allow planning, with --auto
+      --realm-switch     with --auto: let the session list other realms and move between them
       --tier int         tier, with --auto (default 1)
       --url string       server URL; --auto finds it (default "http://127.0.0.1:7777")
 ```
@@ -397,6 +398,50 @@ Any program on PATH named aiculator-NAME also runs as aiculator NAME.
 
 ```text
 aiculator plugin
+```
+
+## `aiculator realm`
+
+See and name the projects on this machine that use the swarm
+
+A realm is one project, with its own server and its own store. A project becomes one
+when its server starts. Realms never share tasks or tokens, so trouble in one stays there.
+
+Act on one from any folder with --realm NAME, such as: aiculator --realm shop task ls
+See them all with: aiculator top --all, or aiculator web --all
+
+```text
+aiculator realm
+```
+
+## `aiculator realm forget`
+
+Take a realm off the list; the project and its data are not touched
+
+```text
+aiculator realm forget NAME
+```
+
+## `aiculator realm ls`
+
+List the realms, and which are running
+
+```text
+aiculator realm ls [flags]
+```
+
+**Flags**
+
+```text
+      --json   print as JSON
+```
+
+## `aiculator realm rename`
+
+Give a realm a new name
+
+```text
+aiculator realm rename OLD NEW
 ```
 
 ## `aiculator serve`
@@ -783,6 +828,7 @@ aiculator top [flags]
 **Flags**
 
 ```text
+      --all                 show every realm on this machine: 1 realms, 2 tasks, 3 agents
       --color               with --once: keep color even in a pipe
       --interval duration   how often to refresh (default 1s)
       --json                print the raw snapshot as JSON and exit
@@ -837,6 +883,7 @@ aiculator web [flags]
 **Flags**
 
 ```text
+      --all            show every realm on this machine, for as long as this command runs
       --no-open        print the link and do not open a browser
       --ttl duration   how long the link works (default 12h0m0s)
 ```

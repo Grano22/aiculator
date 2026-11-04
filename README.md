@@ -105,6 +105,10 @@ Tasks can come from Jira, Notion, Excel or CSV as well as from harnesses. `aicul
 
 Tasks can also carry labels, properties, files and references to things elsewhere, and their priority can rise as they wait. See [Labels, priority and attachments](docs/guides/task-data.md).
 
+## Many projects
+
+Each project is a realm, with its own server and store, so trouble in one stays there. `aiculator top --all` and `aiculator web --all` show them all, with whose tasks are where, and `--realm NAME` acts on one from any folder. See [Realms](docs/guides/realms.md).
+
 ## Harnesses
 
 `aiculator harness` shows all 24 and their state on this machine.
@@ -153,6 +157,7 @@ OpenCode 2 needs one extra step: a running background service does not pick up n
 | `internal/tmpl` | Templates, components and rendering |
 | `internal/meta` | Properties, blobs and foreign resources |
 | `internal/connect` | Import and two-way sync with other platforms |
+| `internal/realm` | The list of projects on a machine, and the view across them |
 | `internal/tui` | The terminal dashboard |
 | `pkg/observe` | Public: live metrics |
 | `pkg/plugin` | Public: the plugin API |

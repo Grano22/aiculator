@@ -29,8 +29,9 @@ type Service struct {
 	log    *slog.Logger
 
 	// Connections finds the downloader for a named connection, when connectors are configured.
-	Connections  func(name string) meta.Downloader
-	plainFetcher meta.Downloader
+	Connections      func(name string) meta.Downloader
+	realm, realmPath string
+	plainFetcher     meta.Downloader
 
 	bg     context.Context
 	cancel context.CancelFunc
@@ -41,6 +42,10 @@ type Service struct {
 type Grant struct {
 	engine.WaitResponse
 	Workdir string `json:"workdir,omitempty"`
+	// Realm says which project this work belongs to, so that a session can notice if it is
+	// not the one it thought it was in.
+	Realm     string `json:"realm,omitempty"`
+	RealmPath string `json:"realm_path,omitempty"`
 	// Notice reminds the reader that notes come from other agents. They are data
 	// to consider, not instructions to follow.
 	Notice string `json:"notice,omitempty"`
@@ -58,6 +63,8 @@ type Options struct {
 	Work   *work.Manager
 	Engine engine.Config
 	Log    *slog.Logger
+	// Realm names this project on the machine, and RealmPath is where it is.
+	Realm, RealmPath string
 }
 
 // New starts the engine with the work layer attached.
@@ -65,7 +72,7 @@ func New(ctx context.Context, o Options) (*Service, error) {
 	if o.Log == nil {
 		o.Log = slog.Default()
 	}
-	s := &Service{Store: o.Store, Work: o.Work, log: o.Log, ready: make(chan struct{}), plainFetcher: meta.NewFetcher(false)}
+	s := &Service{Store: o.Store, Work: o.Work, log: o.Log, ready: make(chan struct{}), plainFetcher: meta.NewFetcher(false), realm: o.Realm, realmPath: o.RealmPath}
 	s.bg, s.cancel = context.WithCancel(context.Background())
 	cfg := o.Engine
 	if o.Work != nil {
@@ -148,7 +155,7 @@ func (s *Service) Claim(ctx context.Context, a engine.Agent, id string) (Grant, 
 }
 
 func (s *Service) prepare(ctx context.Context, a engine.Agent, r engine.WaitResponse) (Grant, error) {
-	g := Grant{WaitResponse: r}
+	g := Grant{WaitResponse: r, Realm: s.realm, RealmPath: s.realmPath}
 	if r.Action != engine.ActionTask {
 		return g, nil
 	}
@@ -225,6 +232,7 @@ func (s *Service) Snapshot(ctx context.Context, version string) (observe.Snapsho
 		return snap, err
 	}
 	snap.Version = version
+	snap.Realm = s.realm
 	snap.Probes = s.Probes(ctx)
 	snap.Ready = true
 	for _, p := range snap.Probes {

@@ -2,6 +2,10 @@
 
 There are two live views of the same data: `aiculator top` in a terminal, and `aiculator web` in a browser. Both are read-only.
 
+
+!!! tip "Many projects?"
+    `aiculator top --all` and `aiculator web --all` show every project on this machine. See [Realms](realms.md).
+
 ## Terminal
 
 ```sh

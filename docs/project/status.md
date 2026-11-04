@@ -13,6 +13,7 @@
 - Verbosity levels, and templates for question types, subagent flows and live sections
 - Labels, aging steps, properties, blobs and foreign resources
 - Connectors for Jira, Notion, Excel and CSV, with two-way sync
+- Realms: a view across every project on a machine
 
 ## Tested on real harnesses
 

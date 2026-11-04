@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aiculator realms</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"></span>
+    <h1>Aiculator realms</h1>
+    <span id="summary" class="muted"></span>
+  </div>
+  <div class="meta">
+    <button id="pause" type="button">Pause</button>
+  </div>
+</header>
+<div id="banner" class="banner" role="alert" hidden></div>
+<main>
+  <section class="kpis" aria-label="Across all realms">
+    <div class="kpi"><span class="label">Realms running</span><strong id="k-running">-</strong></div>
+    <div class="kpi"><span class="label">Waiting to start</span><strong id="k-ready">-</strong></div>
+    <div class="kpi"><span class="label">Being worked on</span><strong id="k-work">-</strong></div>
+    <div class="kpi"><span class="label">Agents working</span><strong id="k-agents">-</strong></div>
+    <div class="kpi"><span class="label">Done</span><strong id="k-done">-</strong></div>
+    <div class="kpi"><span class="label">Need a person</span><strong id="k-parked">-</strong></div>
+  </section>
+
+  <section class="card wide">
+    <h2>Realms</h2>
+    <div class="scroll"><table id="realms"><thead><tr><th>Realm</th><th>State</th><th class="n">Ready</th><th class="n">Working</th><th class="n">Review</th><th class="n">Done</th><th class="n">Parked</th><th class="n">Agents</th><th>Path</th></tr></thead><tbody></tbody></table></div>
+    <p id="realms-empty" class="empty" hidden>No realms yet. A project becomes one when its server starts: <code>aiculator join</code></p>
+  </section>
+
+  <section class="card wide">
+    <h2>Tasks in progress or needing attention, by realm <span id="task-count" class="muted"></span></h2>
+    <div class="scroll"><table id="tasks"><thead><tr><th>Realm</th><th>Task</th><th>State</th><th class="n">Tier</th><th>Owner</th><th>Title</th></tr></thead><tbody></tbody></table></div>
+    <p id="tasks-empty" class="empty" hidden>Nothing in progress.</p>
+  </section>
+
+  <section class="card wide">
+    <h2>Agents, by realm</h2>
+    <div class="scroll"><table id="agents"><thead><tr><th>Realm</th><th>Agent</th><th class="n">Tier</th><th>State</th><th>Task</th></tr></thead><tbody></tbody></table></div>
+    <p id="agents-empty" class="empty" hidden>No agents yet.</p>
+  </section>
+</main>
+<script src="fleet.js"></script>
+</body>
+</html>

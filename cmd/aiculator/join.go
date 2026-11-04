@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -25,6 +27,7 @@ import (
 	"github.com/Grano22/aiculator/internal/client"
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/harness"
+	"github.com/Grano22/aiculator/internal/realm"
 	"github.com/Grano22/aiculator/internal/skillpack"
 	"github.com/Grano22/aiculator/internal/swarm"
 )
@@ -61,7 +64,24 @@ func serverURL() (string, bool) {
 		return "", false
 	}
 	url := strings.TrimSpace(string(b))
-	return url, healthy(url)
+	return url, ownServer(url)
+}
+
+// ownServer checks that the server answering there is this project's. After a crash, the
+// address file can point at a port that another project's server has since taken.
+func ownServer(url string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	var h map[string]string
+	if client.New(url, "").Get(ctx, "/v1/healthz", &h) != nil {
+		return false
+	}
+	abs, err := filepath.Abs(dataDir)
+	if err != nil {
+		return true
+	}
+	// A server from an older version does not say, and it is given the benefit of the doubt.
+	return h["instance"] == "" || h["instance"] == realm.Instance(abs)
 }
 
 // excludeData keeps the data directory out of git without changing a tracked file.
@@ -116,7 +136,13 @@ func startServer(sb string) (string, error) {
 	excludeData(root)
 	addr := "127.0.0.1:0"
 	if b, err := os.ReadFile(filepath.Join(abs, "addr")); err == nil {
-		addr = strings.TrimPrefix(strings.TrimSpace(string(b)), "http://")
+		// Reusing the port lets open sessions reconnect, but only if it is still free: another
+		// project's server may have taken it since this one last ran.
+		last := strings.TrimPrefix(strings.TrimSpace(string(b)), "http://")
+		if ln, err := net.Listen("tcp", last); err == nil {
+			_ = ln.Close()
+			addr = last
+		}
 	}
 	_ = os.Remove(filepath.Join(abs, "addr"))
 	self, err := os.Executable()
@@ -782,6 +808,16 @@ func (b *bridge) connect(ctx context.Context) (*mcp.ClientSession, error) {
 	return s, nil
 }
 
+// reset forgets the connection, so the next call finds the server again.
+func (b *bridge) reset() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.session != nil {
+		_ = b.session.Close()
+		b.session = nil
+	}
+}
+
 func (b *bridge) drop(s *mcp.ClientSession) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -816,10 +852,17 @@ func (b *bridge) call(ctx context.Context, p *mcp.CallToolParams) (*mcp.CallTool
 // to do, because the model reading it can pass that on.
 const noSwarmHere = "This folder has no swarm server running. To start one, run: aiculator join. Then call this tool again; the session does not need a restart."
 
+type realmUseInput struct {
+	Name string `json:"name" jsonschema:"the realm to work in, as listed by realm_list"`
+}
+
 // serveAutoBridge offers the swarm's tools from any folder, and looks for a server only when
 // one is called. So a config that applies to every project cannot show up as a broken MCP
 // server in the ones that do not use the swarm. No server here is an answer, not a failure.
-func serveAutoBridge(ctx context.Context, q api.TokenReq, harnessID string) error {
+//
+// A session stays in the realm of the folder it started in. With switching allowed it can
+// also list the others and move between them, but never while it holds a task.
+func serveAutoBridge(ctx context.Context, q api.TokenReq, harnessID string, switching bool) error {
 	if q.Agent == "" {
 		name := harnessID
 		if name == "" {
@@ -831,36 +874,105 @@ func serveAutoBridge(ctx context.Context, q api.TokenReq, harnessID string) erro
 	if err != nil {
 		return err
 	}
-	b := &bridge{issue: func(ctx context.Context) (string, string, error) {
+	var from string
+	if from, err = os.Getwd(); err != nil {
+		return err
+	}
+	var heldMu sync.Mutex
+	held := ""
+	b := &bridge{}
+	b.issue = func(ctx context.Context) (string, string, error) {
 		if !dataDirFlagSet {
-			dataDir = findDataDir()
+			heldMu.Lock()
+			dataDir = findDataDirFrom(from)
+			heldMu.Unlock()
 		}
 		return issueLocal(ctx, q)
-	}}
+	}
 	srv := mcp.NewServer(&mcp.Implementation{Name: "swarm", Version: version}, &mcp.ServerOptions{Instructions: instructions})
 	for _, t := range tools {
+		name := t.Name
 		srv.AddTool(t, func(ctx context.Context, r *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			res, err := b.call(ctx, &mcp.CallToolParams{Name: r.Params.Name, Arguments: r.Params.Arguments})
 			if err != nil && ctx.Err() == nil {
 				return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: noSwarmHere}}}, nil
 			}
+			if err == nil && switching {
+				heldMu.Lock()
+				held = trackHeld(held, name, res)
+				heldMu.Unlock()
+			}
 			return res, err
 		})
 	}
-	defer func() {
-		b.mu.Lock()
-		defer b.mu.Unlock()
-		if b.session != nil {
-			_ = b.session.Close()
-		}
-	}()
+	if switching {
+		mcp.AddTool(srv, &mcp.Tool{Name: "realm_list", Description: "List the projects on this machine that use the swarm, with which ones are running and which one this session is in."},
+			func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
+				all, err := realm.List()
+				if err != nil {
+					return nil, nil, err
+				}
+				heldMu.Lock()
+				current := findDataDirFrom(from)
+				heldMu.Unlock()
+				views := make([]map[string]any, 0, len(all))
+				for _, r := range all {
+					_, statErr := os.Stat(filepath.Join(r.DataDir, "addr"))
+					views = append(views, map[string]any{"name": r.Name, "path": r.Path, "running": statErr == nil, "current": r.DataDir == current})
+				}
+				return nil, map[string]any{"realms": views}, nil
+			})
+		mcp.AddTool(srv, &mcp.Tool{Name: "realm_use", Description: "Move this session to another project's swarm. Refused while you hold a task: finish or release it first, because a lease belongs to one realm."},
+			func(ctx context.Context, _ *mcp.CallToolRequest, in realmUseInput) (*mcp.CallToolResult, any, error) {
+				heldMu.Lock()
+				defer heldMu.Unlock()
+				if held != "" {
+					return nil, nil, fmt.Errorf("you hold task %s here: submit, fail or release it before moving", held)
+				}
+				r, err := realm.Get(in.Name)
+				if err != nil {
+					return nil, nil, err
+				}
+				from = r.Path
+				b.reset()
+				return nil, map[string]any{"realm": r.Name, "path": r.Path}, nil
+			})
+	}
+	defer b.reset()
 	return srv.Run(ctx, &mcp.StdioTransport{})
+}
+
+// trackHeld works out which task this session holds after a tool call.
+func trackHeld(held, tool string, r *mcp.CallToolResult) string {
+	if r == nil || r.IsError {
+		return held
+	}
+	switch tool {
+	case "wait_for_task", "claim":
+		b, err := json.Marshal(r.StructuredContent)
+		if err != nil {
+			return held
+		}
+		var g struct {
+			Action string `json:"action"`
+			Task   struct {
+				ID string `json:"id"`
+			} `json:"task"`
+		}
+		if json.Unmarshal(b, &g) == nil && g.Action == "task" {
+			return g.Task.ID
+		}
+	case "submit", "fail", "release", "review_verdict":
+		return ""
+	}
+	return held
 }
 
 func mcpCmd() *cobra.Command {
 	var (
 		url, harnessID, agent string
 		auto, planner         bool
+		realmSwitch           bool
 		tier                  int
 	)
 	cmd := &cobra.Command{
@@ -869,7 +981,7 @@ func mcpCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 			if auto {
-				return serveAutoBridge(ctx, api.TokenReq{Agent: agent, Tier: tier, Planner: planner}, harnessID)
+				return serveAutoBridge(ctx, api.TokenReq{Agent: agent, Tier: tier, Planner: planner}, harnessID, realmSwitch)
 			}
 			token := os.Getenv("SWARM_TOKEN")
 			if token == "" {
@@ -901,6 +1013,7 @@ func mcpCmd() *cobra.Command {
 	f.StringVar(&agent, "agent", "", "agent name; generated if empty")
 	f.IntVar(&tier, "tier", 1, "tier, with --auto")
 	f.BoolVar(&planner, "planner", false, "allow planning, with --auto")
+	f.BoolVar(&realmSwitch, "realm-switch", false, "with --auto: let the session list other realms and move between them")
 	cmd.AddCommand(mcpAddCmd(), mcpPrintCmd(), mcpRemoveCmd())
 	return cmd
 }

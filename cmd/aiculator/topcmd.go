@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
+	"github.com/Grano22/aiculator/internal/realm"
 	"github.com/Grano22/aiculator/internal/tui"
 	"github.com/Grano22/aiculator/internal/vlog"
 	"github.com/Grano22/aiculator/pkg/observe"
@@ -27,6 +28,7 @@ func topCmd() *cobra.Command {
 		forceColor   bool
 		width        int
 		viewName     string
+		all          bool
 	)
 	cmd := &cobra.Command{
 		Use:     "top",
@@ -38,6 +40,9 @@ p pauses, q quits.
 Without a terminal, such as in a pipe, it prints one frame and exits.
 Rates reset when the server restarts. Task states and usage totals do not.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if all {
+				return topAll(cmd, interval, once, asJSON, noColor, forceColor, width, viewName)
+			}
 			c, err := adminClient()
 			if err != nil {
 				return fmt.Errorf("%w; start it with: aiculator up", err)
@@ -84,6 +89,7 @@ Rates reset when the server restarts. Task states and usage totals do not.`,
 	}
 	f := cmd.Flags()
 	f.DurationVar(&interval, "interval", time.Second, "how often to refresh")
+	f.BoolVar(&all, "all", false, "show every realm on this machine: 1 realms, 2 tasks, 3 agents")
 	f.BoolVar(&once, "once", false, "print one frame and exit")
 	f.BoolVar(&asJSON, "json", false, "print the raw snapshot as JSON and exit")
 	f.BoolVar(&noColor, "no-color", false, "no color; NO_COLOR also works")
@@ -91,6 +97,46 @@ Rates reset when the server restarts. Task states and usage totals do not.`,
 	f.IntVar(&width, "width", 0, "with --once: width in columns")
 	f.StringVar(&viewName, "view", "overview", "with --once: overview, tasks, agents, flow or usage")
 	return cmd
+}
+
+func topAll(cmd *cobra.Command, interval time.Duration, once, asJSON, noColor, forceColor bool, width int, viewName string) error {
+	if asJSON {
+		views, err := realm.Gather(cmd.Context(), nil)
+		if err != nil {
+			return err
+		}
+		return printJSON(views)
+	}
+	view := tui.View(0)
+	switch viewName {
+	case "overview", "realms":
+	case "tasks":
+		view = 1
+	case "agents":
+		view = 2
+	default:
+		return fmt.Errorf("unknown view %q with --all: use realms, tasks or agents", viewName)
+	}
+	color := !noColor && os.Getenv("NO_COLOR") == ""
+	tty := term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
+	if once || !tty {
+		rows, err := fleet(cmd.Context())
+		if err != nil {
+			return err
+		}
+		w, _ := tui.ScreenSize(term.GetSize(int(os.Stdout.Fd())))
+		if width > 0 {
+			w = width
+		}
+		fmt.Println(tui.RenderFleet(rows, tui.Options{View: view, Width: w, Height: 60, Color: forceColor || (color && tty), Plain: true}))
+		return nil
+	}
+	if logFile == "" {
+		vlog.SetOutput(io.Discard, logFormat)
+	}
+	ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	return tui.RunFleet(ctx, fleet, interval, color)
 }
 
 // eventsCmd streams every committed task change as JSON lines, so that any program in

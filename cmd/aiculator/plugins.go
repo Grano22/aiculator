@@ -70,6 +70,9 @@ func pluginCLI() *plugin.CLI {
 			}
 			return s, c.Get(ctx, "/v1/observe", &s)
 		},
+		Fleet: func(ctx context.Context, ttl time.Duration) (any, error) {
+			return fleetWithLinks(ctx, int64(ttl.Seconds()))
+		},
 	}
 }
 

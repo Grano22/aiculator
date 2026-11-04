@@ -60,6 +60,29 @@ func draw(out io.Writer, text string, width int) {
 
 // Run shows the dashboard until the user quits or ctx ends. It needs a real terminal.
 func Run(ctx context.Context, fetch Fetch, interval time.Duration, color bool) error {
+	var snap observe.Snapshot
+	return loop(ctx, interval, color, func(c context.Context) error {
+		got, err := fetch(c)
+		if err == nil {
+			snap = got
+		}
+		return err
+	}, func(o Options) string { return Render(snap, o) })
+}
+
+// RunFleet shows every realm until the user quits or ctx ends.
+func RunFleet(ctx context.Context, fetch FleetFetch, interval time.Duration, color bool) error {
+	var rows []FleetRow
+	return loop(ctx, interval, color, func(c context.Context) error {
+		got, err := fetch(c)
+		if err == nil {
+			rows = got
+		}
+		return err
+	}, func(o Options) string { return RenderFleet(rows, o) })
+}
+
+func loop(ctx context.Context, interval time.Duration, color bool, fetch func(context.Context) error, render func(Options) string) error {
 	fd := int(os.Stdin.Fd())
 	old, err := term.MakeRaw(fd)
 	if err != nil {
@@ -74,21 +97,19 @@ func Run(ctx context.Context, fetch Fetch, interval time.Duration, color bool) e
 	keys := make(chan string, 16)
 	go readKeys(os.Stdin, keys)
 
-	var snap observe.Snapshot
 	o := Options{Color: color}
 	refresh := func() {
 		c, cancel := context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
-		got, err := fetch(c)
-		if err != nil {
+		if err := fetch(c); err != nil {
 			o.Stale = err.Error()
 			return
 		}
-		snap, o.Stale = got, ""
+		o.Stale = ""
 	}
 	paint := func() {
 		o.Width, o.Height = ScreenSize(term.GetSize(int(out.Fd())))
-		draw(out, Render(snap, o), o.Width)
+		draw(out, render(o), o.Width)
 	}
 	refresh()
 	paint()

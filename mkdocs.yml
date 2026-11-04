@@ -101,6 +101,7 @@ nav:
       - Plan work: guides/planning.md
       - Labels, priority and attachments: guides/task-data.md
       - "Connectors: import and sync": guides/connectors.md
+      - "Realms: many projects": guides/realms.md
       - Skills: guides/skills.md
       - Templates: guides/templates.md
       - Template demo: guides/template-demo.md

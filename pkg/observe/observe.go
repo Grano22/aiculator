@@ -399,6 +399,7 @@ type Planning struct {
 type Snapshot struct {
 	Time       time.Time        `json:"time"`
 	Version    string           `json:"version"`
+	Realm      string           `json:"realm,omitempty"`
 	UptimeMs   int64            `json:"uptime_ms"`
 	Ready      bool             `json:"ready"`
 	States     map[string]int   `json:"states"`

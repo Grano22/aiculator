@@ -1,6 +1,8 @@
 package webdash
 
 import (
+	"context"
+	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -99,5 +101,61 @@ func TestTheTokenLeavesTheAddressBar(t *testing.T) {
 	}
 	if strings.Contains(js, "localStorage") {
 		t.Error("the token should not outlive the tab")
+	}
+}
+
+func TestFleetPageNeedsTheSessionToken(t *testing.T) {
+	h, err := FleetHandler("right", func(context.Context) (any, error) { return []string{"secret-realm"}, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+	get := func(path, token string) (int, string, http.Header) {
+		req, _ := http.NewRequest("GET", srv.URL+path, nil)
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		b, _ := io.ReadAll(resp.Body)
+		return resp.StatusCode, string(b), resp.Header
+	}
+	for _, tok := range []string{"", "wrong"} {
+		if code, body, _ := get("/api/fleet", tok); code != 401 || strings.Contains(body, "secret-realm") {
+			t.Errorf("token %q: %d %s", tok, code, body)
+		}
+	}
+	if code, body, _ := get("/api/fleet", "right"); code != 200 || !strings.Contains(body, "secret-realm") {
+		t.Errorf("%d %s", code, body)
+	}
+	code, body, hdr := get("/", "")
+	if code != 200 || !strings.Contains(body, "fleet.js") {
+		t.Errorf("%d %s", code, body)
+	}
+	if !strings.Contains(hdr.Get("Content-Security-Policy"), "default-src 'none'") {
+		t.Errorf("%v", hdr)
+	}
+	if code, _, _ := get("/fleet.js", ""); code != 200 {
+		t.Errorf("fleet.js: %d", code)
+	}
+}
+
+func TestFleetScriptNeverParsesDataAsHTML(t *testing.T) {
+	b, err := assets.ReadFile("static/fleet.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []string{"innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("} {
+		if strings.Contains(string(b), bad) {
+			t.Errorf("fleet.js uses %s", bad)
+		}
+	}
+	// A link comes from a realm's own server, and is checked before it can become a link.
+	if !strings.Contains(string(b), "safeLink") {
+		t.Error("links are not checked")
 	}
 }

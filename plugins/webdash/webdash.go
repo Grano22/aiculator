@@ -9,13 +9,22 @@ package webdash
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/subtle"
 	"embed"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
+	"net"
 	"net/http"
+	"os"
 	"os/exec"
+	"os/signal"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -60,8 +69,8 @@ func (Plugin) Setup(h *plugin.Host) error {
 // Commands implements plugin.Commander.
 func (Plugin) Commands(cli *plugin.CLI) []*cobra.Command {
 	var (
-		noOpen bool
-		ttl    time.Duration
+		noOpen, all bool
+		ttl         time.Duration
 	)
 	cmd := &cobra.Command{
 		Use:   "web",
@@ -70,6 +79,9 @@ func (Plugin) Commands(cli *plugin.CLI) []*cobra.Command {
 
 The dashboard is compiled into this binary; go build -tags noweb leaves it out.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if all {
+				return serveFleet(cmd.Context(), cli, ttl, noOpen)
+			}
 			url, token, err := cli.ViewerToken(cmd.Context(), ttl)
 			if err != nil {
 				return err
@@ -84,9 +96,89 @@ The dashboard is compiled into this binary; go build -tags noweb leaves it out.`
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&all, "all", false, "show every realm on this machine, for as long as this command runs")
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "print the link and do not open a browser")
 	cmd.Flags().DurationVar(&ttl, "ttl", 12*time.Hour, "how long the link works")
 	return []*cobra.Command{cmd}
+}
+
+// securityHeaders are the same for every page: nothing loads from elsewhere, nothing runs
+// inline, and no site can frame it.
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hdr := w.Header()
+		hdr.Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+		hdr.Set("X-Content-Type-Options", "nosniff")
+		hdr.Set("X-Frame-Options", "DENY")
+		hdr.Set("Referrer-Policy", "no-referrer")
+		hdr.Set("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
+}
+
+// FleetHandler serves the page across realms. Reading the realms takes this user's own
+// tokens, so it runs in this command and not in any project's server: otherwise one project's
+// server would have to hold the keys to all the others.
+func FleetHandler(session string, fetch func(ctx context.Context) (any, error)) (http.Handler, error) {
+	sub, err := fs.Sub(assets, "static")
+	if err != nil {
+		return nil, err
+	}
+	mux := http.NewServeMux()
+	mux.Handle("GET /", http.FileServerFS(sub))
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFileFS(w, r, sub, "fleet.html")
+	})
+	mux.HandleFunc("GET /api/fleet", func(w http.ResponseWriter, r *http.Request) {
+		got := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+		if subtle.ConstantTimeCompare([]byte(got), []byte(session)) != 1 {
+			http.Error(w, "this page needs the link printed by aiculator web --all", http.StatusUnauthorized)
+			return
+		}
+		v, err := fetch(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(v)
+	})
+	return securityHeaders(mux), nil
+}
+
+func serveFleet(ctx context.Context, cli *plugin.CLI, ttl time.Duration, noOpen bool) error {
+	var raw [24]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return err
+	}
+	session := hex.EncodeToString(raw[:])
+	h, err := FleetHandler(session, func(ctx context.Context) (any, error) { return cli.Fleet(ctx, ttl) })
+	if err != nil {
+		return err
+	}
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return err
+	}
+	srv := &http.Server{Handler: h, ReadHeaderTimeout: 5 * time.Second}
+	link := fmt.Sprintf("http://%s/#token=%s", ln.Addr(), session)
+	fmt.Println(link)
+	fmt.Println("Press Ctrl-C to stop.")
+	if !noOpen {
+		if err := open(ctx, link); err != nil {
+			fmt.Println("Could not open a browser, so open that link yourself.")
+		}
+	}
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	go func() {
+		<-ctx.Done()
+		_ = srv.Close()
+	}()
+	if err := srv.Serve(ln); !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
 }
 
 func open(ctx context.Context, url string) error {

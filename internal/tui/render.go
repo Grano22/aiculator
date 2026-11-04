@@ -221,6 +221,9 @@ func (f *frame) header(s observe.Snapshot) {
 		state = f.paint(red, "NOT READY")
 	}
 	parts := []string{f.paint(bold, "aiculator"), Clean(s.Version), "up " + Millis(s.UptimeMs), state}
+	if s.Realm != "" {
+		parts = append(parts, f.paint(cyan, "realm: "+Clean(s.Realm)))
+	}
 	switch {
 	case s.Planning.Active:
 		parts = append(parts, f.paint(cyan, "planning: "+Clean(s.Planning.Phase)))

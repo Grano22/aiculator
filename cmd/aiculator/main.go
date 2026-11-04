@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -23,6 +24,7 @@ import (
 	"github.com/Grano22/aiculator/internal/client"
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/realm"
 	"github.com/Grano22/aiculator/internal/sandbox"
 	"github.com/Grano22/aiculator/internal/store"
 	"github.com/Grano22/aiculator/internal/swarm"
@@ -35,20 +37,50 @@ var dataDir string
 // dataDirFlagSet means --data was given, so nothing should search for the state directory.
 var dataDirFlagSet bool
 
+// realmFlag names the realm to act on, instead of the one this folder belongs to.
+var realmFlag string
+
 // version is set at build time with -ldflags "-X main.version=v1.2.3".
 var version = "dev"
 
-// findDataDir walks up from the working directory, so that commands work from a
-// subdirectory and from inside a task's worktree, which lives under the data dir.
+// findDataDir walks up from the working directory, so that commands work from a subdirectory
+// and from inside a task's worktree, which lives under the data directory.
 func findDataDir() string {
 	dir, err := os.Getwd()
 	if err != nil {
 		return ".swarm"
 	}
+	return findDataDirFrom(dir)
+}
+
+// findDataDirFrom stops at the edge of the project. Without that, a repository nested inside
+// another would silently use the outer one's server, and an agent would be given work from
+// the wrong project. The home directory is an edge too, so that a stray ~/.swarm cannot
+// claim every folder under it.
+func findDataDirFrom(dir string) string {
+	sep := string(filepath.Separator)
+	// A task's worktree has its own .git, and it belongs to the data directory it is inside.
+	if i := strings.LastIndex(dir+sep, sep+".swarm"+sep); i >= 0 {
+		return dir[:i] + sep + ".swarm"
+	}
+	home, _ := os.UserHomeDir()
+	if real, err := filepath.EvalSymlinks(home); err == nil {
+		home = real
+	}
+	if real, err := filepath.EvalSymlinks(dir); err == nil {
+		dir = real
+	}
+	start := dir
 	for {
+		if dir == home && start != home {
+			return ".swarm" // Working in the home directory itself is the one way to use it.
+		}
 		candidate := filepath.Join(dir, ".swarm")
 		if fi, err := os.Stat(candidate); err == nil && fi.IsDir() {
 			return candidate
+		}
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return ".swarm"
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
@@ -74,17 +106,31 @@ func rootCmd() *cobra.Command {
 		Version: version, SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			dataDirFlagSet = cmd.Flags().Changed("data")
+			if realmFlag != "" {
+				if dataDirFlagSet {
+					return errors.New("use --realm or --data, not both")
+				}
+				r, err := realm.Get(realmFlag)
+				if err != nil {
+					return err
+				}
+				// Everything then acts as if it had been run in that project.
+				if err := os.Chdir(r.Path); err != nil {
+					return fmt.Errorf("realm %s: %w", r.Name, err)
+				}
+			}
 			if !dataDirFlagSet {
 				dataDir = findDataDir()
 			}
 			return setupLogging(cmd)
 		},
 	}
+	root.PersistentFlags().StringVar(&realmFlag, "realm", "", "act on this realm, from any folder; see aiculator realm ls")
 	root.PersistentFlags().StringVar(&dataDir, "data", ".swarm", "state directory; found by searching upward when not set")
 	addLoggingFlags(root)
 	// Declared here so that cobra does not claim -v for it, since -v is the verbosity.
 	root.Flags().Bool("version", false, "print the version")
-	root.AddCommand(initCmd(), importCmd(), sourceCmd(), syncCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
+	root.AddCommand(realmCmd(), initCmd(), importCmd(), sourceCmd(), syncCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
 		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), pluginCmd(), debugCmd(), logsCmd(), genDocsCmd())
 	addPluginCommands(root)
 	return root
@@ -185,14 +231,15 @@ func serve(ctx context.Context, o serveOpts) error {
 		log.Info("work layer ready", "repo", repo, "branch", wm.Branch(), "sandbox", sb.Name())
 	}
 
+	realmID := registerRealm(log)
 	cfg := engine.Config{LeaseTTL: o.leaseTTL, ProgressTTL: o.progressTTL, ExitGrace: o.exitGrace, RestartGrace: o.restartGrace, AgingUnit: o.agingUnit, Aging: o.aging}
-	svc, err := swarm.New(ctx, swarm.Options{Store: st, Work: wm, Engine: cfg, Log: log})
+	svc, err := swarm.New(ctx, swarm.Options{Store: st, Work: wm, Engine: cfg, Log: log, Realm: realmID.name, RealmPath: realmID.path})
 	if err != nil {
 		return err
 	}
 	defer svc.Close()
 
-	srv := &api.Server{S: svc, Auth: authority, Version: version}
+	srv := &api.Server{S: svc, Auth: authority, Version: version, Instance: realmID.instance}
 	// Connectors are a side effect, so a bad sources file costs them, not the swarm.
 	if y := startSync(ctx, svc, o.repo, log); y != nil {
 		srv.Sync = y

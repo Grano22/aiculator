@@ -213,3 +213,55 @@ func TestZeroSizedTerminalStillDraws(t *testing.T) {
 		t.Fatal("an error should use the fallback")
 	}
 }
+
+func fleetRows() []FleetRow {
+	return []FleetRow{
+		{Name: "shop", Path: "/code/shop", Live: true, Snapshot: observe.Snapshot{
+			Ready: true, States: map[string]int{"ready": 3, "running": 2, "done": 7, "parked": 1},
+			Tasks:  []observe.TaskLive{{ID: "fix-login", Title: "Fix login", State: "running", Owner: "claude-1", Tier: 1}},
+			Agents: []observe.AgentLive{{ID: "claude-1", Tier: 1, State: "working", Task: "fix-login"}},
+		}},
+		{Name: "docs", Path: "/code/docs"},
+		{Name: "old", Path: "/code/old", Missing: true},
+	}
+}
+
+func TestFleetShowsEveryRealmAndWhoseTasksAreWhose(t *testing.T) {
+	realms := RenderFleet(fleetRows(), Options{Plain: true, Width: 140})
+	for _, want := range []string{"3 realms, 1 running", "shop", "running", "docs", "stopped", "old", "missing", "/code/shop", "1/1"} {
+		if !strings.Contains(realms, want) {
+			t.Errorf("missing %q in:\n%s", want, realms)
+		}
+	}
+	tasks := RenderFleet(fleetRows(), Options{View: 1, Plain: true, Width: 140})
+	if !strings.Contains(tasks, "shop") || !strings.Contains(tasks, "fix-login") || !strings.Contains(tasks, "claude-1") {
+		t.Errorf("tasks:\n%s", tasks)
+	}
+	agents := RenderFleet(fleetRows(), Options{View: 2, Plain: true, Width: 140})
+	if !strings.Contains(agents, "shop") || !strings.Contains(agents, "claude-1") {
+		t.Errorf("agents:\n%s", agents)
+	}
+	// The keys for five views still land somewhere sensible with three.
+	if got := RenderFleet(fleetRows(), Options{View: 4, Plain: true, Width: 140}); !strings.Contains(got, "Tasks in progress") {
+		t.Errorf("view wrap:\n%s", got)
+	}
+}
+
+func TestFleetTextCannotControlTheTerminal(t *testing.T) {
+	rows := fleetRows()
+	rows[0].Name = "evil\x1b[2J"
+	rows[0].Path = "/x\x1b]0;owned\x07"
+	rows[0].Snapshot.Tasks[0].Title = "t\x1b[31m"
+	rows[0].Snapshot.Tasks[0].ID = "i\x1b[H"
+	for v := range 3 {
+		if got := RenderFleet(rows, Options{View: View(v), Plain: true, Width: 140}); strings.Contains(got, "\x1b") {
+			t.Errorf("view %d let an escape through: %q", v, got)
+		}
+	}
+}
+
+func TestFleetWithNoRealms(t *testing.T) {
+	if got := RenderFleet(nil, Options{Plain: true}); !strings.Contains(got, "aiculator join") {
+		t.Errorf("%s", got)
+	}
+}

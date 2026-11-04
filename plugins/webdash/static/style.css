@@ -74,3 +74,6 @@ td.title { white-space: normal; min-width: 160px; overflow-wrap: anywhere; }
 .foot { margin: 0; }
 @media (max-width: 600px) { .top, main { padding-left: 16px; padding-right: 16px; } }
 @media (prefers-reduced-motion: no-preference) { .bar > span { transition: width .4s; } }
+.path { color: var(--muted); font-size: 12px; }
+.realm-name { font-weight: 600; }
+td a, .realm-name a { color: var(--accent); }
