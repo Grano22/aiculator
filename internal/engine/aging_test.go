@@ -22,17 +22,12 @@ func grantedID(t *testing.T, e *Engine) string {
 	return r.Task.ID
 }
 
-// The tick applies boosts on real time, so a test waits for the boost to land.
 func awaitPriority(t *testing.T, e *Engine, id string, want int) {
 	t.Helper()
-	eventually(t, "priority of "+id, func() bool {
-		p, err := e.Priority(bg, id)
-		return err == nil && p.Effective == want
-	})
-	if err := e.Sync(bg); err != nil {
-		t.Fatal(err)
+	p, err := e.Priority(bg, id)
+	if err != nil || p.Effective != want {
+		t.Fatalf("%s: %+v %v, want %d", id, p, err, want)
 	}
-	time.Sleep(3 * e.cfg.Tick)
 }
 
 func TestAgingStepRaisesAWaitingTask(t *testing.T) {
@@ -161,11 +156,12 @@ func TestBadAttributesAreRefused(t *testing.T) {
 // The order agents see must match a brute-force sort over every waiting task, whatever
 // mix of priorities, steps and waits there is. This is what makes the lazy heap safe.
 func TestGrantOrderMatchesBruteForce(t *testing.T) {
+	// The tick is an hour away, so this proves a claim does not depend on it.
 	for seed := range uint64(6) {
 		r := rand.New(rand.NewPCG(seed, 7))
 		clk := newClock()
 		unit := time.Minute
-		e, st := setup(t, Config{Clock: clk, AgingUnit: unit, Tick: time.Millisecond, LeaseTTL: 1000 * time.Hour, ProgressTTL: 1000 * time.Hour})
+		e, st := setup(t, Config{Clock: clk, AgingUnit: unit, Tick: time.Hour, LeaseTTL: 1000 * time.Hour, ProgressTTL: 1000 * time.Hour})
 		type want struct {
 			id    string
 			prio  int
@@ -187,10 +183,7 @@ func TestGrantOrderMatchesBruteForce(t *testing.T) {
 		}
 		for len(tasks) > 0 {
 			clk.Advance(time.Duration(r.IntN(600)) * time.Second)
-			if err := e.Sync(bg); err != nil {
-				t.Fatal(err)
-			}
-			time.Sleep(3 * e.cfg.Tick) // Let the writer's tick apply what has come due.
+			// No waiting for a tick: a claim must see the right order the moment it asks.
 			now := clk.Now()
 			key := func(w want) int64 {
 				b, _ := core.AgingBoost(w.aging, now.Sub(w.ready))

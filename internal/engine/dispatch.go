@@ -294,6 +294,9 @@ func pathsOverlap(a, b string) bool {
 // tryMatch finds work for an agent: review jobs first, then its own tier, then
 // lower tiers it may steal from. It is the only place new leases are created.
 func (e *Engine) tryMatch(a Agent) (WaitResponse, bool) {
+	// The tick also does this, but a claim must not see an order up to a tick out of date. It
+	// costs one look at the top of a heap when nothing is due.
+	e.applyBoosts()
 	if r, ok := e.matchReview(a); ok {
 		return r, true
 	}
