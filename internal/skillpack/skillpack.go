@@ -96,6 +96,29 @@ func (o Options) target(h harness.Harness) string {
 	return filepath.Join(o.Root, filepath.FromSlash(h.SkillsDir))
 }
 
+// HasGlobal reports whether a harness has a user-level place for skills at all.
+func HasGlobal(h harness.Harness) bool { return h.ReadsGlobalAgents || h.GlobalSkillsDir != "" }
+
+// Where says where a harness would find a skill, nearest first: "project", "global", or ""
+// if it would not find it. It looks where that harness reads, not just that a copy exists.
+func Where(name string, h harness.Harness, root string) string {
+	found := func(o Options) bool {
+		dir := o.target(h)
+		if dir == "" {
+			dir = o.canonical()
+		}
+		_, err := os.Stat(filepath.Join(dir, name, "SKILL.md"))
+		return err == nil
+	}
+	if found(Options{Root: root}) {
+		return "project"
+	}
+	if HasGlobal(h) && found(Options{Root: root, Global: true}) {
+		return "global"
+	}
+	return ""
+}
+
 // Action reports one thing an operation did.
 type Action struct {
 	Skill  string

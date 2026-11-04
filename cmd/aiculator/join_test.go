@@ -1412,10 +1412,10 @@ func exists(p string) bool {
 	return err == nil
 }
 
-func TestInitAsksAndDoesOnlyWhatWasChosen(t *testing.T) {
+func TestInitScopedAsksAndDoesOnlyWhatWasChosen(t *testing.T) {
 	p := newProject(t)
 	// Harness, tier and start come from flags. Answers: skills yes, MCP yes.
-	out, err := p.init("y\ny\n", "--no-start", "--harness", "claude", "--tier", "2")
+	out, err := p.init("y\ny\n", "--scoped", "--no-start", "--harness", "claude", "--tier", "2")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
@@ -1434,10 +1434,10 @@ func TestInitAsksAndDoesOnlyWhatWasChosen(t *testing.T) {
 	}
 }
 
-func TestInitDecliningMCPAndSkills(t *testing.T) {
+func TestInitScopedDecliningMCPAndSkills(t *testing.T) {
 	p := newProject(t)
 	// Harness from a flag. Answers: skills no, MCP no, start no.
-	out, err := p.init("n\nn\nn\n", "--harness", "claude")
+	out, err := p.init("n\nn\nn\n", "--scoped", "--harness", "claude")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
@@ -1452,7 +1452,7 @@ func TestInitDecliningMCPAndSkills(t *testing.T) {
 		}
 	}
 	// Skills yes, MCP no, start no.
-	if out, err = p.init("y\nn\nn\n", "--harness", "claude"); err != nil {
+	if out, err = p.init("y\nn\nn\n", "--scoped", "--harness", "claude"); err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
 	if !exists(filepath.Join(p.root, ".agents/skills/swarm-join")) || exists(filepath.Join(p.root, ".mcp.json")) {
@@ -1460,10 +1460,10 @@ func TestInitDecliningMCPAndSkills(t *testing.T) {
 	}
 }
 
-func TestInitWritesNothingUntilEveryAnswerIsIn(t *testing.T) {
+func TestInitScopedWritesNothingUntilEveryAnswerIsIn(t *testing.T) {
 	p := newProject(t)
 	before, _ := os.ReadDir(p.root)
-	out, err := p.init("y\n", "--harness", "claude") // Input ends after the first answer.
+	out, err := p.init("y\n", "--scoped", "--harness", "claude") // Input ends after the first answer.
 	if err == nil || !strings.Contains(out, "--yes") {
 		t.Fatalf("%v\n%s", err, out)
 	}
@@ -1472,10 +1472,10 @@ func TestInitWritesNothingUntilEveryAnswerIsIn(t *testing.T) {
 	}
 }
 
-func TestInitYesTakesDefaultsAndIsSafeToRepeat(t *testing.T) {
+func TestInitScopedYesTakesDefaultsAndIsSafeToRepeat(t *testing.T) {
 	p := newProject(t)
 	for range 2 {
-		out, err := p.init("", "--yes")
+		out, err := p.init("", "--scoped", "--yes")
 		if err != nil {
 			t.Fatalf("%v\n%s", err, out)
 		}
@@ -1491,10 +1491,10 @@ func TestInitYesTakesDefaultsAndIsSafeToRepeat(t *testing.T) {
 	}
 }
 
-func TestInitDryRunChangesNothing(t *testing.T) {
+func TestInitScopedDryRunChangesNothing(t *testing.T) {
 	p := newProject(t)
 	before, _ := os.ReadDir(p.root)
-	out, err := p.init("", "--yes", "--dry-run", "--harness", "claude")
+	out, err := p.init("", "--scoped", "--yes", "--dry-run", "--harness", "claude")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
@@ -1506,12 +1506,12 @@ func TestInitDryRunChangesNothing(t *testing.T) {
 	}
 }
 
-func TestInitInAFolderWithNoRepository(t *testing.T) {
+func TestInitScopedInAFolderWithNoRepository(t *testing.T) {
 	p := newProject(t)
 	plain := t.TempDir()
 	p.root = plain
 	// --yes must not turn a folder into a repository on its own.
-	out, err := p.init("", "--yes", "--harness", "claude")
+	out, err := p.init("", "--scoped", "--yes", "--harness", "claude")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
@@ -1524,7 +1524,7 @@ func TestInitInAFolderWithNoRepository(t *testing.T) {
 	// Asked, and answered yes: repository, skills, MCP config, tier 1, no server.
 	plain2 := t.TempDir()
 	p.root = plain2
-	out, err = p.init("y\ny\ny\n1\nn\n", "--harness", "claude")
+	out, err = p.init("y\ny\ny\n1\nn\n", "--scoped", "--harness", "claude")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
@@ -1533,5 +1533,167 @@ func TestInitInAFolderWithNoRepository(t *testing.T) {
 	}
 	if log, err := exec.Command("git", "-C", plain2, "log", "--oneline").Output(); err != nil || !strings.Contains(string(log), "Initial commit") {
 		t.Errorf("no first commit: %s %v", log, err)
+	}
+}
+
+func TestInitByDefaultSetsUpTheMachineAndNotTheProject(t *testing.T) {
+	p := newProject(t)
+	before, _ := os.ReadDir(p.root)
+	// Not even a git repository is needed, because no project is involved.
+	plain := t.TempDir()
+	root := p.root
+	p.root = plain
+	out, err := p.init("", "--yes")
+	p.root = root
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if !exists(filepath.Join(p.home, ".agents/skills/swarm-join/SKILL.md")) {
+		t.Errorf("no global skills:\n%s", out)
+	}
+	if !exists(filepath.Join(p.home, ".claude/skills/swarm-join/SKILL.md")) {
+		t.Errorf("Claude Code reads its own folder, and did not get a link:\n%s", out)
+	}
+	if entries, _ := os.ReadDir(plain); len(entries) != 0 {
+		t.Errorf("a global init wrote into the folder it ran in: %v", entries)
+	}
+	if after, _ := os.ReadDir(p.root); len(after) != len(before) {
+		t.Errorf("a global init wrote into a project")
+	}
+	// The tools of an MCP server cost context in every session, so this is opt-in.
+	if exists(filepath.Join(p.home, ".claude.json")) {
+		t.Errorf("--yes added MCP config for every project:\n%s", out)
+	}
+	if !strings.Contains(out, "aiculator join") {
+		t.Errorf("it should say what comes next:\n%s", out)
+	}
+}
+
+func TestInitGlobalMCPIsOptInAndKeepsTheUsersConfig(t *testing.T) {
+	p := newProject(t)
+	cfg := filepath.Join(p.home, ".claude.json")
+	if err := os.WriteFile(cfg, []byte(`{"theme":"dark","mcpServers":{"mine":{"command":"x"}}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out, err := p.init("", "--yes", "--mcp", "--harness", "claude", "--tier", "2")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	got := readFileT(t, cfg)
+	for _, want := range []string{`"theme"`, `"mine"`, `"swarm"`, `"2"`} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %s in %s", want, got)
+		}
+	}
+	if entries, _ := os.ReadDir(filepath.Join(p.home, ".aiculator/backups")); len(entries) == 0 {
+		t.Error("the user's own config was changed with no backup")
+	}
+	if exists(filepath.Join(p.root, ".swarm")) {
+		t.Errorf("backups or state landed in the project")
+	}
+}
+
+// join on its own, on a machine with nothing set up, keeps working as it always did.
+func TestJoinWorksAloneAndAddsWhatIsMissing(t *testing.T) {
+	p := newProject(t)
+	out := p.run("join", "--harness", "claude")
+	for _, f := range []string{".agents/skills/swarm-join/SKILL.md", ".claude/skills/swarm-join/SKILL.md", ".mcp.json", ".swarm/addr"} {
+		if !exists(filepath.Join(p.root, f)) {
+			t.Errorf("missing %s:\n%s", f, out)
+		}
+	}
+	if !strings.Contains(out, "Read .agents/skills/swarm-join/SKILL.md") {
+		t.Errorf("%s", out)
+	}
+}
+
+// After a global init, join has only the server left to do.
+func TestJoinReusesAGlobalInstall(t *testing.T) {
+	p := newProject(t)
+	if out, err := p.init("", "--yes", "--mcp", "--harness", "claude"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	out := p.run("join", "--harness", "claude")
+	if !exists(filepath.Join(p.root, ".swarm/addr")) {
+		t.Errorf("no server:\n%s", out)
+	}
+	for _, f := range []string{".agents", ".claude", ".mcp.json"} {
+		if exists(filepath.Join(p.root, f)) {
+			t.Errorf("%s was written, though the machine already had it:\n%s", f, out)
+		}
+	}
+	for _, want := range []string{"already installed", "~/.agents/skills/swarm-join/SKILL.md", "already set for every project"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+}
+
+// Global skills and no global MCP: join adds MCP here, and only that.
+func TestJoinAddsOnlyWhatTheMachineLacks(t *testing.T) {
+	p := newProject(t)
+	if out, err := p.init("", "--yes", "--harness", "claude"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	out := p.run("join", "--harness", "claude")
+	if exists(filepath.Join(p.root, ".agents")) || exists(filepath.Join(p.root, ".claude")) {
+		t.Errorf("skills were copied here:\n%s", out)
+	}
+	if !exists(filepath.Join(p.root, ".mcp.json")) {
+		t.Errorf("no project MCP config:\n%s", out)
+	}
+}
+
+// A scoped install is nearest, so join uses it even when a global one exists too.
+func TestScopedInstallIsPreferredOverGlobal(t *testing.T) {
+	p := newProject(t)
+	if out, err := p.init("", "--yes", "--harness", "claude"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if out, err := p.init("", "--scoped", "--yes", "--harness", "claude"); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if !exists(filepath.Join(p.root, ".agents/skills/swarm-join/SKILL.md")) {
+		t.Fatal("--scoped should install here even with a global copy")
+	}
+	if out := p.run("join", "--harness", "claude"); !strings.Contains(out, "Read .agents/skills/swarm-join/SKILL.md") {
+		t.Errorf("%s", out)
+	}
+}
+
+// A config for every project must not look broken in the ones without a swarm.
+func TestAutoBridgeStartsAnywhereAndFindsAServerLater(t *testing.T) {
+	p := newProject(t)
+	s := mcpSession(t, p, "mcp", "--auto", "--tier", "1", "--harness", "fake")
+	var names []string
+	for tool, err := range s.Tools(context.Background(), nil) {
+		if err != nil {
+			t.Fatal(err)
+		}
+		names = append(names, tool.Name)
+	}
+	if !strings.Contains(strings.Join(names, " "), "wait_for_task") {
+		t.Fatalf("tools: %v", names)
+	}
+	if exists(filepath.Join(p.root, ".swarm")) {
+		t.Error("merely starting the bridge created state in this folder")
+	}
+	r := callTool(t, s, "situation", nil, nil)
+	text := ""
+	for _, c := range r.Content {
+		if tc, ok := c.(*mcp.TextContent); ok {
+			text += tc.Text
+		}
+	}
+	if !r.IsError || !strings.Contains(text, "aiculator join") {
+		t.Fatalf("with no server it should say what to do: %+v %s", r, text)
+	}
+	// The server starts after the session did, and no restart is needed.
+	p.run("up")
+	p.run("task", "add", "--id", "late", "--title", "x", "--allow-empty")
+	var g swarm.Grant
+	callTool(t, s, "wait_for_task", map[string]any{"hold_seconds": 5}, &g)
+	if g.Task == nil || g.Task.ID != "late" {
+		t.Fatalf("grant: %+v", g)
 	}
 }

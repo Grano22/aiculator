@@ -2,29 +2,43 @@
 
 This takes a repository from nothing to one finished, verified task.
 
-## 1. Connect the project
-
-Run this in your project:
+## 1. Set up your machine, once
 
 ```sh
 aiculator init
 ```
 
-It asks a few questions, and writes nothing until you have answered them all:
+It asks which installed harnesses should use the swarm and whether to install its skills, then puts them where each harness reads them for every project. It needs no git repository, writes nothing until you have answered everything, and running it again is safe.
 
-- Which installed harnesses should use the swarm.
-- Whether to install the swarm's skills.
-- Whether to add MCP config, and at which tier.
-- Whether to start the server now.
+## 2. Connect the project
 
-If the folder has no git repository or no commits yet, it offers to create them, because the swarm's worktrees need a commit to start from.
+Run this in a git repository with at least one commit:
 
-No secrets are written, and running it again is safe. The server keeps its data in `.swarm/`, which is excluded from git.
+```sh
+aiculator join --tier 1
+```
 
-!!! tip "In a script"
-    `aiculator init --yes` takes every default without asking. It won't create a git repository unless you agree to, so run it in one that has a commit. To answer single questions, use `--harness claude,opencode`, `--no-skills`, `--no-mcp`, `--no-start` and `--tier 2`. Add `--dry-run` to see what would happen. `aiculator join` does the same setup, and also asks nothing.
+It starts a local server, keeping its data in `.swarm/`, which is excluded from git, and adds the swarm's MCP server to the project's config for each harness. No secrets are written.
 
-## 2. Add a task
+!!! tip "You can skip step 1"
+    `join` works on its own too. It installs whatever a harness can't already find, so step 1 only saves it the work, and keeps your projects free of copies.
+
+### Which setup should I use?
+
+| Command | Sets up | Good for |
+|---|---|---|
+| `aiculator init` | This machine, for every project | Your own machine |
+| `aiculator init --scoped` | This project, asking step by step | Trying it out, or skills you want committed with a project |
+| `aiculator join` | This project, without asking, reusing what exists | Scripts, and each project after `init` |
+
+Harnesses look for a skill in the project first, so a scoped install takes priority over a global one.
+
+For a script, `aiculator init --yes` takes every default. To answer single questions, use `--harness claude,opencode`, `--no-skills`, `--mcp`, `--no-mcp`, `--tier 2` and `--dry-run`.
+
+!!! note "Why MCP is not global by default"
+    An MCP server's tools load into every session, using up context even where you aren't using the swarm. `join` adds them per project, which is usually what you want. To have them everywhere, answer yes in `init`, or use `--mcp`. In a folder with no swarm, the tools then answer with how to start one, rather than showing up as a broken server.
+
+## 3. Add a task
 
 ```sh
 aiculator task add \
@@ -35,7 +49,7 @@ aiculator task add \
 
 The `--check` command is what decides whether the task is finished. Make sure it fails before the work and passes after it.
 
-## 3. Get an agent working
+## 4. Get an agent working
 
 === "A session already open"
 

@@ -8,7 +8,7 @@ disable-model-invocation: true
 argument-hint: "[tier: 1 standard, 2 advanced, 3 ultra]"
 when_to_use: The user says join the swarm, work the queue, take tasks, or become a worker.
 metadata:
-  version: "1.0.1"
+  version: "1.1.0"
   aiculator.kind: worker
   aiculator.channels: mcp shell
   aiculator.min-version: "0.1.0"
@@ -28,6 +28,8 @@ For the shell route, first register once, using the tier the user gave, or 1 if 
 ```sh
 aiculator work join --tier TIER
 ```
+
+If either route says no server is running in this folder, tell the user, and with their agreement run `aiculator join`. It only starts what this project lacks. Then carry on, with no restart.
 
 It prints your agent name. Pass it as `--agent NAME` on every later command. Run only `aiculator work` commands here, because they are what your session is cleared to use.
 

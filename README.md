@@ -29,8 +29,10 @@ An agent saying "done" counts for nothing: the swarm runs the acceptance checks.
 CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o bin/aiculator ./cmd/aiculator
 export PATH="$PWD/bin:$PATH"     # The skills call aiculator by name.
 
+aiculator init                   # Once per machine: asks which harnesses and skills you want
+
 cd /path/to/your/repo
-aiculator init                   # Asks which harnesses, skills and MCP config you want
+aiculator join --tier 1          # Starts the server, and adds only what this project lacks
 aiculator task add --title "Add a health endpoint" \
   --spec "Add GET /healthz returning 200." --check "go test ./..."
 aiculator task ls

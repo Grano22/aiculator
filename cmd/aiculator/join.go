@@ -6,10 +6,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -262,6 +264,112 @@ type setupPlan struct {
 	tier               int
 	planner            bool
 	sandbox            string
+	// global sets up the whole machine rather than this project.
+	global bool
+	// reuse leaves alone what a harness can already find, at either level.
+	reuse bool
+}
+
+const swarmSkills = "swarm-*"
+
+// bundledSwarmSkills lists the skills a project needs a harness to find.
+var bundledSwarmSkills = []string{"swarm-join", "swarm-operate", "swarm-plan"}
+
+// globalBackups is where config is copied before a user-level file is changed.
+func globalBackups() string { return harness.ExpandHome("~/.aiculator/backups") }
+
+// atUserLevel returns the harness with its MCP config pointed at the user-level file, or
+// false if it has none.
+func atUserLevel(h harness.Harness) (harness.Harness, bool) {
+	if h.GlobalMCPFile == "" {
+		return h, false
+	}
+	h.MCPFile = harness.ExpandHome(h.GlobalMCPFile)
+	return h, true
+}
+
+// skillsFound reports whether a harness can already find all the swarm's skills, and where
+// the nearest one is.
+func skillsFound(h harness.Harness, root string) (string, bool) {
+	level := ""
+	for _, name := range bundledSwarmSkills {
+		w := skillpack.Where(name, h, root)
+		if w == "" {
+			return "", false
+		}
+		if level == "" || w == "project" {
+			level = w
+		}
+	}
+	return level, true
+}
+
+// installSkills puts skills where the plan says, and returns how each harness finds them.
+func installSkills(p setupPlan, root string) (map[string]string, error) {
+	levels := map[string]string{}
+	var need []harness.Harness
+	for _, h := range p.harnesses {
+		if p.global && !skillpack.HasGlobal(h) {
+			levels[h.ID] = "none"
+			continue
+		}
+		if p.reuse {
+			if level, ok := skillsFound(h, root); ok {
+				levels[h.ID] = level
+				continue
+			}
+		}
+		need = append(need, h)
+		levels[h.ID] = "project"
+		if p.global {
+			levels[h.ID] = "global"
+		}
+	}
+	if len(need) == 0 {
+		return levels, nil
+	}
+	acts, err := skillpack.Install(skillpack.Options{Root: root, Global: p.global, Patterns: []string{swarmSkills}, Harnesses: need})
+	if err != nil {
+		return nil, err
+	}
+	for _, a := range acts {
+		if a.What == "conflict" || a.What == "invalid" {
+			fmt.Printf("warning: %s for %s: %s\n", a.Skill, a.Target, a.Detail)
+		}
+	}
+	return levels, nil
+}
+
+// writeMCPFor adds a harness's MCP config, and says how it can reach the swarm.
+func writeMCPFor(p setupPlan, h harness.Harness, root string, args []string) (string, error) {
+	if h.MCP == harness.MCPNone {
+		return "", nil
+	}
+	target, backups := h, filepath.Join(dataDir, "backups")
+	if p.global {
+		var ok bool
+		if target, ok = atUserLevel(h); !ok {
+			return "no user-level MCP config, so use aiculator init --scoped in a project", nil
+		}
+		backups = globalBackups()
+	} else if p.reuse {
+		if user, ok := atUserLevel(h); ok && user.HasMCP(root) {
+			return "MCP is already set for every project, in " + h.GlobalMCPFile + ", at the tier chosen then", nil
+		}
+	}
+	e := harness.Entry{Command: selfCommand(), Args: append(slices.Clone(args), "--harness", h.ID)}
+	r, err := target.WriteMCP(root, e, backups)
+	if err != nil {
+		return "", err
+	}
+	if r.Path == "" {
+		return "", nil
+	}
+	shown := h.MCPFile
+	if p.global {
+		shown = h.GlobalMCPFile
+	}
+	return "MCP in " + shown + " after a restart", nil
 }
 
 // runSetup does the writing for join and init. Each step can be run again safely.
@@ -273,43 +381,51 @@ func runSetup(p setupPlan) error {
 		}
 	}
 	root := projectRoot()
+	levels := map[string]string{}
 	if p.skills {
-		acts, err := skillpack.Install(skillpack.Options{Root: root, Patterns: []string{"swarm-*"}, Harnesses: hs})
-		if err != nil {
+		var err error
+		if levels, err = installSkills(p, root); err != nil {
 			return err
 		}
-		for _, a := range acts {
-			if a.What == "conflict" || a.What == "invalid" {
-				fmt.Printf("warning: %s for %s: %s\n", a.Skill, a.Target, a.Detail)
-			}
+		if p.global {
+			fmt.Println("Skills are in ~/.agents/skills for every project. Edit them only there.")
+			fmt.Println()
+		} else if slices.Contains(slices.Collect(maps.Values(levels)), "project") {
+			fmt.Printf("Skills are in %s. Edit them only there.\n\n", skillpack.CanonicalDir)
+		} else {
+			fmt.Println("Skills were already installed for every project, so they were left as they are.")
+			fmt.Println()
 		}
-		fmt.Printf("Skills are in %s. Edit them only there.\n\n", skillpack.CanonicalDir)
 	}
 	args := []string{"mcp", "--auto", "--tier", strconv.Itoa(tier)}
 	if p.planner {
 		args = append(args, "--planner")
 	}
-	backups := filepath.Join(dataDir, "backups")
 	for _, h := range hs {
-		route := "shell (no restart needed)"
-		if !p.skills {
-			route = "no skills installed"
+		var parts []string
+		switch {
+		case !p.skills:
+		case levels[h.ID] == "none":
+			parts = append(parts, "no user-level skills, so use aiculator init --scoped in a project")
+		case p.global:
+			parts = append(parts, "skills for every project")
+		default:
+			parts = append(parts, "shell (no restart needed)")
 		}
-		if p.mcp && h.MCP != harness.MCPNone {
-			e := harness.Entry{Command: selfCommand(), Args: append(args, "--harness", h.ID)}
-			r, err := h.WriteMCP(root, e, backups)
+		if p.mcp {
+			route, err := writeMCPFor(p, h, root, args)
 			if err != nil {
 				fmt.Printf("%-10s could not write its MCP config: %v\n", h.ID, err)
 				continue
 			}
-			if r.Path != "" {
-				route = "MCP in " + h.MCPFile + " after a restart"
-				if p.skills {
-					route += "; shell works now"
-				}
+			if route != "" {
+				parts = append(parts, route)
 			}
 		}
-		fmt.Printf("%-10s %s\n", h.ID, route)
+		if len(parts) == 0 {
+			parts = append(parts, "nothing installed")
+		}
+		fmt.Printf("%-10s %s\n", h.ID, strings.Join(parts, "; "))
 		if h.Source != harness.SourceDocs {
 			fmt.Printf("%-10s paths come from a community table, not %s's docs; run aiculator skill --list to check\n", "", h.Name)
 		}
@@ -318,15 +434,22 @@ func runSetup(p setupPlan) error {
 		}
 	}
 	fmt.Println()
-	if p.skills {
+	switch {
+	case p.global:
+		fmt.Println("This machine is set up. In a project, start the swarm with: aiculator join")
+	case p.skills:
+		dir := skillpack.CanonicalDir
+		if !slices.Contains(slices.Collect(maps.Values(levels)), "project") {
+			dir = "~/" + skillpack.CanonicalDir
+		}
 		fmt.Printf("In a NEW session, ask it to use the swarm-join skill (/swarm-join in Claude Code).\n")
 		fmt.Printf("In a session ALREADY OPEN, paste this; it needs no restart:\n\n")
-		fmt.Printf("  Read %s/swarm-join/SKILL.md and follow it. Join as tier %d.\n\n", skillpack.CanonicalDir, tier)
-	} else if p.mcp {
+		fmt.Printf("  Read %s/swarm-join/SKILL.md and follow it. Join as tier %d.\n\n", dir, tier)
+	case p.mcp:
 		fmt.Println("Restart your harness, and ask it to use the swarm's wait_for_task tool.")
 		fmt.Println()
 	}
-	if !p.start {
+	if !p.global && !p.start {
 		fmt.Println("The server is not running. Start it with: aiculator up")
 	}
 	if !p.skills && !p.mcp {
@@ -335,8 +458,10 @@ func runSetup(p setupPlan) error {
 	if selfCommand() != "aiculator" {
 		fmt.Printf("Note: aiculator is not on PATH. The skills call it by name, so add %s to PATH.\n", filepath.Dir(selfCommand()))
 	}
-	fmt.Println("A joined session runs outside the sandbox, under its harness's own permissions.")
-	fmt.Println("For sandboxed workers, use aiculator drive.")
+	if !p.global {
+		fmt.Println("A joined session runs outside the sandbox, under its harness's own permissions.")
+		fmt.Println("For sandboxed workers, use aiculator drive.")
+	}
 	return nil
 }
 
@@ -352,8 +477,10 @@ func joinCmd() *cobra.Command {
 		Short: "Connect installed harnesses to the swarm: server, skills and MCP config",
 		Long: `Sets a project up so any harness can join the swarm, including one already open.
 
-It starts the server, installs the bundled skills into .agents/skills, links them to
-harnesses that need it, and registers the MCP bridge. No secrets are written.`,
+It starts the server, and works on its own on a machine with nothing set up: it installs the
+bundled skills into .agents/skills, links them to harnesses that need it, and registers the
+MCP bridge. Anything a harness can already find is left alone, at either level, so after
+aiculator init it only has to start the server. No secrets are written.`,
 		RunE: func(*cobra.Command, []string) error {
 			hs, err := selectHarnesses(list)
 			if err != nil {
@@ -362,7 +489,7 @@ harnesses that need it, and registers the MCP bridge. No secrets are written.`,
 			if len(hs) == 0 {
 				return errors.New("no known harness found on PATH; name one with --harness, or see aiculator harness")
 			}
-			return runSetup(setupPlan{harnesses: hs, skills: true, mcp: true, start: !noStart, tier: tier, planner: planner, sandbox: sb})
+			return runSetup(setupPlan{harnesses: hs, skills: true, mcp: true, start: !noStart, tier: tier, planner: planner, sandbox: sb, reuse: true})
 		},
 	}
 	f := cmd.Flags()
@@ -622,8 +749,10 @@ func (b bearer) RoundTrip(r *http.Request) (*http.Response, error) {
 // bridge forwards tool calls to the server, reconnecting if the server restarted.
 type bridge struct {
 	url, token string
-	mu         sync.Mutex
-	session    *mcp.ClientSession
+	// issue gets a token when one is needed, for a bridge that finds its server by itself.
+	issue   func(ctx context.Context) (url, token string, err error)
+	mu      sync.Mutex
+	session *mcp.ClientSession
 }
 
 func (b *bridge) connect(ctx context.Context) (*mcp.ClientSession, error) {
@@ -631,6 +760,15 @@ func (b *bridge) connect(ctx context.Context) (*mcp.ClientSession, error) {
 	defer b.mu.Unlock()
 	if b.session != nil {
 		return b.session, nil
+	}
+	if b.issue != nil {
+		// Looked up each time, so a server started after this session began is found, and
+		// one that moved to a new port after a restart is found again.
+		url, token, err := b.issue(ctx)
+		if err != nil {
+			return nil, err
+		}
+		b.url, b.token = url, token
 	}
 	cl := mcp.NewClient(&mcp.Implementation{Name: "aiculator-bridge", Version: version}, nil)
 	s, err := cl.Connect(ctx, &mcp.StreamableClientTransport{
@@ -674,6 +812,51 @@ func (b *bridge) call(ctx context.Context, p *mcp.CallToolParams) (*mcp.CallTool
 
 // mcpCmd bridges stdio to the server, for harnesses that launch MCP servers as
 // subprocesses. --auto gets its own token locally, so harness config holds no secret.
+// noSwarmHere is what a tool answers in a folder that has not joined a swarm. It says what
+// to do, because the model reading it can pass that on.
+const noSwarmHere = "This folder has no swarm server running. To start one, run: aiculator join. Then call this tool again; the session does not need a restart."
+
+// serveAutoBridge offers the swarm's tools from any folder, and looks for a server only when
+// one is called. So a config that applies to every project cannot show up as a broken MCP
+// server in the ones that do not use the swarm. No server here is an answer, not a failure.
+func serveAutoBridge(ctx context.Context, q api.TokenReq, harnessID string) error {
+	if q.Agent == "" {
+		name := harnessID
+		if name == "" {
+			name = "session"
+		}
+		q.Agent = name + "-" + randomSuffix()
+	}
+	tools, instructions, err := api.ToolDefinitions(ctx)
+	if err != nil {
+		return err
+	}
+	b := &bridge{issue: func(ctx context.Context) (string, string, error) {
+		if !dataDirFlagSet {
+			dataDir = findDataDir()
+		}
+		return issueLocal(ctx, q)
+	}}
+	srv := mcp.NewServer(&mcp.Implementation{Name: "swarm", Version: version}, &mcp.ServerOptions{Instructions: instructions})
+	for _, t := range tools {
+		srv.AddTool(t, func(ctx context.Context, r *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			res, err := b.call(ctx, &mcp.CallToolParams{Name: r.Params.Name, Arguments: r.Params.Arguments})
+			if err != nil && ctx.Err() == nil {
+				return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: noSwarmHere}}}, nil
+			}
+			return res, err
+		})
+	}
+	defer func() {
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		if b.session != nil {
+			_ = b.session.Close()
+		}
+	}()
+	return srv.Run(ctx, &mcp.StdioTransport{})
+}
+
 func mcpCmd() *cobra.Command {
 	var (
 		url, harnessID, agent string
@@ -685,21 +868,10 @@ func mcpCmd() *cobra.Command {
 		Short: "Serve the swarm's MCP tools over stdio (--auto, or a token in SWARM_TOKEN)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
-			token := os.Getenv("SWARM_TOKEN")
 			if auto {
-				if agent == "" {
-					name := harnessID
-					if name == "" {
-						name = "session"
-					}
-					agent = name + "-" + randomSuffix()
-				}
-				var err error
-				url, token, err = issueLocal(ctx, api.TokenReq{Agent: agent, Tier: tier, Planner: planner})
-				if err != nil {
-					return err
-				}
+				return serveAutoBridge(ctx, api.TokenReq{Agent: agent, Tier: tier, Planner: planner}, harnessID)
 			}
+			token := os.Getenv("SWARM_TOKEN")
 			if token == "" {
 				return errors.New("SWARM_TOKEN is not set; or pass --auto")
 			}

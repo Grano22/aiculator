@@ -60,15 +60,20 @@ func initCmd() *cobra.Command {
 		yes, dry, planner        bool
 		noSkills, noMCP, noStart bool
 		allHarnesses             bool
+		scoped, withMCP          bool
 	)
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Set this project up, step by step: harnesses, skills, MCP config and the server",
-		Long: `Asks what you want, then does it: which installed harnesses to set up, whether to
-install the swarm's skills, whether to add the MCP config, and whether to start the server.
+		Short: "Set up this machine, step by step: harnesses, skills and MCP config",
+		Long: `Asks what you want, then does it. By default this sets up the whole machine: the swarm's
+skills go where each harness reads them for every project, so that afterwards aiculator join
+only has to start a server in a project. This needs no git repository and starts no server.
 
-Nothing is written until the last question is answered, so backing out with Ctrl-C leaves
-the project as it was. Running it again is safe, and keeps what is already there.
+With --scoped it sets up this project alone, which also offers to start the server, and to
+create the git repository the swarm needs.
+
+Nothing is written until the last question is answered, so backing out with Ctrl-C changes
+nothing. Running it again is safe, and keeps what is already there.
 
 For a script, --yes takes every default, and flags answer single questions.`,
 		Args: cobra.NoArgs,
@@ -76,6 +81,7 @@ For a script, --yes takes every default, and flags answer single questions.`,
 			err := runInit(cmd, initOptions{
 				list: list, sb: sb, tier: tier, yes: yes, dry: dry, planner: planner,
 				noSkills: noSkills, noMCP: noMCP, noStart: noStart, allHarnesses: allHarnesses,
+				scoped: scoped, withMCP: withMCP,
 			})
 			switch {
 			case errors.Is(err, prompt.ErrCanceled):
@@ -91,9 +97,11 @@ For a script, --yes takes every default, and flags answer single questions.`,
 	f.BoolVarP(&yes, "yes", "y", false, "take every default and ask nothing")
 	f.StringVar(&list, "harness", "", "set these up without asking: installed, all, or comma-separated ids")
 	f.BoolVar(&allHarnesses, "all-harnesses", false, "also offer harnesses that were not found on this machine")
+	f.BoolVar(&scoped, "scoped", false, "set up this project only, rather than the whole machine")
 	f.BoolVar(&noSkills, "no-skills", false, "do not install the skills")
 	f.BoolVar(&noMCP, "no-mcp", false, "do not add MCP config")
-	f.BoolVar(&noStart, "no-start", false, "do not start the server")
+	f.BoolVar(&withMCP, "mcp", false, "add MCP config without asking")
+	f.BoolVar(&noStart, "no-start", false, "do not start the server, with --scoped")
 	f.IntVar(&tier, "tier", 1, "tier for MCP sessions: 1 standard, 2 advanced, 3 ultra")
 	f.BoolVar(&planner, "planner", false, "also allow these sessions to plan")
 	f.BoolVar(&dry, "dry-run", false, "say what would be done, and do nothing")
@@ -107,6 +115,7 @@ type initOptions struct {
 	yes, dry, planner        bool
 	noSkills, noMCP, noStart bool
 	allHarnesses             bool
+	scoped, withMCP          bool
 }
 
 // runInit collects every answer first, and acts only afterwards. That is the promise that
@@ -121,12 +130,19 @@ func runInit(cmd *cobra.Command, o initOptions) error {
 		return p.Confirm(question, def)
 	}
 	if !o.yes {
-		p.Say("This sets up %s for the swarm. Nothing is written until you have answered everything.\n", root)
+		if o.scoped {
+			p.Say("This sets up %s for the swarm. Nothing is written until you have answered everything.\n", root)
+		} else {
+			p.Say("This sets up the swarm for every project on this machine. For this project alone, use --scoped.")
+			p.Say("Nothing is written until you have answered everything.\n")
+		}
 	}
 
-	// Git comes first, because the swarm's worktrees need a commit to start from.
-	needsInit, needsCommit := gitState(root)
-	makeGit := false
+	// Only a project needs git, because its worktrees need a commit to start from.
+	var needsInit, needsCommit, makeGit bool
+	if o.scoped {
+		needsInit, needsCommit = gitState(root)
+	}
 	if needsCommit {
 		question := "This folder has no commits yet, and the swarm needs one. Make an empty first commit?"
 		if needsInit {
@@ -169,8 +185,15 @@ func runInit(cmd *cobra.Command, o initOptions) error {
 		anyMCP = anyMCP || h.MCP != harness.MCPNone
 	}
 	mcp := !o.noMCP && anyMCP
-	if mcp {
-		if mcp, err = ask("Also add MCP config, so new sessions get the swarm's tools directly?", true); err != nil {
+	if mcp && !o.withMCP {
+		// The tools of every MCP server take up room in a session's context. In one project
+		// that is the point. In every session on the machine it is a cost for little gain,
+		// since aiculator join adds them where they are wanted, and so the default differs.
+		question, def := "Also add MCP config, so new sessions get the swarm's tools directly?", true
+		if !o.scoped {
+			question, def = "Also add MCP config for every project? Its tools load in every session; aiculator join can add them per project instead.", false
+		}
+		if mcp, err = ask(question, def); err != nil {
 			return err
 		}
 	}
@@ -186,14 +209,14 @@ func runInit(cmd *cobra.Command, o initOptions) error {
 		}
 		tier = i + 1
 	}
-	start := !o.noStart
+	start := o.scoped && !o.noStart
 	if start {
 		if start, err = ask("Start the server now?", true); err != nil {
 			return err
 		}
 	}
 
-	plan := setupPlan{harnesses: hs, skills: skills, mcp: mcp, start: start, tier: tier, planner: o.planner, sandbox: o.sb}
+	plan := setupPlan{harnesses: hs, skills: skills, mcp: mcp, start: start, tier: tier, planner: o.planner, sandbox: o.sb, global: !o.scoped}
 	if o.dry {
 		printPlan(plan, needsInit && makeGit, needsCommit && makeGit)
 		return nil
@@ -268,12 +291,20 @@ func printPlan(s setupPlan, gitInit, gitCommit bool) {
 		ids = append(ids, h.ID)
 	}
 	if s.skills {
-		fmt.Printf("- Install the swarm's skills in .agents/skills, and link them for: %s\n", strings.Join(ids, ", "))
+		where := ".agents/skills"
+		if s.global {
+			where = "~/.agents/skills, for every project"
+		}
+		fmt.Printf("- Install the swarm's skills in %s, and link them for: %s\n", where, strings.Join(ids, ", "))
 	}
 	if s.mcp {
 		for _, h := range s.harnesses {
-			if h.MCP != harness.MCPNone {
-				fmt.Printf("- Add MCP config for %s to %s, at tier %d\n", h.ID, h.MCPFile, s.tier)
+			file := h.MCPFile
+			if s.global {
+				file = h.GlobalMCPFile
+			}
+			if h.MCP != harness.MCPNone && file != "" {
+				fmt.Printf("- Add MCP config for %s to %s, at tier %d\n", h.ID, file, s.tier)
 			}
 		}
 	}

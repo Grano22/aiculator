@@ -10,6 +10,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/Grano22/aiculator/internal/api"
 	"github.com/Grano22/aiculator/internal/auth"
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/meta"
@@ -110,5 +111,35 @@ func TestAgentReadsAttachmentsOverMCP(t *testing.T) {
 	}
 	if got := call("fetch_resource", map[string]any{"task_id": "t", "name": "a.txt"}); !strings.Contains(got, "hello from a file") {
 		t.Errorf("fetch_resource: %s", got)
+	}
+}
+
+// The bridge offers these from any folder, with no server. They must be exactly what a real
+// server offers, or a tool could appear to exist and not work.
+func TestToolDefinitionsMatchARealServer(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	tools, instructions, err := api.ToolDefinitions(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := f.session(t, "a1", 1)
+	real := map[string]string{}
+	for tool, err := range s.Tools(ctx, nil) {
+		if err != nil {
+			t.Fatal(err)
+		}
+		real[tool.Name] = tool.Description
+	}
+	if len(tools) != len(real) || len(tools) < 10 {
+		t.Fatalf("%d definitions, %d on a server", len(tools), len(real))
+	}
+	for _, d := range tools {
+		if real[d.Name] != d.Description {
+			t.Errorf("%s differs", d.Name)
+		}
+	}
+	if instructions != s.InitializeResult().Instructions {
+		t.Error("the instructions differ")
 	}
 }

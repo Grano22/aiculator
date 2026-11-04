@@ -32,6 +32,9 @@ import (
 
 var dataDir string
 
+// dataDirFlagSet means --data was given, so nothing should search for the state directory.
+var dataDirFlagSet bool
+
 // version is set at build time with -ldflags "-X main.version=v1.2.3".
 var version = "dev"
 
@@ -70,7 +73,8 @@ func rootCmd() *cobra.Command {
 		Use: "aiculator", Short: "Run and control an agent swarm across coding harnesses",
 		Version: version, SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			if !cmd.Flags().Changed("data") {
+			dataDirFlagSet = cmd.Flags().Changed("data")
+			if !dataDirFlagSet {
 				dataDir = findDataDir()
 			}
 			return setupLogging(cmd)

@@ -412,3 +412,34 @@ func TestNewSkillPassesLint(t *testing.T) {
 		t.Error("accepted a path as a name")
 	}
 }
+
+func TestWhereLooksNearestFirstAndWhereTheHarnessReads(t *testing.T) {
+	root, home := t.TempDir(), t.TempDir()
+	t.Setenv("HOME", home)
+	claude, ok := harness.Get("claude")
+	if !ok {
+		t.Fatal("no claude")
+	}
+	if got := Where("swarm-join", claude, root); got != "" {
+		t.Fatalf("nothing installed: %q", got)
+	}
+	// In ~/.agents/skills alone, Claude Code would not see it: it reads its own folder.
+	if err := writeBundled("swarm-join", filepath.Join(home, ".agents/skills/swarm-join")); err != nil {
+		t.Fatal(err)
+	}
+	if got := Where("swarm-join", claude, root); got != "" {
+		t.Errorf("Claude Code cannot read that: %q", got)
+	}
+	if err := writeBundled("swarm-join", filepath.Join(home, ".claude/skills/swarm-join")); err != nil {
+		t.Fatal(err)
+	}
+	if got := Where("swarm-join", claude, root); got != "global" {
+		t.Errorf("got %q", got)
+	}
+	if err := writeBundled("swarm-join", filepath.Join(root, ".claude/skills/swarm-join")); err != nil {
+		t.Fatal(err)
+	}
+	if got := Where("swarm-join", claude, root); got != "project" {
+		t.Errorf("the nearest should win: %q", got)
+	}
+}

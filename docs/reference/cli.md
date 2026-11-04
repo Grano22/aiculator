@@ -122,13 +122,17 @@ aiculator import SOURCE [flags]
 
 ## `aiculator init`
 
-Set this project up, step by step: harnesses, skills, MCP config and the server
+Set up this machine, step by step: harnesses, skills and MCP config
 
-Asks what you want, then does it: which installed harnesses to set up, whether to
-install the swarm's skills, whether to add the MCP config, and whether to start the server.
+Asks what you want, then does it. By default this sets up the whole machine: the swarm's
+skills go where each harness reads them for every project, so that afterwards aiculator join
+only has to start a server in a project. This needs no git repository and starts no server.
 
-Nothing is written until the last question is answered, so backing out with Ctrl-C leaves
-the project as it was. Running it again is safe, and keeps what is already there.
+With --scoped it sets up this project alone, which also offers to start the server, and to
+create the git repository the swarm needs.
+
+Nothing is written until the last question is answered, so backing out with Ctrl-C changes
+nothing. Running it again is safe, and keeps what is already there.
 
 For a script, --yes takes every default, and flags answer single questions.
 
@@ -142,11 +146,13 @@ aiculator init [flags]
       --all-harnesses    also offer harnesses that were not found on this machine
       --dry-run          say what would be done, and do nothing
       --harness string   set these up without asking: installed, all, or comma-separated ids
+      --mcp              add MCP config without asking
       --no-mcp           do not add MCP config
       --no-skills        do not install the skills
-      --no-start         do not start the server
+      --no-start         do not start the server, with --scoped
       --planner          also allow these sessions to plan
       --sandbox string   sandbox for the server: auto, seatbelt, bwrap, docker or none (default "auto")
+      --scoped           set up this project only, rather than the whole machine
       --tier int         tier for MCP sessions: 1 standard, 2 advanced, 3 ultra (default 1)
   -y, --yes              take every default and ask nothing
 ```
@@ -157,8 +163,10 @@ Connect installed harnesses to the swarm: server, skills and MCP config
 
 Sets a project up so any harness can join the swarm, including one already open.
 
-It starts the server, installs the bundled skills into .agents/skills, links them to
-harnesses that need it, and registers the MCP bridge. No secrets are written.
+It starts the server, and works on its own on a machine with nothing set up: it installs the
+bundled skills into .agents/skills, links them to harnesses that need it, and registers the
+MCP bridge. Anything a harness can already find is left alone, at either level, so after
+aiculator init it only has to start the server. No secrets are written.
 
 ```text
 aiculator join [flags]
