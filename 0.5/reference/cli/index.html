@@ -1,0 +1,3691 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Run a queue of coding tasks across AI harnesses, and verify the results yourself.">
+      
+      
+      
+        <link rel="canonical" href="https://Grano22.github.io/aiculator/0.5/reference/cli/">
+      
+      
+        <link rel="prev" href="../../concepts/verification/">
+      
+      
+        <link rel="next" href="../harnesses/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>CLI - Aiculator</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cli-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Aiculator" class="md-header__button md-logo" aria-label="Aiculator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Aiculator
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Grano22/aiculator" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Grano22/aiculator
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Showcase
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/install/" class="md-tabs__link">
+          
+  
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/join/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../concepts/architecture/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../project/status/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Aiculator" class="md-nav__button md-logo" aria-label="Aiculator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Aiculator
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Grano22/aiculator" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Grano22/aiculator
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Showcase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/join/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Join from an open harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/workers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run sandboxed workers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/planning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan work
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/task-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Labels, priority and attachments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/connectors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connectors: import and sync
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/realms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Realms: many projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/template-demo/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m2.5 19.6 1.3.6v-9L1.4 17c-.4 1.1.1 2.2 1.1 2.6M15.2 4.8l5 12-7.3 3-5-11.9v-.1zm.1-2c-.3 0-.5 0-.8.1L7.1 6c-.7.3-1.2 1-1.2 1.8 0 .2 0 .5.1.8l5 11.9c.3.8 1 1.2 1.8 1.2.3 0 .5 0 .8-.1l7.4-3.1c1-.4 1.5-1.6 1.1-2.6L17.1 4c-.3-.8-1.1-1.2-1.8-1.2m-4.8 7.1c-.6 0-1-.4-1-1s.4-1 1-1 1 .5 1 1-.4 1-1 1m-4.6 9.9c0 1.1.9 2 2 2h1.4l-3.4-8.3z"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+    Template demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/dashboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Debugging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tasks and tiers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-debug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator debug
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-debug-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator debug levels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-debug-verbosity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator debug verbosity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator down
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-drive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator drive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator events
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-harness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator harness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator import
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator init
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-join" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator join
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator logs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator mcp
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-mcp-add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator mcp add
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-mcp-print" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator mcp print
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-mcp-remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator mcp remove
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plan-add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plan add
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plan-begin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plan begin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plan-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plan commit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plan-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plan update
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plugin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-realm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator realm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-realm-forget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator realm forget
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-realm-ls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator realm ls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-realm-rename" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator realm rename
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-serve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator serve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-situation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator situation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator skill
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator source
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-source-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator source check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-source-ls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator source ls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator sync
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-sync-hook-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator sync hook-token
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-sync-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator sync status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task add
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-amend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task amend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-attach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task attach
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-cancel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task cancel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-fetch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task fetch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-ls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task ls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-meta" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task meta
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task priority
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task prop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task resource
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-show" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task show
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-unpark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task unpark
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator template
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator token
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-top" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator top
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-unjoin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator unjoin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator up
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-web" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator web
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work claim
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work fail
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-heartbeat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work heartbeat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-join" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work join
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-progress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work progress
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work release
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-situation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work situation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-submit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work submit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-verdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work verdict
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-wait" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work wait
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../harnesses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Harnesses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project/status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releasing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project/packaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package managers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-debug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator debug
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-debug-levels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator debug levels
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-debug-verbosity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator debug verbosity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator down
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-drive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator drive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator events
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-harness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator harness
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator import
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator init
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-join" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator join
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator logs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator mcp
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-mcp-add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator mcp add
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-mcp-print" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator mcp print
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-mcp-remove" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator mcp remove
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plan-add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plan add
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plan-begin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plan begin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plan-commit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plan commit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plan-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plan update
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator plugin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-realm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator realm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-realm-forget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator realm forget
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-realm-ls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator realm ls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-realm-rename" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator realm rename
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-serve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator serve
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-situation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator situation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator skill
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator source
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-source-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator source check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-source-ls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator source ls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator sync
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-sync-hook-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator sync hook-token
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-sync-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator sync status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task add
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-amend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task amend
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-attach" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task attach
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-cancel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task cancel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-fetch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task fetch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-ls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task ls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-meta" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task meta
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task priority
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-prop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task prop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task resource
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-show" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task show
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-task-unpark" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator task unpark
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator template
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator token
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-top" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator top
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-unjoin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator unjoin
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator up
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-web" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator web
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work claim
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work fail
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-heartbeat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work heartbeat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-join" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work join
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-progress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work progress
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work release
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-situation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work situation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-submit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work submit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-verdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work verdict
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-work-wait" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator work wait
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Showcase
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Reference
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- Generated by aiculator gen-docs. Do not edit by hand. -->
+
+<h1 id="cli-reference">CLI reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
+<p>Every command, generated from the program itself. Run any command with <code>--help</code> to see the same text.</p>
+<h2 id="aiculator-debug"><code>aiculator debug</code><a class="headerlink" href="#aiculator-debug" title="Permanent link">&para;</a></h2>
+<p>Debugging tools: verbosity levels, and changing them on a running server</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>aiculator debug
+</code></pre></div>
+<h2 id="aiculator-debug-levels"><code>aiculator debug levels</code><a class="headerlink" href="#aiculator-debug-levels" title="Permanent link">&para;</a></h2>
+<p>Explain what each verbosity level shows</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>aiculator debug levels
+</code></pre></div>
+<h2 id="aiculator-debug-verbosity"><code>aiculator debug verbosity</code><a class="headerlink" href="#aiculator-debug-verbosity" title="Permanent link">&para;</a></h2>
+<p>Show or change a running server's verbosity, with no restart</p>
+<p>Changes take effect at once. Use --for, so that a debugging session cannot leave
+the server logging at a high level by accident. The previous level then comes back by itself.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>aiculator debug verbosity [LEVEL] [flags]
+</code></pre></div>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>  aiculator debug verbosity                     show the current level
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  aiculator debug verbosity 5 --for 10m         trace for ten minutes
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  aiculator debug verbosity --vmodule engine=5 --for 5m
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  aiculator debug verbosity 2                   set it for good
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>      --for duration     go back to the previous level after this long
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>      --vmodule string   levels per component, such as engine=5
+</code></pre></div>
+<h2 id="aiculator-down"><code>aiculator down</code><a class="headerlink" href="#aiculator-down" title="Permanent link">&para;</a></h2>
+<p>Stop the swarm server for this project</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>aiculator down
+</code></pre></div>
+<h2 id="aiculator-drive"><code>aiculator drive</code><a class="headerlink" href="#aiculator-drive" title="Permanent link">&para;</a></h2>
+<p>Launch an ACP harness and feed it tasks (token in SWARM_TOKEN)</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>aiculator drive [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>      --agent string         agent name, for review notes (default "driver")
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>      --harness string       harness id, from aiculator harness
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>      --heartbeat duration   how often to save work and renew the lease (default 15s)
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>      --hold duration        how long each wait call holds (default 30s)
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>      --manifest string      YAML manifest file, instead of a preset
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>      --max-tasks int        stop after this many tasks; 0 means no limit
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>      --sandbox string       sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>      --url string           server URL (default "http://127.0.0.1:7777")
+</code></pre></div>
+<h2 id="aiculator-events"><code>aiculator events</code><a class="headerlink" href="#aiculator-events" title="Permanent link">&para;</a></h2>
+<p>Stream every task change as JSON lines</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>aiculator events
+</code></pre></div>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>  aiculator events
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  aiculator events | jq -r 'select(.state == "done") | .id'
+</code></pre></div>
+<h2 id="aiculator-harness"><code>aiculator harness</code><a class="headerlink" href="#aiculator-harness" title="Permanent link">&para;</a></h2>
+<p>List supported harnesses and how each connects</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>aiculator harness
+</code></pre></div>
+<h2 id="aiculator-import"><code>aiculator import</code><a class="headerlink" href="#aiculator-import" title="Permanent link">&para;</a></h2>
+<p>Load tasks once from a configured source, such as Jira, Notion or a spreadsheet</p>
+<p>Reads a source named in .agents/sources.yaml, once, and creates a task for each item.
+Importing again is safe: an item that was imported before is left alone, or brought up to date with --update.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>aiculator import SOURCE [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>      --config string   sources file; .agents/sources.yaml if empty
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>      --dry-run         show what would be imported, and change nothing
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>      --limit int       stop after this many items; 0 means all
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>      --query string    use this query instead of the configured one: JQL for Jira, a JSON filter for Notion
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>      --update          bring items that were imported before up to date
+</code></pre></div>
+<h2 id="aiculator-init"><code>aiculator init</code><a class="headerlink" href="#aiculator-init" title="Permanent link">&para;</a></h2>
+<p>Set up this machine, step by step: harnesses, skills and MCP config</p>
+<p>Asks what you want, then does it. By default this sets up the whole machine: the swarm's
+skills go where each harness reads them for every project, so that afterwards aiculator join
+only has to start a server in a project. This needs no git repository and starts no server.</p>
+<p>With --scoped it sets up this project alone, which also offers to start the server, and to
+create the git repository the swarm needs.</p>
+<p>Nothing is written until the last question is answered, so backing out with Ctrl-C changes
+nothing. Running it again is safe, and keeps what is already there.</p>
+<p>For a script, --yes takes every default, and flags answer single questions.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>aiculator init [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>      --all-harnesses    also offer harnesses that were not found on this machine
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>      --dry-run          say what would be done, and do nothing
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>      --harness string   set these up without asking: installed, all, or comma-separated ids
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>      --mcp              add MCP config without asking
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>      --no-mcp           do not add MCP config
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>      --no-skills        do not install the skills
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>      --no-start         do not start the server, with --scoped
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>      --planner          also allow these sessions to plan
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>      --sandbox string   sandbox for the server: auto, seatbelt, bwrap, docker or none (default "auto")
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>      --scoped           set up this project only, rather than the whole machine
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>      --tier int         tier for MCP sessions: 1 standard, 2 advanced, 3 ultra (default 1)
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>  -y, --yes              take every default and ask nothing
+</code></pre></div>
+<h2 id="aiculator-join"><code>aiculator join</code><a class="headerlink" href="#aiculator-join" title="Permanent link">&para;</a></h2>
+<p>Connect installed harnesses to the swarm: server, skills and MCP config</p>
+<p>Sets a project up so any harness can join the swarm, including one already open.</p>
+<p>It starts the server, and works on its own on a machine with nothing set up: it installs the
+bundled skills into .agents/skills, links them to harnesses that need it, and registers the
+MCP bridge. Anything a harness can already find is left alone, at either level, so after
+aiculator init it only has to start the server. No secrets are written.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>aiculator join [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>      --harness string   installed, all, or comma-separated ids (default "installed")
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>      --no-start         do not start the server
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>      --planner          also allow these sessions to plan
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>      --sandbox string   sandbox for the server: auto, seatbelt, bwrap, docker or none (default "auto")
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>      --tier int         tier: 1 standard, 2 advanced, 3 ultra (default 1)
+</code></pre></div>
+<h2 id="aiculator-logs"><code>aiculator logs</code><a class="headerlink" href="#aiculator-logs" title="Permanent link">&para;</a></h2>
+<p>Show the logs of a server started with aiculator up</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>aiculator logs [flags]
+</code></pre></div>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>  aiculator logs --tail 50
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>  aiculator logs -f --component engine
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>  aiculator logs -f --grep ship-api-3
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>      --component string   show only this component
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>  -f, --follow             keep printing new lines
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>      --grep string        show only lines containing this text
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>      --tail int           show only the last N matching lines
+</code></pre></div>
+<h2 id="aiculator-mcp"><code>aiculator mcp</code><a class="headerlink" href="#aiculator-mcp" title="Permanent link">&para;</a></h2>
+<p>Serve the swarm's MCP tools over stdio (--auto, or a token in SWARM_TOKEN)</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>aiculator mcp [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>      --agent string     agent name; generated if empty
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>      --auto             find the local server and get a token by itself
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>      --harness string   harness id, used in the agent's name
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>      --planner          allow planning, with --auto
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>      --realm-switch     with --auto: let the session list other realms and move between them
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>      --tier int         tier, with --auto (default 1)
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>      --url string       server URL; --auto finds it (default "http://127.0.0.1:7777")
+</code></pre></div>
+<h2 id="aiculator-mcp-add"><code>aiculator mcp add</code><a class="headerlink" href="#aiculator-mcp-add" title="Permanent link">&para;</a></h2>
+<p>Add the swarm's MCP server, or any server, to a harness's config</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>aiculator mcp add [--harness TARGET] [--name NAME -- COMMAND ARGS...] [flags]
+</code></pre></div>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>  aiculator mcp add                               every installed harness
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>  aiculator mcp add --harness opencode --tier 2
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>  aiculator mcp add --harness claude,cursor --global
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>  aiculator mcp add --harness ~/.local/bin/opencode   found from the executable
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>  aiculator mcp add --harness ./custom/mcp.json       a config file; format inferred
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>  aiculator mcp add --name docs --harness claude -- npx -y docs-server
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>      --dry-run           show what would be written and change nothing
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>      --env stringArray   environment variable for a custom server, as KEY=VALUE; stored in plain text
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>      --format string     for a config path: mcpServers-json, opencode-json or codex-toml; inferred if empty
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>      --global            use the harness's user-level config
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>      --harness string    auto, all, ids, a harness executable, or a config file path (default "auto")
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>      --name string       server name (default "swarm")
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>      --planner           allow the swarm's own server to plan
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>      --tier int          tier for the swarm's own server (default 1)
+</code></pre></div>
+<h2 id="aiculator-mcp-print"><code>aiculator mcp print</code><a class="headerlink" href="#aiculator-mcp-print" title="Permanent link">&para;</a></h2>
+<p>Print the config piece to add a server by hand; changes nothing</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>aiculator mcp print [--harness TARGET] [--name NAME -- COMMAND ARGS...] [flags]
+</code></pre></div>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>  aiculator mcp print --harness opencode
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>  aiculator mcp print --harness codex --planner
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>  aiculator mcp print --harness ./custom.toml
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>  aiculator mcp print --name docs --harness claude -- npx -y docs-server
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>      --env stringArray   environment variable for a custom server, as KEY=VALUE; stored in plain text
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>      --format string     for a config path: mcpServers-json, opencode-json or codex-toml; inferred if empty
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>      --global            use the harness's user-level config
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>      --harness string    auto, all, ids, a harness executable, or a config file path (default "auto")
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>      --name string       server name (default "swarm")
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>      --planner           allow the swarm's own server to plan
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>      --tier int          tier for the swarm's own server (default 1)
+</code></pre></div>
+<h2 id="aiculator-mcp-remove"><code>aiculator mcp remove</code><a class="headerlink" href="#aiculator-mcp-remove" title="Permanent link">&para;</a></h2>
+<p>Remove a server from a harness's config, and nothing else</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>aiculator mcp remove [--harness TARGET] [--name NAME] [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>      --env stringArray   environment variable for a custom server, as KEY=VALUE; stored in plain text
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>      --format string     for a config path: mcpServers-json, opencode-json or codex-toml; inferred if empty
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>      --global            use the harness's user-level config
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>      --harness string    auto, all, ids, a harness executable, or a config file path (default "auto")
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>      --name string       server name (default "swarm")
+<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>      --planner           allow the swarm's own server to plan
+<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>      --tier int          tier for the swarm's own server (default 1)
+</code></pre></div>
+<h2 id="aiculator-plan"><code>aiculator plan</code><a class="headerlink" href="#aiculator-plan" title="Permanent link">&para;</a></h2>
+<p>Drive the planner lease by hand</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>aiculator plan
+</code></pre></div>
+<h2 id="aiculator-plan-add"><code>aiculator plan add</code><a class="headerlink" href="#aiculator-plan-add" title="Permanent link">&para;</a></h2>
+<p>Add a draft task to the plan</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>aiculator plan add [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>      --check stringArray   acceptance command
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>      --dep strings         task id this depends on
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>      --epoch uint          planning epoch
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>      --id string           task id; generated if empty
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>      --priority int        higher runs sooner
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>      --review              also require an independent agent review
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>      --spec string         full instructions
+<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>      --tag strings         required capability tag
+<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a>      --tier int            tier: 1 standard, 2 advanced, 3 ultra (default 1)
+<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>      --title string        short title
+<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a>      --touches strings     path this task will change
+</code></pre></div>
+<h2 id="aiculator-plan-begin"><code>aiculator plan begin</code><a class="headerlink" href="#aiculator-plan-begin" title="Permanent link">&para;</a></h2>
+<p>Take the planner lease</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>aiculator plan begin [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>      --ttl duration   lease length (default 1m0s)
+</code></pre></div>
+<h2 id="aiculator-plan-commit"><code>aiculator plan commit</code><a class="headerlink" href="#aiculator-plan-commit" title="Permanent link">&para;</a></h2>
+<p>Publish the plan</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>aiculator plan commit [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>      --epoch uint   planning epoch
+</code></pre></div>
+<h2 id="aiculator-plan-update"><code>aiculator plan update</code><a class="headerlink" href="#aiculator-plan-update" title="Permanent link">&para;</a></h2>
+<p>Publish hints to waiting agents</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>aiculator plan update [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>      --epoch uint             planning epoch
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>      --eta-ms int             estimated time to commit
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>      --expected stringArray   tasks expected, as TIER=COUNT
+<a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>      --phase string           what the planner is doing
+<a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>      --ttl duration           lease length (default 1m0s)
+</code></pre></div>
+<h2 id="aiculator-plugin"><code>aiculator plugin</code><a class="headerlink" href="#aiculator-plugin" title="Permanent link">&para;</a></h2>
+<p>List plugins, both compiled in and on PATH</p>
+<p>Plugins compiled into this binary add commands, server routes and event handlers.
+Build one in with a blank import in cmd/aiculator; the web dashboard is one, and go build
+-tags noweb leaves it out.</p>
+<p>Any program on PATH named aiculator-NAME also runs as aiculator NAME.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>aiculator plugin
+</code></pre></div>
+<h2 id="aiculator-realm"><code>aiculator realm</code><a class="headerlink" href="#aiculator-realm" title="Permanent link">&para;</a></h2>
+<p>See and name the projects on this machine that use the swarm</p>
+<p>A realm is one project, with its own server and its own store. A project becomes one
+when its server starts. Realms never share tasks or tokens, so trouble in one stays there.</p>
+<p>Act on one from any folder with --realm NAME, such as: aiculator --realm shop task ls
+See them all with: aiculator top --all, or aiculator web --all</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>aiculator realm
+</code></pre></div>
+<h2 id="aiculator-realm-forget"><code>aiculator realm forget</code><a class="headerlink" href="#aiculator-realm-forget" title="Permanent link">&para;</a></h2>
+<p>Take a realm off the list; the project and its data are not touched</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>aiculator realm forget NAME
+</code></pre></div>
+<h2 id="aiculator-realm-ls"><code>aiculator realm ls</code><a class="headerlink" href="#aiculator-realm-ls" title="Permanent link">&para;</a></h2>
+<p>List the realms, and which are running</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>aiculator realm ls [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>      --json   print as JSON
+</code></pre></div>
+<h2 id="aiculator-realm-rename"><code>aiculator realm rename</code><a class="headerlink" href="#aiculator-realm-rename" title="Permanent link">&para;</a></h2>
+<p>Give a realm a new name</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>aiculator realm rename OLD NEW
+</code></pre></div>
+<h2 id="aiculator-serve"><code>aiculator serve</code><a class="headerlink" href="#aiculator-serve" title="Permanent link">&para;</a></h2>
+<p>Start the swarm server</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>aiculator serve [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>      --addr string              listen address; port 0 picks a free one (default "127.0.0.1:7777")
+<a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>      --aging strings            raise priority after a wait, as wait=boost, such as 1h=5,4h=20
+<a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a>      --aging-unit duration      waiting this long equals one priority point (default 1m0s)
+<a id="__codelineno-46-4" name="__codelineno-46-4" href="#__codelineno-46-4"></a>      --branch string            branch that receives merged work (default "swarm/integration")
+<a id="__codelineno-46-5" name="__codelineno-46-5" href="#__codelineno-46-5"></a>      --exit-grace duration      quiet time before agents are told to exit (default 30s)
+<a id="__codelineno-46-6" name="__codelineno-46-6" href="#__codelineno-46-6"></a>      --lease-ttl duration       lease length (default 2m0s)
+<a id="__codelineno-46-7" name="__codelineno-46-7" href="#__codelineno-46-7"></a>      --progress-ttl duration    time without file changes before an agent counts as a zombie (default 10m0s)
+<a id="__codelineno-46-8" name="__codelineno-46-8" href="#__codelineno-46-8"></a>      --repo string              git repository to work on; empty disables the work layer
+<a id="__codelineno-46-9" name="__codelineno-46-9" href="#__codelineno-46-9"></a>      --restart-grace duration   no lease expires this soon after a restart (default 15s)
+<a id="__codelineno-46-10" name="__codelineno-46-10" href="#__codelineno-46-10"></a>      --sandbox string           sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
+<a id="__codelineno-46-11" name="__codelineno-46-11" href="#__codelineno-46-11"></a>      --sync-always              fsync every write; survives power loss but is slower
+</code></pre></div>
+<h2 id="aiculator-situation"><code>aiculator situation</code><a class="headerlink" href="#aiculator-situation" title="Permanent link">&para;</a></h2>
+<p>Show the state of the swarm</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>aiculator situation
+</code></pre></div>
+<h2 id="aiculator-skill"><code>aiculator skill</code><a class="headerlink" href="#aiculator-skill" title="Permanent link">&para;</a></h2>
+<p>Manage skills in one place: .agents/skills</p>
+<p>Skills live in .agents/skills. Installing puts them where each harness looks: harnesses
+that scan .agents/skills need nothing, and the others get a link. Skills in .agent/skills
+are picked up too. An edit in one place reaches every harness.</p>
+<p>Patterns use * for anything, ? for one character and [abc] for a set. Quote any pattern
+with a wildcard: an unquoted * alone also works, but zsh stops at an unmatched *-sth.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>aiculator skill [--install PATTERN...] [flags]
+</code></pre></div>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>  aiculator skill --install '*'                  all skills, to every installed harness
+<a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>  aiculator skill --install 'swarm-*' 'lint-?'   by pattern
+<a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a>  aiculator skill --install '*-tool' --global    into ~/.agents/skills and home directories
+<a id="__codelineno-49-4" name="__codelineno-49-4" href="#__codelineno-49-4"></a>  aiculator skill --install '*' --harness all    every supported harness, installed or not
+<a id="__codelineno-49-5" name="__codelineno-49-5" href="#__codelineno-49-5"></a>  aiculator skill --install x --harness claude,pi
+<a id="__codelineno-49-6" name="__codelineno-49-6" href="#__codelineno-49-6"></a>  aiculator skill --install x --path ./vendor/skills --harness none
+<a id="__codelineno-49-7" name="__codelineno-49-7" href="#__codelineno-49-7"></a>  aiculator skill --install x --source ~/my-skills
+<a id="__codelineno-49-8" name="__codelineno-49-8" href="#__codelineno-49-8"></a>  aiculator skill --list
+<a id="__codelineno-49-9" name="__codelineno-49-9" href="#__codelineno-49-9"></a>  aiculator skill --lint
+<a id="__codelineno-49-10" name="__codelineno-49-10" href="#__codelineno-49-10"></a>  aiculator skill --new my-skill --description "..."
+<a id="__codelineno-49-11" name="__codelineno-49-11" href="#__codelineno-49-11"></a>  aiculator skill --uninstall 'swarm-*' --purge
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a>      --copy                 copy instead of linking, for tools that do not follow links
+<a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a>      --description string   description for --new
+<a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a>      --force                refresh bundled skills and replace links; your own directories are never replaced
+<a id="__codelineno-50-4" name="__codelineno-50-4" href="#__codelineno-50-4"></a>      --global               use ~/.agents/skills and home directories
+<a id="__codelineno-50-5" name="__codelineno-50-5" href="#__codelineno-50-5"></a>      --harness string       installed, all, none, or comma-separated ids (default "installed")
+<a id="__codelineno-50-6" name="__codelineno-50-6" href="#__codelineno-50-6"></a>      --install strings      install skills matching these patterns
+<a id="__codelineno-50-7" name="__codelineno-50-7" href="#__codelineno-50-7"></a>      --lint                 check skills against the Agent Skills spec
+<a id="__codelineno-50-8" name="__codelineno-50-8" href="#__codelineno-50-8"></a>      --list                 list skills
+<a id="__codelineno-50-9" name="__codelineno-50-9" href="#__codelineno-50-9"></a>      --new string           create a skill with full metadata
+<a id="__codelineno-50-10" name="__codelineno-50-10" href="#__codelineno-50-10"></a>      --path strings         also install to this directory
+<a id="__codelineno-50-11" name="__codelineno-50-11" href="#__codelineno-50-11"></a>      --purge                with --uninstall, also delete from .agents/skills
+<a id="__codelineno-50-12" name="__codelineno-50-12" href="#__codelineno-50-12"></a>      --source strings       also read skills from this directory
+<a id="__codelineno-50-13" name="__codelineno-50-13" href="#__codelineno-50-13"></a>      --uninstall strings    remove skills matching these patterns from harnesses
+</code></pre></div>
+<h2 id="aiculator-source"><code>aiculator source</code><a class="headerlink" href="#aiculator-source" title="Permanent link">&para;</a></h2>
+<p>List and check the configured sources</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a>aiculator source
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a>      --config string   sources file; .agents/sources.yaml if empty
+</code></pre></div>
+<h2 id="aiculator-source-check"><code>aiculator source check</code><a class="headerlink" href="#aiculator-source-check" title="Permanent link">&para;</a></h2>
+<p>Check a source's settings and credentials by reading from it</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a>aiculator source check NAME
+</code></pre></div>
+<h2 id="aiculator-source-ls"><code>aiculator source ls</code><a class="headerlink" href="#aiculator-source-ls" title="Permanent link">&para;</a></h2>
+<p>List the configured sources</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a>aiculator source ls
+</code></pre></div>
+<h2 id="aiculator-sync"><code>aiculator sync</code><a class="headerlink" href="#aiculator-sync" title="Permanent link">&para;</a></h2>
+<p>See how connected systems are being kept in step</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a>aiculator sync
+</code></pre></div>
+<h2 id="aiculator-sync-hook-token"><code>aiculator sync hook-token</code><a class="headerlink" href="#aiculator-sync-hook-token" title="Permanent link">&para;</a></h2>
+<p>Show the token Notion sent when its webhook was set up</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a>aiculator sync hook-token SOURCE
+</code></pre></div>
+<h2 id="aiculator-sync-status"><code>aiculator sync status</code><a class="headerlink" href="#aiculator-sync-status" title="Permanent link">&para;</a></h2>
+<p>Show each source's sync: what was sent and received, latency and errors</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a>aiculator sync status
+</code></pre></div>
+<h2 id="aiculator-task"><code>aiculator task</code><a class="headerlink" href="#aiculator-task" title="Permanent link">&para;</a></h2>
+<p>Manage tasks</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a>aiculator task
+</code></pre></div>
+<h2 id="aiculator-task-add"><code>aiculator task add</code><a class="headerlink" href="#aiculator-task-add" title="Permanent link">&para;</a></h2>
+<p>Add a task</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a>aiculator task add [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a>      --aging strings       raise priority after a wait, as wait=boost, such as 1h=5,4h=20
+<a id="__codelineno-60-2" name="__codelineno-60-2" href="#__codelineno-60-2"></a>      --allow-empty         allow a submission that changes no files
+<a id="__codelineno-60-3" name="__codelineno-60-3" href="#__codelineno-60-3"></a>      --budget int          budget in micro-dollars; 0 means no limit
+<a id="__codelineno-60-4" name="__codelineno-60-4" href="#__codelineno-60-4"></a>      --check stringArray   acceptance command
+<a id="__codelineno-60-5" name="__codelineno-60-5" href="#__codelineno-60-5"></a>      --dep strings         task id this depends on
+<a id="__codelineno-60-6" name="__codelineno-60-6" href="#__codelineno-60-6"></a>      --id string           task id; generated if empty
+<a id="__codelineno-60-7" name="__codelineno-60-7" href="#__codelineno-60-7"></a>      --label stringArray   label as name=value
+<a id="__codelineno-60-8" name="__codelineno-60-8" href="#__codelineno-60-8"></a>      --priority int        higher runs sooner
+<a id="__codelineno-60-9" name="__codelineno-60-9" href="#__codelineno-60-9"></a>      --review              also require an independent agent review
+<a id="__codelineno-60-10" name="__codelineno-60-10" href="#__codelineno-60-10"></a>      --spec string         full instructions
+<a id="__codelineno-60-11" name="__codelineno-60-11" href="#__codelineno-60-11"></a>      --tag strings         required capability tag
+<a id="__codelineno-60-12" name="__codelineno-60-12" href="#__codelineno-60-12"></a>      --tier int            tier: 1 standard, 2 advanced, 3 ultra (default 1)
+<a id="__codelineno-60-13" name="__codelineno-60-13" href="#__codelineno-60-13"></a>      --title string        short title
+<a id="__codelineno-60-14" name="__codelineno-60-14" href="#__codelineno-60-14"></a>      --touches strings     path this task will change
+</code></pre></div>
+<h2 id="aiculator-task-amend"><code>aiculator task amend</code><a class="headerlink" href="#aiculator-task-amend" title="Permanent link">&para;</a></h2>
+<p>Change a task's title, spec, priority, labels or aging, without touching its progress</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a>aiculator task amend ID [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a>      --aging strings       replace the aging steps, as wait=boost, such as 1h=5
+<a id="__codelineno-62-2" name="__codelineno-62-2" href="#__codelineno-62-2"></a>      --label stringArray   label as name=value; name= removes it
+<a id="__codelineno-62-3" name="__codelineno-62-3" href="#__codelineno-62-3"></a>      --priority int        new priority
+<a id="__codelineno-62-4" name="__codelineno-62-4" href="#__codelineno-62-4"></a>      --spec string         new instructions
+<a id="__codelineno-62-5" name="__codelineno-62-5" href="#__codelineno-62-5"></a>      --title string        new title
+</code></pre></div>
+<h2 id="aiculator-task-attach"><code>aiculator task attach</code><a class="headerlink" href="#aiculator-task-attach" title="Permanent link">&para;</a></h2>
+<p>Store a file as a blob and attach it to a task</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a>aiculator task attach ID FILE [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a>      --name string   property name; the file name if empty
+</code></pre></div>
+<h2 id="aiculator-task-cancel"><code>aiculator task cancel</code><a class="headerlink" href="#aiculator-task-cancel" title="Permanent link">&para;</a></h2>
+<p>Cancel a task</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a>aiculator task cancel ID [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-66-1" name="__codelineno-66-1" href="#__codelineno-66-1"></a>      --note string   reason
+</code></pre></div>
+<h2 id="aiculator-task-fetch"><code>aiculator task fetch</code><a class="headerlink" href="#aiculator-task-fetch" title="Permanent link">&para;</a></h2>
+<p>Save an attached file or foreign resource; a resource is downloaded only once</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-67-1" name="__codelineno-67-1" href="#__codelineno-67-1"></a>aiculator task fetch ID NAME [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-68-1" name="__codelineno-68-1" href="#__codelineno-68-1"></a>  -o, --output string   file to write; standard output if empty
+</code></pre></div>
+<h2 id="aiculator-task-ls"><code>aiculator task ls</code><a class="headerlink" href="#aiculator-task-ls" title="Permanent link">&para;</a></h2>
+<p>List tasks</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-69-1" name="__codelineno-69-1" href="#__codelineno-69-1"></a>aiculator task ls
+</code></pre></div>
+<h2 id="aiculator-task-meta"><code>aiculator task meta</code><a class="headerlink" href="#aiculator-task-meta" title="Permanent link">&para;</a></h2>
+<p>Show a task's properties, files and foreign resources</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-70-1" name="__codelineno-70-1" href="#__codelineno-70-1"></a>aiculator task meta ID
+</code></pre></div>
+<h2 id="aiculator-task-priority"><code>aiculator task priority</code><a class="headerlink" href="#aiculator-task-priority" title="Permanent link">&para;</a></h2>
+<p>Show how a task's priority is worked out right now</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-71-1" name="__codelineno-71-1" href="#__codelineno-71-1"></a>aiculator task priority ID
+</code></pre></div>
+<h2 id="aiculator-task-prop"><code>aiculator task prop</code><a class="headerlink" href="#aiculator-task-prop" title="Permanent link">&para;</a></h2>
+<p>Set properties; JSON values keep their type, and NAME= removes one</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-72-1" name="__codelineno-72-1" href="#__codelineno-72-1"></a>aiculator task prop ID NAME=VALUE...
+</code></pre></div>
+<h2 id="aiculator-task-resource"><code>aiculator task resource</code><a class="headerlink" href="#aiculator-task-resource" title="Permanent link">&para;</a></h2>
+<p>Attach a foreign object by reference; its bytes are fetched only when asked for</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-73-1" name="__codelineno-73-1" href="#__codelineno-73-1"></a>aiculator task resource ID NAME URL [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-74-1" name="__codelineno-74-1" href="#__codelineno-74-1"></a>      --kind string   what kind of object this is (default "http")
+</code></pre></div>
+<h2 id="aiculator-task-show"><code>aiculator task show</code><a class="headerlink" href="#aiculator-task-show" title="Permanent link">&para;</a></h2>
+<p>Show one task</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-75-1" name="__codelineno-75-1" href="#__codelineno-75-1"></a>aiculator task show ID
+</code></pre></div>
+<h2 id="aiculator-task-unpark"><code>aiculator task unpark</code><a class="headerlink" href="#aiculator-task-unpark" title="Permanent link">&para;</a></h2>
+<p>Return a parked task to the queue</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-76-1" name="__codelineno-76-1" href="#__codelineno-76-1"></a>aiculator task unpark ID [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-77-1" name="__codelineno-77-1" href="#__codelineno-77-1"></a>      --add-budget int   budget to add, in micro-dollars
+<a id="__codelineno-77-2" name="__codelineno-77-2" href="#__codelineno-77-2"></a>      --note string      reason
+</code></pre></div>
+<h2 id="aiculator-template"><code>aiculator template</code><a class="headerlink" href="#aiculator-template" title="Permanent link">&para;</a></h2>
+<p>Render reusable instruction templates into skills</p>
+<p>Templates live in .agents/templates; .agent/templates and .agent/template also work.
+They use Jinja2 and MDX-style components, and render into skills that install exactly as
+aiculator skill --install does.</p>
+<p>Bundled components: Directive, Anchor, Subagents, Backoff, OutputFormat, Flow, Step, Note, Toc.
+Add or replace one by creating components/NAME.md in a template directory.</p>
+<p>These produce instructions for a model. A model can still ignore text, so anything that
+must hold needs a real check, such as a task's --check command.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-78-1" name="__codelineno-78-1" href="#__codelineno-78-1"></a>aiculator template [--install PATTERN...] [flags]
+</code></pre></div>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-79-1" name="__codelineno-79-1" href="#__codelineno-79-1"></a>  aiculator template --list
+<a id="__codelineno-79-2" name="__codelineno-79-2" href="#__codelineno-79-2"></a>  aiculator template --new my-rules
+<a id="__codelineno-79-3" name="__codelineno-79-3" href="#__codelineno-79-3"></a>  aiculator template --render agent-discipline --set retries=5
+<a id="__codelineno-79-4" name="__codelineno-79-4" href="#__codelineno-79-4"></a>  aiculator template --install '*'
+<a id="__codelineno-79-5" name="__codelineno-79-5" href="#__codelineno-79-5"></a>  aiculator template --install 'agent-*' --global --set timeout=300s
+<a id="__codelineno-79-6" name="__codelineno-79-6" href="#__codelineno-79-6"></a>  aiculator template --install x --per-harness       a separate copy per harness
+<a id="__codelineno-79-7" name="__codelineno-79-7" href="#__codelineno-79-7"></a>  aiculator template --install x --path ./vendor/skills --harness none
+<a id="__codelineno-79-8" name="__codelineno-79-8" href="#__codelineno-79-8"></a>  aiculator template --check                         fail if a rendered skill is stale
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-80-1" name="__codelineno-80-1" href="#__codelineno-80-1"></a>      --check             fail if a rendered skill no longer matches its template
+<a id="__codelineno-80-2" name="__codelineno-80-2" href="#__codelineno-80-2"></a>      --copy              copy instead of linking
+<a id="__codelineno-80-3" name="__codelineno-80-3" href="#__codelineno-80-3"></a>      --for string        with --render, render as this harness
+<a id="__codelineno-80-4" name="__codelineno-80-4" href="#__codelineno-80-4"></a>      --force             replace links; your own directories are never replaced
+<a id="__codelineno-80-5" name="__codelineno-80-5" href="#__codelineno-80-5"></a>      --global            use ~/.agents and home directories
+<a id="__codelineno-80-6" name="__codelineno-80-6" href="#__codelineno-80-6"></a>      --harness string    installed, all, none, or comma-separated ids (default "installed")
+<a id="__codelineno-80-7" name="__codelineno-80-7" href="#__codelineno-80-7"></a>      --install strings   render and install templates matching these patterns
+<a id="__codelineno-80-8" name="__codelineno-80-8" href="#__codelineno-80-8"></a>      --list              list templates
+<a id="__codelineno-80-9" name="__codelineno-80-9" href="#__codelineno-80-9"></a>      --new string        create a starter template
+<a id="__codelineno-80-10" name="__codelineno-80-10" href="#__codelineno-80-10"></a>      --path strings      also install to this directory
+<a id="__codelineno-80-11" name="__codelineno-80-11" href="#__codelineno-80-11"></a>      --per-harness       render a separate copy into each harness's own directory
+<a id="__codelineno-80-12" name="__codelineno-80-12" href="#__codelineno-80-12"></a>      --render string     print one rendered template; writes nothing
+<a id="__codelineno-80-13" name="__codelineno-80-13" href="#__codelineno-80-13"></a>      --set stringArray   template variable, as KEY=VALUE
+<a id="__codelineno-80-14" name="__codelineno-80-14" href="#__codelineno-80-14"></a>      --source strings    also read templates from this directory
+</code></pre></div>
+<h2 id="aiculator-token"><code>aiculator token</code><a class="headerlink" href="#aiculator-token" title="Permanent link">&para;</a></h2>
+<p>Issue an agent token</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-81-1" name="__codelineno-81-1" href="#__codelineno-81-1"></a>aiculator token [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-82-1" name="__codelineno-82-1" href="#__codelineno-82-1"></a>      --agent string   agent name
+<a id="__codelineno-82-2" name="__codelineno-82-2" href="#__codelineno-82-2"></a>      --planner        allow this agent to plan
+<a id="__codelineno-82-3" name="__codelineno-82-3" href="#__codelineno-82-3"></a>      --tag strings    capability tag
+<a id="__codelineno-82-4" name="__codelineno-82-4" href="#__codelineno-82-4"></a>      --tier int       tier (default 1)
+<a id="__codelineno-82-5" name="__codelineno-82-5" href="#__codelineno-82-5"></a>      --ttl int        lifetime in seconds; 0 never expires
+</code></pre></div>
+<h2 id="aiculator-top"><code>aiculator top</code><a class="headerlink" href="#aiculator-top" title="Permanent link">&para;</a></h2>
+<p>Live terminal dashboard: flow, throughput, latency, jitter, probes, liveness and usage</p>
+<p>A live view of the swarm. Keys: 1-5 or tab switch views, arrows or j and k scroll,
+p pauses, q quits.</p>
+<p>Without a terminal, such as in a pipe, it prints one frame and exits.
+Rates reset when the server restarts. Task states and usage totals do not.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-83-1" name="__codelineno-83-1" href="#__codelineno-83-1"></a>aiculator top [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-84-1" name="__codelineno-84-1" href="#__codelineno-84-1"></a>      --all                 show every realm on this machine: 1 realms, 2 tasks, 3 agents
+<a id="__codelineno-84-2" name="__codelineno-84-2" href="#__codelineno-84-2"></a>      --color               with --once: keep color even in a pipe
+<a id="__codelineno-84-3" name="__codelineno-84-3" href="#__codelineno-84-3"></a>      --interval duration   how often to refresh (default 1s)
+<a id="__codelineno-84-4" name="__codelineno-84-4" href="#__codelineno-84-4"></a>      --json                print the raw snapshot as JSON and exit
+<a id="__codelineno-84-5" name="__codelineno-84-5" href="#__codelineno-84-5"></a>      --no-color            no color; NO_COLOR also works
+<a id="__codelineno-84-6" name="__codelineno-84-6" href="#__codelineno-84-6"></a>      --once                print one frame and exit
+<a id="__codelineno-84-7" name="__codelineno-84-7" href="#__codelineno-84-7"></a>      --view string         with --once: overview, tasks, agents, flow or usage (default "overview")
+<a id="__codelineno-84-8" name="__codelineno-84-8" href="#__codelineno-84-8"></a>      --width int           with --once: width in columns
+</code></pre></div>
+<h2 id="aiculator-unjoin"><code>aiculator unjoin</code><a class="headerlink" href="#aiculator-unjoin" title="Permanent link">&para;</a></h2>
+<p>Remove the swarm's MCP config and skill links from harnesses</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-85-1" name="__codelineno-85-1" href="#__codelineno-85-1"></a>aiculator unjoin [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-86-1" name="__codelineno-86-1" href="#__codelineno-86-1"></a>      --harness string   installed, all, or comma-separated ids (default "all")
+<a id="__codelineno-86-2" name="__codelineno-86-2" href="#__codelineno-86-2"></a>      --purge            also delete the swarm skills from .agents/skills
+</code></pre></div>
+<h2 id="aiculator-up"><code>aiculator up</code><a class="headerlink" href="#aiculator-up" title="Permanent link">&para;</a></h2>
+<p>Start the swarm server for this project in the background</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-87-1" name="__codelineno-87-1" href="#__codelineno-87-1"></a>aiculator up [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-88-1" name="__codelineno-88-1" href="#__codelineno-88-1"></a>      --aging strings    raise priority after a wait, as wait=boost, such as 1h=5,4h=20
+<a id="__codelineno-88-2" name="__codelineno-88-2" href="#__codelineno-88-2"></a>      --sandbox string   sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
+</code></pre></div>
+<h2 id="aiculator-web"><code>aiculator web</code><a class="headerlink" href="#aiculator-web" title="Permanent link">&para;</a></h2>
+<p>Open the web dashboard</p>
+<p>Opens the live dashboard in your browser, using a read-only token that expires.</p>
+<p>The dashboard is compiled into this binary; go build -tags noweb leaves it out.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-89-1" name="__codelineno-89-1" href="#__codelineno-89-1"></a>aiculator web [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-90-1" name="__codelineno-90-1" href="#__codelineno-90-1"></a>      --all            show every realm on this machine, for as long as this command runs
+<a id="__codelineno-90-2" name="__codelineno-90-2" href="#__codelineno-90-2"></a>      --no-open        print the link and do not open a browser
+<a id="__codelineno-90-3" name="__codelineno-90-3" href="#__codelineno-90-3"></a>      --ttl duration   how long the link works (default 12h0m0s)
+</code></pre></div>
+<h2 id="aiculator-work"><code>aiculator work</code><a class="headerlink" href="#aiculator-work" title="Permanent link">&para;</a></h2>
+<p>Work the queue from a shell: the route for any harness, no restart needed</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-91-1" name="__codelineno-91-1" href="#__codelineno-91-1"></a>aiculator work
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-92-1" name="__codelineno-92-1" href="#__codelineno-92-1"></a>      --agent string   agent name from aiculator work join
+</code></pre></div>
+<h2 id="aiculator-work-claim"><code>aiculator work claim</code><a class="headerlink" href="#aiculator-work-claim" title="Permanent link">&para;</a></h2>
+<p>Claim one specific ready task</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-93-1" name="__codelineno-93-1" href="#__codelineno-93-1"></a>aiculator work claim [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-94-1" name="__codelineno-94-1" href="#__codelineno-94-1"></a>      --task string   task id
+</code></pre></div>
+<h2 id="aiculator-work-fail"><code>aiculator work fail</code><a class="headerlink" href="#aiculator-work-fail" title="Permanent link">&para;</a></h2>
+<p>Give up; saved work and note go to the next attempt</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-95-1" name="__codelineno-95-1" href="#__codelineno-95-1"></a>aiculator work fail [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-96-1" name="__codelineno-96-1" href="#__codelineno-96-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-96-2" name="__codelineno-96-2" href="#__codelineno-96-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-96-3" name="__codelineno-96-3" href="#__codelineno-96-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-96-4" name="__codelineno-96-4" href="#__codelineno-96-4"></a>      --task string   task id
+<a id="__codelineno-96-5" name="__codelineno-96-5" href="#__codelineno-96-5"></a>      --tokens int    tokens used since your last report
+</code></pre></div>
+<h2 id="aiculator-work-heartbeat"><code>aiculator work heartbeat</code><a class="headerlink" href="#aiculator-work-heartbeat" title="Permanent link">&para;</a></h2>
+<p>Extend your lease; this does not count as progress</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-97-1" name="__codelineno-97-1" href="#__codelineno-97-1"></a>aiculator work heartbeat [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-98-1" name="__codelineno-98-1" href="#__codelineno-98-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-98-2" name="__codelineno-98-2" href="#__codelineno-98-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-98-3" name="__codelineno-98-3" href="#__codelineno-98-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-98-4" name="__codelineno-98-4" href="#__codelineno-98-4"></a>      --task string   task id
+<a id="__codelineno-98-5" name="__codelineno-98-5" href="#__codelineno-98-5"></a>      --tokens int    tokens used since your last report
+</code></pre></div>
+<h2 id="aiculator-work-join"><code>aiculator work join</code><a class="headerlink" href="#aiculator-work-join" title="Permanent link">&para;</a></h2>
+<p>Register this session as a worker and print its agent name</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-99-1" name="__codelineno-99-1" href="#__codelineno-99-1"></a>aiculator work join [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-100-1" name="__codelineno-100-1" href="#__codelineno-100-1"></a>      --agent string     agent name; generated if empty
+<a id="__codelineno-100-2" name="__codelineno-100-2" href="#__codelineno-100-2"></a>      --harness string   harness id, used in the agent's name
+<a id="__codelineno-100-3" name="__codelineno-100-3" href="#__codelineno-100-3"></a>      --planner          also allow this session to plan
+<a id="__codelineno-100-4" name="__codelineno-100-4" href="#__codelineno-100-4"></a>      --tier int         tier: 1 standard, 2 advanced, 3 ultra (default 1)
+</code></pre></div>
+<h2 id="aiculator-work-progress"><code>aiculator work progress</code><a class="headerlink" href="#aiculator-work-progress" title="Permanent link">&para;</a></h2>
+<p>Save your work; only real file changes count</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-101-1" name="__codelineno-101-1" href="#__codelineno-101-1"></a>aiculator work progress [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-102-1" name="__codelineno-102-1" href="#__codelineno-102-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-102-2" name="__codelineno-102-2" href="#__codelineno-102-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-102-3" name="__codelineno-102-3" href="#__codelineno-102-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-102-4" name="__codelineno-102-4" href="#__codelineno-102-4"></a>      --task string   task id
+<a id="__codelineno-102-5" name="__codelineno-102-5" href="#__codelineno-102-5"></a>      --tokens int    tokens used since your last report
+</code></pre></div>
+<h2 id="aiculator-work-release"><code>aiculator work release</code><a class="headerlink" href="#aiculator-work-release" title="Permanent link">&para;</a></h2>
+<p>Hand back with no penalty, when the harness cannot do it</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-103-1" name="__codelineno-103-1" href="#__codelineno-103-1"></a>aiculator work release [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-104-1" name="__codelineno-104-1" href="#__codelineno-104-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-104-2" name="__codelineno-104-2" href="#__codelineno-104-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-104-3" name="__codelineno-104-3" href="#__codelineno-104-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-104-4" name="__codelineno-104-4" href="#__codelineno-104-4"></a>      --task string   task id
+<a id="__codelineno-104-5" name="__codelineno-104-5" href="#__codelineno-104-5"></a>      --tokens int    tokens used since your last report
+</code></pre></div>
+<h2 id="aiculator-work-situation"><code>aiculator work situation</code><a class="headerlink" href="#aiculator-work-situation" title="Permanent link">&para;</a></h2>
+<p>Show the swarm as this agent sees it</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-105-1" name="__codelineno-105-1" href="#__codelineno-105-1"></a>aiculator work situation
+</code></pre></div>
+<h2 id="aiculator-work-submit"><code>aiculator work submit</code><a class="headerlink" href="#aiculator-work-submit" title="Permanent link">&para;</a></h2>
+<p>Submit finished work for verification</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-106-1" name="__codelineno-106-1" href="#__codelineno-106-1"></a>aiculator work submit [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-107-1" name="__codelineno-107-1" href="#__codelineno-107-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-107-2" name="__codelineno-107-2" href="#__codelineno-107-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-107-3" name="__codelineno-107-3" href="#__codelineno-107-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-107-4" name="__codelineno-107-4" href="#__codelineno-107-4"></a>      --task string   task id
+<a id="__codelineno-107-5" name="__codelineno-107-5" href="#__codelineno-107-5"></a>      --tokens int    tokens used since your last report
+</code></pre></div>
+<h2 id="aiculator-work-verdict"><code>aiculator work verdict</code><a class="headerlink" href="#aiculator-work-verdict" title="Permanent link">&para;</a></h2>
+<p>Approve (--pass) or reject another agent's work</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-108-1" name="__codelineno-108-1" href="#__codelineno-108-1"></a>aiculator work verdict [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-109-1" name="__codelineno-109-1" href="#__codelineno-109-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-109-2" name="__codelineno-109-2" href="#__codelineno-109-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-109-3" name="__codelineno-109-3" href="#__codelineno-109-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-109-4" name="__codelineno-109-4" href="#__codelineno-109-4"></a>      --pass          approve; leave out to reject
+<a id="__codelineno-109-5" name="__codelineno-109-5" href="#__codelineno-109-5"></a>      --task string   task id
+<a id="__codelineno-109-6" name="__codelineno-109-6" href="#__codelineno-109-6"></a>      --tokens int    tokens used since your last report
+</code></pre></div>
+<h2 id="aiculator-work-wait"><code>aiculator work wait</code><a class="headerlink" href="#aiculator-work-wait" title="Permanent link">&para;</a></h2>
+<p>Get the next task, or be told to wait or exit</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-110-1" name="__codelineno-110-1" href="#__codelineno-110-1"></a>aiculator work wait [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-111-1" name="__codelineno-111-1" href="#__codelineno-111-1"></a>      --hold duration   how long to hold if no work is available (default 25s)
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../../concepts/verification/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Verification">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Verification
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../harnesses/" class="md-footer__link md-footer__link--next" aria-label="Next: Harnesses">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Harnesses
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.code.select", "content.tooltips", "navigation.path", "navigation.tracking"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>
