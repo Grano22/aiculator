@@ -1385,7 +1385,8 @@ func readFileT(t *testing.T, path string) string {
 	return string(b)
 }
 
-// initProject runs init with answers on standard input, with only these harnesses found.
+// init runs init with answers on standard input, with these harnesses found. The system
+// folders stay on the path, because that is where the sandbox tools are.
 func (p *project) init(stdin string, args ...string) (string, error) {
 	p.t.Helper()
 	dir := p.t.TempDir()
@@ -1401,7 +1402,7 @@ func (p *project) init(stdin string, args ...string) (string, error) {
 	c := exec.Command(p.bin, append([]string{"init"}, args...)...)
 	c.Dir = p.root
 	c.Stdin = strings.NewReader(stdin)
-	c.Env = append(os.Environ(), "HOME="+p.home, "AICULATOR_REALMS="+filepath.Join(p.home, "realms"), "PATH="+dir+string(os.PathListSeparator)+filepath.Dir(git),
+	c.Env = append(os.Environ(), "HOME="+p.home, "AICULATOR_REALMS="+filepath.Join(p.home, "realms"), "PATH="+strings.Join([]string{dir, filepath.Dir(git), "/usr/bin", "/bin"}, string(os.PathListSeparator)),
 		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
 	out, err := c.CombinedOutput()
 	return string(out), err

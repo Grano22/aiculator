@@ -25,6 +25,7 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 - A repository nested inside another no longer uses the outer one's server. Tasks added there went to the wrong project, and agents would have worked in the wrong repository. A stray `.swarm` in the home directory no longer claims every folder below it.
 - A project no longer takes another project's server for its own when its old address reaches one after a crash, and no longer fails to start when its old port is taken.
+- Replaying the event log could miss the newest events on a busy machine, because the wait for it to catch up could finish too early.
 
 ## [0.4.0] - 2026-11-03
 

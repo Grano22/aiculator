@@ -131,19 +131,34 @@ func (s *Store) ProjectorLag(ctx context.Context) (uint64, error) {
 	return info.NumPending + uint64(info.NumAckPending), nil
 }
 
-// WaitProjected blocks until the projector has caught up with the bucket or ctx
-// ends. It is used by replay and by tests.
+// WaitProjected blocks until the projector has recorded every task revision committed before
+// this call, or ctx ends. It is used by replay and by tests.
+//
+// It waits for the newest revision by its sequence number. Asking the consumer whether it has
+// anything pending is not enough: a revision just written can take a moment to count as
+// pending, so a busy machine could report "caught up" with the last events still missing.
 func (s *Store) WaitProjected(ctx context.Context) error {
+	src, err := s.js.Stream(ctx, "KV_"+bucket)
+	if err != nil {
+		return err
+	}
+	last, err := src.GetLastMsgForSubject(ctx, "$KV."+bucket+"."+taskPrefix+">")
+	if errors.Is(err, jetstream.ErrMsgNotFound) {
+		return nil // No task has ever been written.
+	}
+	if err != nil {
+		return err
+	}
+	c, err := s.js.Consumer(ctx, "KV_"+bucket, "projector")
+	if err != nil {
+		return err
+	}
 	for {
-		c, err := s.js.Consumer(ctx, "KV_"+bucket, "projector")
-		if err != nil {
-			return err
-		}
 		info, err := c.Info(ctx)
 		if err != nil {
 			return err
 		}
-		if info.NumPending == 0 && info.NumAckPending == 0 {
+		if info.AckFloor.Stream >= last.Sequence {
 			return nil
 		}
 		select {
