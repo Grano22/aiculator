@@ -91,6 +91,50 @@ aiculator events
   aiculator events | jq -r 'select(.state == "done") | .id'
 ```
 
+## `aiculator export`
+
+Write tasks or other data to a file: JSON, YAML, CSV, TSV, Excel, HTML or Markdown
+
+Exports what you choose, in the format you choose. Tasks are the default, and JSON is the
+default format, unless the file name in -o says otherwise.
+
+Values are always treated as text: HTML is escaped, Excel cells are stored as strings, and in
+CSV a value that a spreadsheet would run as a formula starts with a quote.
+
+```text
+aiculator export [tasks|agents|usage|flow|realms] [flags]
+```
+
+**Examples**
+
+```text
+  aiculator export                                   # All tasks, as JSON
+  aiculator export -o tasks.xlsx                     # The file name picks the format
+  aiculator export --format html -o report.html --state running,review
+  aiculator export --fields id,title,labels.team,owner --format csv
+  aiculator export --label team=core --sort priority -o core.yaml
+  aiculator export --with-meta --fields id,meta.points -o points.csv
+  aiculator export --all -o everything.xlsx          # Tasks from every realm
+  aiculator export --list-fields                     # What can be selected
+  aiculator export realms --format md
+```
+
+**Flags**
+
+```text
+      --all                 tasks from every running realm, with a realm column
+      --fields strings      what to include, such as id,title,labels.team; see --list-fields
+      --format string       json, yaml, csv, tsv, xlsx, html or md; from the file name, or json
+      --label stringArray   only with this label, as name=value
+      --limit int           stop after this many rows
+      --list-fields         list what can be selected, and write nothing
+  -o, --output string       file to write; standard output if empty
+      --sort string         sort by this field; -field for descending
+      --state strings       only these states, such as running,review
+      --where stringArray   only where a field has this value, as field=value
+      --with-meta           add each task's properties, as meta.NAME; costs one request per task
+```
+
 ## `aiculator harness`
 
 List supported harnesses and how each connects
@@ -306,6 +350,89 @@ aiculator mcp remove [--harness TARGET] [--name NAME] [flags]
       --name string       server name (default "swarm")
       --planner           allow the swarm's own server to plan
       --tier int          tier for the swarm's own server (default 1)
+```
+
+## `aiculator parallel`
+
+Work out what subagents can do at the same time in one working tree
+
+Worktrees keep tasks apart. This is the level below: one task split among subagents in one
+checkout. Give it the jobs and what each will change, and it says what can safely run at once.
+Jobs share a wave only if their claims cannot overlap, and a job that claims nothing runs alone.
+
+This needs no server, and it does not touch the swarm's state.
+
+```text
+aiculator parallel
+```
+
+## `aiculator parallel plan`
+
+Plan jobs into waves that cannot conflict
+
+Reads jobs as YAML or JSON. A claim is a file or a directory ending in /. With symbol
+granularity it can also be file#symbol or file:10-40. Reads are what a job relies on staying the same while it works.
+
+Granularity is how finely claims are compared. The default, auto, uses the coarser of dir and
+file that loses no parallelism, and it treats file#symbol as the whole file. To let two jobs share
+one file, ask for symbol. Their claims are then checked against the file, but nothing can stop a
+subagent straying, and two in one file can overwrite each other.
+
+```text
+aiculator parallel plan [flags]
+```
+
+**Examples**
+
+```text
+  aiculator parallel plan --file jobs.yaml -o plan.json
+  cat jobs.yaml | aiculator parallel plan --file - --max 3
+
+  # jobs.yaml
+  jobs:
+    - id: api
+      touches: [internal/api/users.go]
+    - id: docs
+      touches: [docs/users.md]
+      reads: [internal/api/users.go]
+    - id: format
+      exclusive: true
+      deps: [api, docs]
+```
+
+**Flags**
+
+```text
+      --file string          the jobs, as YAML or JSON; - for standard input
+      --granularity string   dir, file, symbol, repo or auto (default "auto")
+      --json                 print the plan as JSON
+      --max int              most subagents at once (default 4)
+  -o, --output string        save the plan, for verify
+```
+
+## `aiculator parallel snapshot`
+
+Record the working tree before a wave, without staging or committing anything
+
+```text
+aiculator parallel snapshot
+```
+
+## `aiculator parallel verify`
+
+Check that a wave changed only what its jobs claimed; exits 1 if not
+
+```text
+aiculator parallel verify [flags]
+```
+
+**Flags**
+
+```text
+      --json           print as JSON
+      --plan string    the plan saved by parallel plan -o
+      --since string   what parallel snapshot printed before that wave
+      --wave int       which wave just finished (default 1)
 ```
 
 ## `aiculator plan`

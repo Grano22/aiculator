@@ -279,6 +279,8 @@ Ask it to look for bugs.
 </SubagentFlow>
 ```
 
+To split one task among subagents in the same worktree, use the `parallel-subagents` template or `<ParallelWork>`. See [Parallel subagents](parallel.md).
+
 ## Sections a model keeps current
 
 `<DynamicSection>` marks text the model must keep true as it works. `living-section` is a ready-made one, for a progress file.

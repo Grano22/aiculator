@@ -45,6 +45,7 @@ aiculator skill --uninstall 'swarm-*' --purge   # Also delete the source
 |---|---|
 | `swarm-join` | Work the queue. It only starts when you ask for it. |
 | `swarm-plan` | Turn a spec into tasks. |
+| `swarm-parallel` | Split one task among subagents in one worktree, without conflicts. |
 | `swarm-operate` | Start the server, add tasks, launch workers. |
 
 ## Metadata

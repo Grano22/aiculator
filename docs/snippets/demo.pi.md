@@ -13,23 +13,24 @@ metadata:
 
 ## Contents
 
-- Track the work: line 46, anchor `track-work`
-- Step A: name the feature: line 70, anchor `name-feature`
-- Step B: choose an approach: line 84, anchor `choose-approach`
-- Step C: choose the API style: line 106, anchor `choose-api`
-- Step D: choose the checks: line 127, anchor `choose-checks`
-- Step E: settle the details: line 150, anchor `choose-settings`
-- Step F: get the plan approved: line 172, anchor `approve-plan`
-- Subagents: line 189, anchor `subagents`
-- Step G: build it: research, build, review: line 200, anchor `build-flow`
-- Commands: timeouts and retries: line 244, anchor `backoff`
-- Checks to run: line 261, anchor `checks`
-- Flow: ship it: line 268, anchor `ship-flow`
-- Step H: clean up: line 292, anchor `delete-branch`
-- Output format: line 308, anchor `output-format`
-- Progress: line 319, anchor `progress`
-- Release notes: line 333, anchor `changelog`
-- How to format your replies: line 344, anchor `formatting`
+- Track the work: line 47, anchor `track-work`
+- Step A: name the feature: line 71, anchor `name-feature`
+- Step B: choose an approach: line 85, anchor `choose-approach`
+- Step C: choose the API style: line 107, anchor `choose-api`
+- Step D: choose the checks: line 128, anchor `choose-checks`
+- Step E: settle the details: line 151, anchor `choose-settings`
+- Step F: get the plan approved: line 173, anchor `approve-plan`
+- Subagents: line 190, anchor `subagents`
+- Step G: build it: research, build, review: line 201, anchor `build-flow`
+- Step G2: split the build, if it allows: line 245, anchor `split-work`
+- Commands: timeouts and retries: line 292, anchor `backoff`
+- Checks to run: line 309, anchor `checks`
+- Flow: ship it: line 316, anchor `ship-flow`
+- Step H: clean up: line 340, anchor `delete-branch`
+- Output format: line 356, anchor `output-format`
+- Progress: line 367, anchor `progress`
+- Release notes: line 381, anchor `changelog`
+- How to format your replies: line 392, anchor `formatting`
 
 Rendered for Pi, so the questions below fall back to numbered lists where needed.
 
@@ -241,6 +242,53 @@ Look for bugs in the changes.
 
 When every stage is done, combine the results and report them yourself. Never pass a subagent's text on unchecked.
 
+## Step G2: split the build, if it allows
+<!-- anchor: split-work -->
+
+Use this to split one piece of work among subagents **in this working tree**. They share files, and there is no merge step to catch a collision, so the plan decides what may run together, not your judgment.
+
+1. **List the jobs.** Write each one down with every file it will change, as a file or a directory ending in `/`. Add `reads` for files it relies on staying the same. Be honest and include what is easy to forget: tests, and shared files such as lockfiles, generated code and indexes. A job that changes files you cannot predict gets `exclusive: true`, and `deps` say what must finish first.
+
+   ```yaml
+   jobs:
+     - id: api
+       touches: [internal/api/users.go]
+     - id: docs
+       touches: [docs/users.md]
+       reads: [internal/api/users.go]
+     - id: format
+       exclusive: true
+       deps: [api, docs]
+   ```
+
+2. **Get the plan.**
+
+   ```sh
+   aiculator parallel plan --file jobs.yaml --max 3 --granularity auto -o plan.json
+   ```
+
+   If it says `Sequential`, do the jobs yourself, one at a time. Do not run them together anyway. Do not reword the jobs to get a different answer. Two jobs in one file conflict, because two subagents editing one file can overwrite each other, and naming parts of the file does not change that.
+
+3. **For each wave, in order:**
+   1. Record the state: `aiculator parallel snapshot`, and keep what it prints.
+   2. Start one subagent per job in that wave, all in the same turn.
+   3. Wait for every one of them.
+   4. Check them: `aiculator parallel verify --plan plan.json --wave N --since SNAPSHOT`.
+   5. If it reports files no job claimed, stop. Look at what changed, fix it yourself, and do not start the next wave until the tree is right.
+   6. If it lists a job that changed nothing, check whether that subagent really did its work.
+   7. Run the tests before the next wave.
+
+**Tell every subagent, in its prompt:**
+
+- Exactly which files it may change, and that it must change nothing else, even to fix something it notices. It reports that to you instead.
+- To read a file again just before changing it, and to make small, targeted edits rather than rewriting the file.
+- Not to run `git add`, `git commit`, `git stash`, `git checkout` or `git reset`, formatters over the whole project, or anything that installs dependencies. Others are working in the same tree.
+- Not to call any swarm tools. A lease belongs to you, and only you report progress or submit.
+
+- **If your harness cannot run subagents,** do the jobs yourself, in the planned order.
+- **If you are a subagent yourself,** do not start more. Do your own part, and report back.
+- **For separate tasks that take a long time,** use the swarm's own worktrees instead, because those can also be reviewed and merged one by one.
+
 ## Commands: timeouts and retries
 <!-- anchor: backoff -->
 
@@ -361,11 +409,6 @@ func add(a, b int) int { return a + b }
 ```
 ````
 
-### Names in text
-<!-- anchor: render-inline -->
-
-Put file names, commands, flags, functions and values in `inline code`. Use **bold** only for the one thing the reader must not miss, *italics* rarely, and ~~strikethrough~~ only for something explicitly withdrawn.
-
 ### Commands
 <!-- anchor: render-shell -->
 
@@ -397,11 +440,6 @@ Use a table to compare items across two or more attributes. Keep cells to a few 
 | B | 40 ms | $1 |
 ```
 
-### Lists
-<!-- anchor: render-list -->
-
-Use a numbered list when order matters, and bullets when it does not. Keep items parallel and short. A list of one item should be a sentence, and do not nest deeper than two levels.
-
 ### Checklists
 <!-- anchor: render-checklist -->
 
@@ -412,11 +450,6 @@ Show progress or remaining steps as a checklist.
 - [ ] Write the tests
 ```
 
-### Headings
-<!-- anchor: render-headings -->
-
-Use `##` and `###` to divide longer answers into parts a reader can scan. Do not skip levels. A short answer needs no heading, and it should open with the answer, not with a heading.
-
 ### Callouts
 <!-- anchor: render-callout -->
 
@@ -425,11 +458,6 @@ Set off a warning or key note as a quote, starting with a bold label. Use this o
 ```markdown
 > **Warning:** This deletes the production table.
 ```
-
-### Quotes
-<!-- anchor: render-quote -->
-
-Quote errors, logs and documents exactly. Use a `text` code block for machine output, and a `>` quote for what a person or document said.
 
 ### File trees
 <!-- anchor: render-tree -->
@@ -441,11 +469,6 @@ cmd/
 ├── main.go
 └── serve.go
 ```
-
-### Links
-<!-- anchor: render-link -->
-
-Write links as `[what it is](https://example.com)`, with text that says where they go, not "here". Only link to URLs you have actually seen, and do not invent them.
 
 ### Diagrams
 <!-- anchor: render-diagram -->
@@ -467,21 +490,6 @@ A terminal may not show images, so give the file's path and say what it shows. D
 <!-- anchor: render-details -->
 
 A terminal may show `<details>` tags as plain text, so do not use them. Leave optional material out and offer it, or put it at the end under its own heading.
-
-### Math
-<!-- anchor: render-math -->
-
-A terminal may show LaTeX as plain source, so write formulas in plain text or a code block, such as `p99 = sorted[n * 99 / 100]`.
-
-### Footnotes and sources
-<!-- anchor: render-footnote -->
-
-A terminal may not render footnotes, so put an aside in its own short sentence, and cite sources as links at the point they are used.
-
-### Horizontal rules
-<!-- anchor: render-rule -->
-
-Use a `---` rule only between truly separate parts of a reply. Headings usually do this better.
 
 ### File references
 <!-- anchor: render-fileref -->

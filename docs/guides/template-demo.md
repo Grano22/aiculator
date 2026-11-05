@@ -227,6 +227,7 @@ The same template, per harness. Compare "Track the work" and "Step F" across the
     | `<PlanMode>` | Step F | Get a plan approved before changing anything |
     | `<Subagents>` | Before step G | Use subagents only in these cases |
     | `<SubagentFlow>` and `<Stage>` | Step G | Orchestrate stages, checking each result |
+    | `<ParallelWork>` | Step G2 | Plan subagents in one worktree, and verify each wave |
     | `<Backoff>` | After step G | Limit commands, and retry on this schedule |
     | `<Flow>` and `<Step>` | "Ship it" | Follow steps in order, one at a time |
     | `<OutputFormat>` | Near the end | Use this format in every reply |

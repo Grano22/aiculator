@@ -1939,3 +1939,139 @@ func TestSessionStaysInItsRealmUnlessAllowedToMove(t *testing.T) {
 		t.Fatalf("after moving: %+v", g2)
 	}
 }
+
+func exportProject(t *testing.T) *project {
+	t.Helper()
+	p := newProject(t)
+	p.run("up")
+	p.run("task", "add", "--id", "a-1", "--title", "First <b>", "--priority", "5", "--label", "team=core", "--allow-empty")
+	p.run("task", "add", "--id", "b-2", "--title", "=SUM(A1:A9)", "--priority", "9", "--label", "team=web", "--allow-empty")
+	p.run("task", "prop", "a-1", "points=8")
+	return p
+}
+
+func TestExportDefaultsToJSONOfEveryTask(t *testing.T) {
+	p := exportProject(t)
+	var rows []map[string]any
+	if err := json.Unmarshal([]byte(p.run("export")), &rows); err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 2 || rows[0]["id"] != "a-1" || rows[0]["checks"] != nil && rows[0]["state"] == nil {
+		t.Fatalf("%+v", rows)
+	}
+}
+
+func TestExportChoosesFormatFieldsAndRows(t *testing.T) {
+	p := exportProject(t)
+	// The file name picks the format.
+	for name, want := range map[string]string{"t.yaml": "- ", "t.csv": "id,title", "t.tsv": "id\ttitle", "t.md": "| id |", "t.html": "<table>", "t.json": `"id"`} {
+		f := filepath.Join(p.root, name)
+		if out := p.run("export", "-o", f); !strings.Contains(out, "2 rows") {
+			t.Errorf("%s: %s", name, out)
+		}
+		if got := readFileT(t, f); !strings.Contains(got, want) {
+			t.Errorf("%s: missing %q in %s", name, want, got)
+		}
+	}
+	// A title that is a formula stays text.
+	if got := readFileT(t, filepath.Join(p.root, "t.csv")); !strings.Contains(got, "'=SUM") {
+		t.Errorf("csv: %s", got)
+	}
+	if got := readFileT(t, filepath.Join(p.root, "t.html")); strings.Contains(got, "<b>") {
+		t.Errorf("html: %s", got)
+	}
+	// What is included, and which rows.
+	if got := p.run("export", "--format", "csv", "--fields", "id,labels.team"); got != "id,labels.team\na-1,core\nb-2,web\n" {
+		t.Errorf("fields: %q", got)
+	}
+	if got := p.run("export", "--format", "csv", "--fields", "id", "--label", "team=web"); got != "id\nb-2\n" {
+		t.Errorf("label: %q", got)
+	}
+	if got := p.run("export", "--format", "csv", "--fields", "id", "--where", "priority=5"); got != "id\na-1\n" {
+		t.Errorf("where: %q", got)
+	}
+	if got := p.run("export", "--format", "csv", "--fields", "id", "--sort", "-priority", "--limit", "1"); got != "id\nb-2\n" {
+		t.Errorf("sort: %q", got)
+	}
+	if got := p.run("export", "--format", "csv", "--fields", "id", "--state", "done"); got != "id\n" {
+		t.Errorf("state: %q", got)
+	}
+	if got := p.run("export", "--format", "csv", "--fields", "id,meta.points", "--with-meta", "--limit", "1"); got != "id,meta.points\na-1,8\n" {
+		t.Errorf("meta: %q", got)
+	}
+	if got := p.run("export", "--list-fields"); !strings.Contains(got, "labels.team") {
+		t.Errorf("list: %s", got)
+	}
+	for _, what := range []string{"agents", "usage", "flow", "realms"} {
+		if out, err := p.tryIn(p.root, "export", what, "--format", "json"); err != nil {
+			t.Errorf("%s: %v %s", what, err, out)
+		}
+	}
+	for args, want := range map[string]string{"--format pdf": "unknown format", "nope": "cannot export", "-o t.txt": "does not say the format", "--where x": "field=value"} {
+		if out, err := p.tryIn(p.root, append([]string{"export"}, strings.Fields(args)...)...); err == nil || !strings.Contains(out, want) {
+			t.Errorf("%s: %v %s", args, err, out)
+		}
+	}
+}
+
+func TestExportAcrossRealmsAddsAColumn(t *testing.T) {
+	p := exportProject(t)
+	other := mkRepo(t, filepath.Join(t.TempDir(), "other"))
+	t.Cleanup(func() { _, _ = p.tryIn(other, "down") })
+	if out, err := p.tryIn(other, "up"); err != nil {
+		t.Fatalf("%v %s", err, out)
+	}
+	if out, err := p.tryIn(other, "task", "add", "--id", "z-9", "--title", "x"); err != nil {
+		t.Fatalf("%v %s", err, out)
+	}
+	got := p.run("export", "--all", "--format", "csv")
+	if !strings.HasPrefix(got, "realm,id,") || !strings.Contains(got, "other,z-9") || !strings.Contains(got, "a-1") {
+		t.Errorf("%s", got)
+	}
+}
+
+func TestParallelPlanAndVerifyEndToEnd(t *testing.T) {
+	p := newProject(t)
+	jobs := filepath.Join(p.home, "jobs.yaml")
+	y := "jobs:\n  - {id: a, touches: [a.txt]}\n  - {id: b, touches: [b.txt]}\n  - {id: c, touches: [a.txt]}\n"
+	if err := os.WriteFile(jobs, []byte(y), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	plan := filepath.Join(p.home, "plan.json")
+	out := p.run("parallel", "plan", "--file", jobs, "-o", plan)
+	if !strings.Contains(out, "Parallel: 3 jobs in 2 waves") || !strings.Contains(out, "a.txt") {
+		t.Fatalf("%s", out)
+	}
+	// It needs no server, and leaves nothing in the project.
+	if exists(filepath.Join(p.root, ".swarm")) {
+		t.Error("planning created state")
+	}
+	var parsed struct {
+		Waves []struct {
+			Jobs []string `json:"jobs"`
+		} `json:"waves"`
+	}
+	if err := json.Unmarshal([]byte(readFileT(t, plan)), &parsed); err != nil {
+		t.Fatal(err)
+	}
+	wave := "1"
+	since := strings.TrimSpace(p.run("parallel", "snapshot"))
+	for _, id := range parsed.Waves[0].Jobs {
+		name := map[string]string{"a": "a.txt", "b": "b.txt", "c": "a.txt"}[id]
+		if err := os.WriteFile(filepath.Join(p.root, name), []byte(id), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if out := p.run("parallel", "verify", "--plan", plan, "--wave", wave, "--since", since); !strings.Contains(out, "2 files changed") {
+		t.Errorf("%s", out)
+	}
+	if err := os.WriteFile(filepath.Join(p.root, "stray.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := p.tryIn(p.root, "parallel", "verify", "--plan", plan, "--wave", wave, "--since", since); err == nil || !strings.Contains(out, "NOT CLAIMED: stray.txt") {
+		t.Errorf("a stray file must fail the check: %v %s", err, out)
+	}
+	if out, err := p.tryIn(p.root, "parallel", "plan", "--file", jobs, "--granularity", "line"); err == nil {
+		t.Errorf("%s", out)
+	}
+}

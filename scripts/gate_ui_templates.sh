@@ -10,7 +10,7 @@ trap 'cd /; [ -n "${KEEP:-}" ] && echo "kept $D" || rm -rf "$D"' EXIT
 cd "$D"
 git init -q -b main .
 git -c user.name=t -c user.email=t@t commit -q --allow-empty -m r
-aiculator template --install 'ui-*' subagent-flow living-section rich-markdown --per-harness --harness claude > /dev/null
+aiculator template --install 'ui-*' subagent-flow living-section rich-markdown parallel-subagents --per-harness --harness claude > /dev/null
 # Print mode has nobody to answer, so Claude Code does not offer AskUserQuestion there. A small
 # server offers a tool with the same name and schema, which records the arguments the model
 # chooses. That tests its choice of mode, though not the interactive UI itself.
@@ -40,20 +40,24 @@ probe() { # name mcp|none prompt check-python
   if [ -n "${ONLY:-}" ] && [[ ! " $ONLY " == *" $name "* ]]; then return; fi
   [ "$mode" = mcp ] && extra+=(--mcp-config "$D/mcp.json")
   claude -p "$prompt" --model "$MODEL" --output-format stream-json --verbose --max-turns "${TURNS:-8}" "${extra[@]}" \
-    --allowedTools "Skill,ToolSearch,Read,Write,Edit,Glob,Grep,Agent,Task,TaskCreate,TaskUpdate,TodoWrite,EnterPlanMode,mcp__ask__AskUserQuestion" < /dev/null > "$name.jsonl" 2>/dev/null
+    --allowedTools "Skill,ToolSearch,Read,Write,Edit,Glob,Grep,Agent,Task,TaskCreate,TaskUpdate,TodoWrite,EnterPlanMode,Bash(aiculator parallel:*),mcp__ask__AskUserQuestion" < /dev/null > "$name.jsonl" 2>/dev/null
   if python3 - "$name.jsonl" "$check" <<'PY'
 import json, sys
-calls, text = [], ""
+calls, text, turns = [], "", {}
 for line in open(sys.argv[1]):
     try: m = json.loads(line)
     except ValueError: continue
     if m.get("type") != "assistant": continue
     for c in m["message"].get("content", []):
-        if c.get("type") == "tool_use": calls.append((c["name"], c.get("input", {})))
+        if c.get("type") == "tool_use":
+            calls.append((c["name"], c.get("input", {})))
+            if c["name"] in ("Agent", "Task"):
+                k = m["message"].get("id", len(calls))
+                turns[k] = turns.get(k, 0) + 1
         if c.get("type") == "text": text += c["text"]
 asks = [i for n, i in calls if n.endswith("AskUserQuestion")]
 first = asks[0]["questions"] if asks else []
-ok = eval(sys.argv[2], {"asks": asks, "q": first, "calls": calls, "text": text, "any": any, "all": all, "len": len, "sum": sum, "open": open})
+ok = eval(sys.argv[2], {"asks": asks, "q": first, "calls": calls, "text": text, "any": any, "all": all, "len": len, "sum": sum, "open": open, "together": max(turns.values(), default=0), "shell": [i.get("command", "") for n, i in calls if n == "Bash"]})
 print("   tools:", [n.replace("mcp__ask__", "") for n, _ in calls])
 if asks: print("   asked:", [(x["header"], "many" if x.get("multiSelect") else "one", [o["label"] for o in x["options"]]) for x in first])
 sys.exit(0 if ok else 1)
@@ -91,5 +95,15 @@ probe plan none "Use the ui-plan skill. Rename the add function in calc.go to su
   "$SKILL and '1.' in text and not any(n in ('Write', 'Edit') for n, _ in calls) and 'func add' in open('calc.go').read()"
 probe markdown none "Use the rich-markdown skill, and do not create or edit any file. In calc.go, add subtracts when it should add. Show the fix as a change, name the line, give the command to run the tests, and compare value and pointer receivers in Go by speed and safety." \
   "$SKILL and '\`\`\`diff' in text and '\`\`\`sh' in text and 'calc.go:3' in text and '|--' in text.replace(' ', '')"
+# Three files that do not overlap: the plan allows it, so they should run together.
+printf 'one\n' > p1.txt; printf 'two\n' > p2.txt; printf 'three\n' > p3.txt
+git add -A >/dev/null 2>&1; git -c user.name=t -c user.email=t@t commit -qm fixtures
+TURNS=30 probe parallel none "Use the parallel-subagents skill. Add the word done to the end of each of p1.txt, p2.txt and p3.txt, each as its own job." \
+  "$SKILL and any('parallel plan' in c for c in shell) and any('parallel verify' in c for c in shell) and together >= 2 and all('done' in open(f).read() for f in ('p1.txt', 'p2.txt', 'p3.txt'))"
+# Two jobs on one file: the plan refuses, so they must not run together, whatever the model thinks.
+printf 'a\nb\n' > same.txt
+git add -A >/dev/null 2>&1; git -c user.name=t -c user.email=t@t commit -qm same
+TURNS=30 probe parallel_conflict none "Use the parallel-subagents skill. In same.txt, change the line a to A as one job, and the line b to B as another job." \
+  "$SKILL and any('parallel plan' in c for c in shell) and together < 2 and open('same.txt').read().split() == ['A', 'B']"
 echo "--- $pass passed, $fail failed"
 [ "$fail" = 0 ]

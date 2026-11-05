@@ -14,6 +14,8 @@
 - Labels, aging steps, properties, blobs and foreign resources
 - Connectors for Jira, Notion, Excel and CSV, with two-way sync
 - Realms: a view across every project on a machine
+- Export to JSON, YAML, CSV, TSV, Excel, HTML and Markdown
+- Parallel subagents in one worktree, with a conflict-free planner
 
 ## Tested on real harnesses
 

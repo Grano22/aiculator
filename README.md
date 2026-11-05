@@ -109,6 +109,12 @@ Tasks can also carry labels, properties, files and references to things elsewher
 
 Each project is a realm, with its own server and store, so trouble in one stays there. `aiculator top --all` and `aiculator web --all` show them all, with whose tasks are where, and `--realm NAME` acts on one from any folder. See [Realms](docs/guides/realms.md).
 
+## Export and parallel work
+
+`aiculator export` writes tasks to JSON, YAML, CSV, Excel, HTML or Markdown, with the fields and rows you choose. See [Export](docs/guides/export.md).
+
+`aiculator parallel plan` works out which jobs subagents can safely do at the same time in one worktree, and `parallel verify` checks with git what they really changed. See [Parallel subagents](docs/guides/parallel.md).
+
 ## Harnesses
 
 `aiculator harness` shows all 24 and their state on this machine.
@@ -158,6 +164,8 @@ OpenCode 2 needs one extra step: a running background service does not pick up n
 | `internal/meta` | Properties, blobs and foreign resources |
 | `internal/connect` | Import and two-way sync with other platforms |
 | `internal/realm` | The list of projects on a machine, and the view across them |
+| `internal/export` | Writers for every export format |
+| `internal/parallel` | The conflict-free planner and verifier for subagents |
 | `internal/tui` | The terminal dashboard |
 | `pkg/observe` | Public: live metrics |
 | `pkg/plugin` | Public: the plugin API |

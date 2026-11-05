@@ -1,0 +1,19 @@
+---
+template:
+  vars:
+    max: 4
+    granularity: auto
+name: parallel-subagents
+description: Runs several subagents at the same time in one working tree, without conflicts, by planning which jobs cannot overlap and checking afterwards what each wave changed. Use when work splits into parts that touch different files, or when the user asks to do several things at once in this checkout.
+compatibility: Requires git and the aiculator binary on PATH. Needs no server. Falls back to doing the jobs in order in a harness without subagents. These are instructions to the model, not technical limits.
+allowed-tools: Bash(aiculator parallel:*)
+metadata:
+  version: "1.0.0"
+  aiculator.kind: flow
+---
+
+# Parallel subagents in one worktree
+
+<Directive id="plan-decides">Only the plan decides what runs together. If it says two jobs conflict, they do not share a wave, however small they look.</Directive>
+
+<ParallelWork id="how" title="How to do it" max="{{ max }}" granularity="{{ granularity }}" />

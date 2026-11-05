@@ -97,6 +97,8 @@ Look for bugs in the changes.
 </Stage>
 </SubagentFlow>
 
+<ParallelWork id="split-work" title="Step G2: split the build, if it allows" max="{{ max_subagents }}" />
+
 <Backoff timeout="{{ timeout }}" retries="{{ retries }}" base="2s" factor="2" limit="30s" on="timeouts, network errors and rate limits" />
 
 ## Checks to run
@@ -125,7 +127,7 @@ Next: what remains, or "nothing"
 
 <DynamicSection id="changelog" title="Release notes" file="RELEASE_NOTES.md" update="whenever the plan changes" />
 
-{# Every rule except one comes from RichMarkdown, and that one is used alone, with extra advice. #}
-<RichMarkdown id="formatting" title="How to format your replies" surface="{{ surface }}" only="code,inline,shell,diff,table,list,checklist,headings,callout,quote,tree,link,diagram,image,details,math,footnote,rule" />
+{# Some rules come from RichMarkdown, and one is used alone, with extra advice. #}
+<RichMarkdown id="formatting" title="How to format your replies" surface="{{ surface }}" only="code,shell,diff,table,checklist,callout,tree,diagram,image,details" />
 
 <Render kind="fileref" surface="{{ surface }}">In this demo, cite the checkout code this way in every review finding.</Render>

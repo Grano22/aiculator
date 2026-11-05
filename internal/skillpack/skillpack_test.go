@@ -443,3 +443,27 @@ func TestWhereLooksNearestFirstAndWhereTheHarnessReads(t *testing.T) {
 		t.Errorf("the nearest should win: %q", got)
 	}
 }
+
+// The skill and the template teach the same flow. They are separate files, so this keeps
+// the steps that matter from drifting apart.
+func TestParallelSkillAndTemplateAgree(t *testing.T) {
+	skill, err := bundled.ReadFile("skills/swarm-parallel/SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl, err := os.ReadFile("../tmpl/library/components/ParallelWork.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, must := range []string{
+		"aiculator parallel plan", "aiculator parallel snapshot", "aiculator parallel verify", "exclusive: true", "Sequential", "Do not reword the jobs",
+		"git commit", "Not to call any swarm tools", "If you are a subagent yourself", "If your harness cannot run subagents",
+	} {
+		if !strings.Contains(string(skill), must) {
+			t.Errorf("the skill has lost %q", must)
+		}
+		if !strings.Contains(string(tmpl), must) {
+			t.Errorf("the template has lost %q", must)
+		}
+	}
+}
