@@ -43,6 +43,21 @@ aiculator web --ttl 1h    # Expires sooner; the default is 12 hours
 
 It follows your system's light or dark setting, works at phone width, and pauses while its tab is hidden.
 
+### Flow analytics
+
+Below the live numbers, four charts show how work has flowed. Filter them by time window (the last hour up to everything kept), by tier and by label. On `aiculator web --all`, a realm filter picks the project.
+
+![Flow analytics: the state Sankey, failure reasons, the retry funnel and the cumulative flow.](../assets/screens/web-flow-dark.png#only-dark)
+![Flow analytics: the state Sankey, failure reasons, the retry funnel and the cumulative flow.](../assets/screens/web-flow-light.png#only-light)
+
+- **States:** a Sankey of the path each task took, Draft → Ready → Claimed → Running → Review → Merging → Done, and where it left that path for Failed, Parked or Canceled. A node bigger than what leaves it holds tasks that are still there. A task that failed and then made it counts once, on the path it finished; its retries are in the funnel.
+- **Why tasks fall out:** each time a task failed or was parked in the window: the state it was in, then the reason. Reasons are the swarm's codes, such as `no_progress`, `checks_failed`, `review_rejected`, `budget_exhausted`, `needs_resplit`, `unreadable_record` and `done_without_verification`. A note an agent wrote when it gave up shows as `agent_note`, so that its text never becomes a chart label.
+- **Tries:** how many tasks reached a first, second or third try, and how many finished on each one.
+- **What caused retries:** what ended the try before each new one. A failure's reason counts first. Otherwise it's the last reason the task had, such as an expired claim.
+- **Cumulative flow:** how many tasks were in each state over time, stacked with done at the bottom. A band that keeps growing, such as review, is a bottleneck.
+
+The charts come from the event log, which keeps every committed change, so a restart loses nothing. The server reads the log into a compact index when it starts, then follows it. Until it has caught up, the card says so. Tier and label filters use each task's tier and labels now. Working out the charts for 20,000 tasks takes about 9 ms.
+
 The dashboard is a [plugin](plugins.md) compiled into the binary. `go build -tags noweb` leaves it out, saving about 0.1 MiB.
 
 ## What the numbers mean
@@ -104,6 +119,7 @@ Totals by task and tier come from durable state, so they survive a restart. Rate
 | `GET /v1/readyz` | None | Is it ready. Returns 503 if a probe fails, with no details. |
 | `GET /metrics` | Viewer | Prometheus format |
 | `GET /v1/observe` | Viewer | The full snapshot as JSON |
+| `GET /v1/analytics` | Viewer | The flow analytics as JSON. Takes `window` (such as `6h`, `7d` or `all`), `tier`, `label` (`key=value` or `key`) and `points` |
 | `GET /v1/events` | Viewer | Every task change, as JSON lines |
 
 Create a read-only token for a scraper with the API's `/v1/tokens` route, setting `viewer: true`. `aiculator web --no-open` also prints one in its link.

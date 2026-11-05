@@ -1,7 +1,8 @@
 #!/bin/bash
-# Regenerates docs/assets/screens from a real server doing real work for about 80 seconds,
-# with agents driven through the CLI, so every image shows actual output. Only the token
-# and cost figures are demo values, because no model runs here. Needs Chrome and Node.
+# Regenerates docs/assets/screens, and the README's demo.gif, from a real server doing real
+# work for about 90 seconds, with agents driven through the CLI, so every image shows actual
+# output. Only the token and cost figures are demo values, because no model runs here.
+# Needs Chrome and Node.
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 OUT="$ROOT/docs/assets/screens"
@@ -26,6 +27,9 @@ for round in $(seq 16); do
     n=$((n + 1))
     aiculator task add --id "${work[i]}-$round" --title "${work[i+1]}" --check "test -f out-$n" --budget 5000000 --priority $((RANDOM % 3)) > /dev/null
     echo "out-$n" > ".swarm/file-${work[i]}-$round"
+    # Some fail their checks on the first try and pass on the second, so the retry funnel
+    # and the failure flow have real retries to show.
+    if [ $((n % 5)) = 0 ]; then touch ".swarm/flaky-${work[i]}-$round"; fi
   done
 done
 aiculator task add --id billing-v2 --title "Move billing to the new ledger" --tier 3 --budget 5000000 --check "true" > /dev/null
@@ -65,7 +69,11 @@ worker() { # agent seconds-between-tasks
   while [ "$(date +%s)" -lt "$end" ]; do
     read -r act id lease wd < <(aiculator work wait --agent "$agent" --hold 1s | field)
     if [ "$act" = task ] && [ -f ".swarm/file-$id" ]; then
-      touch "$wd/$(cat ".swarm/file-$id")"
+      if [ -f ".swarm/flaky-$id" ] && [ ! -f ".swarm/tried-$id" ]; then
+        touch ".swarm/tried-$id" "$wd/notes.txt" # Changes a file, but not the one the check wants.
+      else
+        touch "$wd/$(cat ".swarm/file-$id")"
+      fi
       aiculator work progress --agent "$agent" --task "$id" --lease "$lease" --tokens $((3000 + RANDOM % 9000)) --cost $((40000 + RANDOM % 160000)) --note "Implemented" > /dev/null
       sleep "$gap"
       aiculator work submit --agent "$agent" --task "$id" --lease "$lease" > /dev/null
@@ -77,7 +85,11 @@ worker "$A" 1.3 & P1=$!
 worker "$B" 1.9 & P2=$!
 worker "$C" 2.6 & P3=$!
 
-sleep 22
+sleep 12
+# Plans change: two tasks are no longer needed.
+aiculator task cancel ship-i18n-16 > /dev/null
+aiculator task cancel ship-docs-16 > /dev/null
+sleep 10
 # Claimed late on purpose, so it is close to its timeout when the pictures are taken.
 aiculator work claim --agent "$ADV" --task search-idx > /dev/null
 L=$(aiculator task show search-idx | python3 -c "import json,sys;print(json.load(sys.stdin)['lease_epoch'])")
@@ -93,6 +105,7 @@ aiculator plan update --epoch "$EPOCH" --ttl 5m --phase "splitting the mobile sp
 sleep 9
 
 node "$ROOT/scripts/screenshots.mjs" "$(aiculator web --no-open)" "$OUT" "$D"
+go run -C "$ROOT" ./scripts/gifmake -out "$OUT/demo.gif" -width 960 -delay 50 -hold 250 "$D"/frames/frame-*.png
 kill "$P1" "$P2" "$P3" 2>/dev/null || true
 pkill -f "aiculator work wait" 2>/dev/null || true
 echo "--- what the images show"

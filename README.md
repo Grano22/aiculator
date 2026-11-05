@@ -1,18 +1,35 @@
+<p align="center">
+  <img src="docs/assets/aiculator_banner.jpg" alt="Aiculator" width="100%">
+</p>
+
 # Aiculator
 
 One static Go binary that runs a queue of coding tasks across AI harnesses. It assigns each task to an agent of the right tier, isolates it in a git worktree and sandbox, verifies the result itself, and merges it.
 
 An agent saying "done" counts for nothing: the swarm runs the acceptance checks.
 
-![The web dashboard, showing throughput, the flow of tasks, latency, health probes, tasks at risk, agents and budgets.](docs/assets/screens/web-dark.png)
+![The web dashboard updating live as agents claim, run and finish tasks, with the state Sankey of the flow analytics below.](docs/assets/screens/demo.gif)
 
-<sub>A real server doing real work, from `scripts/screenshots.sh`. Agents were driven through the CLI, so token and cost figures are demo values.</sub>
+<sub>A real server doing real work, recorded by `scripts/screenshots.sh`. Agents were driven through the CLI, so token and cost figures are demo values.</sub>
 
 **[Read the docs](https://grano22.github.io/aiculator/)**, which start with a showcase of what it does.
 
 ## Live dashboards
 
 `aiculator top` shows flow, throughput, latency with jitter, health probes, usage and tasks in trouble, in your terminal. `aiculator web` shows the same in your browser, compiled into the binary, with a read-only link.
+
+![The web dashboard: throughput, flow, flow analytics, latency, health probes, tasks at risk, agents and budgets.](docs/assets/screens/web-dark.png)
+
+The web dashboard also has flow analytics, filtered by realm, tier, label and time window:
+
+- a Sankey of how tasks moved through the states
+- a Sankey of why they fell out
+- the retry funnel
+- a cumulative flow diagram
+
+They come from the durable event log, so a restart loses nothing.
+
+![Flow analytics: the state Sankey, failure reasons, the retry funnel and the cumulative flow.](docs/assets/screens/web-flow-dark.png)
 
 ![The aiculator top terminal dashboard.](docs/assets/screens/tui-overview.png)
 

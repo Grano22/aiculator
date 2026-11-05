@@ -8,6 +8,17 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ### Added
 
+- **Flow analytics on the web dashboard:**
+  - Charts:
+    - a Sankey of the path tasks take through the states, with where they leave it
+    - a Sankey of why tasks fail or are parked, from where and for what reason
+    - a retry funnel, with what caused each retry
+    - a cumulative flow diagram
+  - Filters: window, tier and label. `aiculator web --all` adds a realm filter.
+  - Source: the durable event log, read into a compact index at startup and kept current, so a restart loses nothing.
+  - API: `GET /v1/analytics`.
+- **A banner and a demo GIF** at the top of the README, the GIF recorded with the screenshots from a real server, and new screenshots of the analytics.
+
 - **Architecture and path tests:** import rules between packages are checked in tests, the core is kept free of clocks, randomness and I/O, and every transition in the TLA+ spec is reached through the real state machine. A coverage gate counts the binary that the end-to-end tests run, and holds each package to a minimum.
 - **Repair at startup:** a task record that can't be read, or that breaks a rule, is quarantined and replaced by a safe version. A record that can't be read becomes a parked stand-in, and a Done task without an independent check is parked for a person to decide.
 - **`aiculator doctor`:** reports repaired and quarantined records, overdue leases, orphan worktrees, event log lag and stale `pid` or `addr` files, with or without a server running. `--fix` cleans up what is safe to clean up.

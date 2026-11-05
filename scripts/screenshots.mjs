@@ -37,10 +37,37 @@ async function capture(name, width, height, scheme, scale = 2, maxHeight = 1700)
   writeFileSync(`${out}/${name}.png`, Buffer.from(shot.data, "base64"));
 }
 
+await send("Runtime.enable");
+const evaluate = async (expr) => (await send("Runtime.evaluate", { expression: expr, returnByValue: true })).result.value;
+
 await send("Page.navigate", { url: link });
 await sleep(2500);
-await capture("web-dark", 1280, 900, "dark", 1.5);
-await capture("web-light", 1280, 900, "light", 1.5);
+
+// The README's animation: the top of the dashboard, live, one frame every half second.
+mkdirSync(`${tmp}/frames`, { recursive: true });
+await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 860, deviceScaleFactor: 1, mobile: false });
+await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
+await sleep(1500);
+for (let i = 0; i < 28; i++) {
+  const shot = await send("Page.captureScreenshot", { format: "png", clip: { x: 0, y: 0, width: 1280, height: 860, scale: 1 } });
+  writeFileSync(`${tmp}/frames/frame-${String(i).padStart(3, "0")}.png`, Buffer.from(shot.data, "base64"));
+  await sleep(500);
+}
+
+// The flow analytics on their own, in both colour schemes.
+async function element(name, selector, scheme) {
+  await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1.5, mobile: false });
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: scheme }] });
+  await sleep(1200);
+  const r = await evaluate(`(() => { const b = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return { x: b.left + scrollX, y: b.top + scrollY, w: b.width, h: b.height }; })()`);
+  const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: r.x - 8, y: r.y - 8, width: r.w + 16, height: r.h + 16, scale: 1 } });
+  writeFileSync(`${out}/${name}.png`, Buffer.from(shot.data, "base64"));
+}
+await element("web-flow-dark", "#flow-analytics", "dark");
+await element("web-flow-light", "#flow-analytics", "light");
+
+await capture("web-dark", 1280, 900, "dark", 1.5, 2600);
+await capture("web-light", 1280, 900, "light", 1.5, 2600);
 await capture("web-mobile", 390, 844, "dark", 2, 1500);
 
 const COLORS = { 31: "#ff7b72", 32: "#3fb950", 33: "#d29922", 36: "#58a6ff" };
