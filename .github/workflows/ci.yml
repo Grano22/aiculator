@@ -138,10 +138,12 @@ jobs:
         id: cover
         run: ./scripts/coverage.sh coverage || echo "status=$?" >> "$GITHUB_OUTPUT"
       - name: Report
+        env:
+          STATUS: ${{ steps.cover.outputs.status }}
         run: |
           go run ./scripts/report --title "Coverage" --tests "Linux coverage=coverage/test.json" \
             --cover coverage/coverage.out --cover-html coverage/coverage.html --out coverage/report || true
-          exit "${{ steps.cover.outputs.status || 0 }}"
+          if [ -n "$STATUS" ] && [ "$STATUS" != 0 ]; then exit 1; fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

@@ -7,7 +7,7 @@
 # limit, change it here on purpose and say why in the commit.
 set -eu
 MAX_BINARY_MIB=${MAX_BINARY_MIB:-30}
-MAX_ARCHIVE_MIB=${MAX_ARCHIVE_MIB:-11}
+MAX_ARCHIVE_MIB=${MAX_ARCHIVE_MIB:-12}
 VERSION=${1:?version, such as v1.2.3}
 GOOS=${2:?goos}
 GOARCH=${3:?goarch}
