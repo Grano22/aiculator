@@ -14,6 +14,10 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 - **Backups of chosen tasks:** rules in `.agents/backups.yaml` pick tasks by id pattern, label, tag, state or priority, or all of them, and keep a journal of each change, snapshots at an interval, or both, with retention by count and age. `aiculator backup versions` and `backup restore` put a copy back safely: in-flight work goes back to Ready, the lease moves on, and the replaced record is quarantined.
 - **Standby server:** `aiculator up --standby` keeps a second server waiting, which takes over on the same address if the first one dies. The leader is whoever holds the data directory lock, which `spec/tla/Election.tla` checks against an election based on health checks. `/v1/healthz` reports the leadership `term`.
 
+### Changed
+
+- **Faster heartbeats:** a heartbeat that only extends a lease is kept in memory while the stored deadline is more than half a lease away, which takes it from 19µs to 1.5µs in the engine. Verified tokens are remembered, so checking one costs 35ns instead of 32µs. Together, a heartbeat over HTTP went from 105µs to 49µs, with a third fewer allocations, and followers such as sync and backups read far fewer revisions. Task records are encoded from a pointer, which cuts the bytes allocated per commit by 10%.
+
 ## [0.6.0] - 2026-11-05
 
 ### Added

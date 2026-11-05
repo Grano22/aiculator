@@ -51,3 +51,5 @@ A claim that times out before work starts costs nothing, and neither does a `rel
 ## Zombies
 
 A heartbeat shows only that an agent is alive. Progress is measured separately: the swarm hashes the worktree itself, and only a changed hash counts. An agent with a live heartbeat and unchanged files loses its lease when the progress timeout runs out, which is 10 minutes by default. Its late submit is refused, and its saved work goes to the next attempt.
+
+Most heartbeats only push a lease deadline forward, so they aren't all written to disk. One is kept in memory while the stored deadline is still more than half a lease away, and written once it isn't. Any heartbeat that changes something else, such as the first one moving a task from claimed to running, is always written. Fencing uses the lease number, which a heartbeat never changes, so a stored deadline that is behind can't let a second agent in. After a crash or a takeover, the stored deadline still leaves at least half a lease, and no lease expires within the restart grace anyway. `engine.Config.DurableHeartbeats` writes every heartbeat instead.

@@ -64,13 +64,16 @@ type Config struct {
 	ExitGrace     time.Duration // Quiet time before an agent is told to exit.
 	PlanLostGrace time.Duration // How long waiters see planner_lost.
 	RestartGrace  time.Duration // No lease expires this soon after a restart.
-	StaleAfter    time.Duration // Age at which a read value is flagged stale.
-	Tick          time.Duration
-	AgingUnit     time.Duration    // Waiting this long equals one priority point.
-	Aging         []core.AgingStep // Extra boosts after a wait. A task's own steps replace these.
-	Steal         []StealRule
-	PresenceTTL   time.Duration
-	Hooks         Hooks
+	// DurableHeartbeats writes every heartbeat to the store, instead of only those that
+	// change something or that a crash could otherwise cut short.
+	DurableHeartbeats bool
+	StaleAfter        time.Duration // Age at which a read value is flagged stale.
+	Tick              time.Duration
+	AgingUnit         time.Duration    // Waiting this long equals one priority point.
+	Aging             []core.AgingStep // Extra boosts after a wait. A task's own steps replace these.
+	Steal             []StealRule
+	PresenceTTL       time.Duration
+	Hooks             Hooks
 }
 
 // DefaultConfig holds production defaults.
@@ -110,6 +113,9 @@ type entry struct {
 	task     core.Task
 	rev      uint64
 	readySeq uint64
+	// durableLease is the lease deadline as last written to the store. Heartbeats can run
+	// ahead of it in memory; see commit.
+	durableLease time.Time
 }
 
 type op struct {
@@ -364,6 +370,9 @@ func (e *Engine) index(old, t core.Task, rev uint64) {
 	if old.ID != "" && e.counts[old.Tier] != nil {
 		e.counts[old.Tier][old.State]--
 	}
+	if rev != ent.rev {
+		ent.durableLease = t.LeaseDeadline
+	}
 	ent.task, ent.rev = t, rev
 	if e.counts[t.Tier] == nil {
 		e.counts[t.Tier] = map[core.State]int{}
@@ -513,6 +522,12 @@ func (e *Engine) commit(id string, c core.Cmd) (core.Task, error) {
 		}
 		return ent.task, err
 	}
+	if e.heartbeatInMemory(ent, n, c) {
+		old := ent.task
+		e.index(old, n, ent.rev)
+		e.obs.Count(observe.SeriesCoalesced, time.Now(), 1)
+		return n, nil
+	}
 	began := time.Now()
 	rev, err := e.st.UpdateTask(n, ent.rev)
 	if err != nil {
@@ -537,6 +552,24 @@ func (e *Engine) commit(id string, c core.Cmd) (core.Task, error) {
 	e.record(old, n, c)
 	e.fireHooks(old, n)
 	return n, nil
+}
+
+// heartbeatInMemory decides whether a heartbeat can skip the store. Heartbeats are by far
+// the most common command, and most only push a deadline forward. Each one written is a
+// disk write and a revision that every follower reads.
+//
+// It is safe to keep one in memory when the stored deadline is still more than half a
+// lease away. Fencing depends on the lease number, which a heartbeat never changes, so a
+// stale stored deadline cannot let a second agent in while the first still holds the task.
+// After a crash or a takeover, the stored deadline is at least half a lease from when the
+// last heartbeat was written, and no lease expires within RestartGrace of a start anyway,
+// which leaves the agent time to send the next one. A heartbeat that changes anything else,
+// such as the first one moving Claimed to Running, is always written.
+func (e *Engine) heartbeatInMemory(ent *entry, n core.Task, c core.Cmd) bool {
+	if c.Kind != core.CmdHeartbeat || n.State != ent.task.State || c.LeaseTTL <= 0 || e.cfg.DurableHeartbeats {
+		return false
+	}
+	return ent.durableLease.Sub(e.now()) > c.LeaseTTL/2
 }
 
 // record feeds the dashboards. Rates use real time. Task ages use the engine's clock,

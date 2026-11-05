@@ -33,7 +33,7 @@ type fixture struct {
 	auth *auth.Authority
 }
 
-func setup(t *testing.T) *fixture {
+func setup(t testing.TB) *fixture {
 	t.Helper()
 	ctx := context.Background()
 	st, err := store.Open(ctx, store.Options{Dir: t.TempDir()})

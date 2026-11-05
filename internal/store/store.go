@@ -160,7 +160,7 @@ func mapErr(err error) error {
 
 // CreateTask writes a new task and fails if the ID is already taken.
 func (s *Store) CreateTask(t core.Task) (uint64, error) {
-	b, err := json.Marshal(t)
+	b, err := json.Marshal(&t)
 	if err != nil {
 		return 0, err
 	}
@@ -172,7 +172,7 @@ func (s *Store) CreateTask(t core.Task) (uint64, error) {
 
 // UpdateTask is the commit point: a compare-and-swap on the task's revision.
 func (s *Store) UpdateTask(t core.Task, rev uint64) (uint64, error) {
-	b, err := json.Marshal(t)
+	b, err := json.Marshal(&t)
 	if err != nil {
 		return 0, err
 	}
@@ -343,7 +343,7 @@ func (s *Store) PutPlanning(p Planning, rev uint64) (uint64, error) {
 // RawPutForTest overwrites a key without compare-and-swap, simulating a foreign
 // writer. Tests use it to prove that stale writes are rejected.
 func (s *Store) RawPutForTest(t core.Task) error {
-	b, err := json.Marshal(t)
+	b, err := json.Marshal(&t)
 	if err != nil {
 		return err
 	}

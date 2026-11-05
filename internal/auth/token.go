@@ -13,7 +13,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Grano22/aiculator/internal/core"
@@ -34,7 +36,18 @@ type Claims struct {
 type Authority struct {
 	key ed25519.PrivateKey
 	now func() time.Time
+
+	// verified remembers tokens whose signature checked out. Checking one costs about 30µs,
+	// far more than the call it guards, and every agent sends the same token on every call.
+	// A token's signature cannot stop being valid under the same key, and there is no
+	// revocation, so this changes no answer. Only tokens that verified are kept, so forged
+	// ones cannot fill it, and expiry is still checked each time.
+	mu       sync.Mutex
+	verified map[string]Claims
 }
+
+// maxVerified bounds the cache. When full it is emptied, which costs one check per token.
+const maxVerified = 4096
 
 // ErrInvalidToken means a token is malformed, forged or expired.
 var ErrInvalidToken = errors.New("invalid token")
@@ -95,7 +108,13 @@ func (a *Authority) Issue(c Claims) (string, error) {
 
 // Verify checks the signature and expiry and returns the claims.
 func (a *Authority) Verify(token string) (Claims, error) {
-	var c Claims
+	a.mu.Lock()
+	c, hit := a.verified[token]
+	a.mu.Unlock()
+	if hit {
+		c.Tags = slices.Clone(c.Tags)
+		return a.checkExpiry(c)
+	}
 	bodyB64, sigB64, ok := strings.Cut(token, ".")
 	if !ok {
 		return c, ErrInvalidToken
@@ -112,6 +131,17 @@ func (a *Authority) Verify(token string) (Claims, error) {
 	if err := json.Unmarshal(body, &c); err != nil {
 		return c, ErrInvalidToken
 	}
+	a.mu.Lock()
+	if a.verified == nil || len(a.verified) >= maxVerified {
+		a.verified = make(map[string]Claims, 64)
+	}
+	a.verified[token] = Claims{Agent: c.Agent, Tier: c.Tier, Tags: slices.Clone(c.Tags), Admin: c.Admin,
+		Planner: c.Planner, Viewer: c.Viewer, Expires: c.Expires}
+	a.mu.Unlock()
+	return a.checkExpiry(c)
+}
+
+func (a *Authority) checkExpiry(c Claims) (Claims, error) {
 	if !c.Expires.IsZero() && a.now().After(c.Expires) {
 		return c, fmt.Errorf("%w: expired", ErrInvalidToken)
 	}

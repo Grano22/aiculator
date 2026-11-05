@@ -122,6 +122,8 @@ const (
 	SeriesCommits = "commits"
 	SeriesAPI     = "api"
 	SeriesZombies = "zombies"
+	// SeriesCoalesced counts heartbeats kept in memory instead of written.
+	SeriesCoalesced = "heartbeats_in_memory"
 
 	LatencyQueue  = "queue_wait"
 	LatencyCommit = "commit"
@@ -235,6 +237,8 @@ type Throughput struct {
 	TotalDone    int64 `json:"total_done"`
 	TotalFailed  int64 `json:"total_failed"`
 	TotalZombies int64 `json:"total_zombies"`
+	// HeartbeatsInMemory is how many heartbeats did not need a write.
+	HeartbeatsInMemory int64 `json:"heartbeats_in_memory,omitempty"`
 	// Per-second history for the last minute, oldest first.
 	Commits []int64 `json:"commits_history"`
 	Grants  []int64 `json:"grants_history"`
@@ -285,7 +289,8 @@ func (c *Collector) Read(now time.Time) Measures {
 			CommitsPerSec: perSec(SeriesCommits), APIPerSec: perSec(SeriesAPI),
 			TotalGrants: get(SeriesGrants).total, TotalDone: get(SeriesDone).total,
 			TotalFailed: get(SeriesFailed).total, TotalZombies: get(SeriesZombies).total,
-			Commits: get(SeriesCommits).tail(sec, 60), Grants: get(SeriesGrants).tail(sec, 60), Done: get(SeriesDone).tail(sec, 60),
+			HeartbeatsInMemory: get(SeriesCoalesced).total,
+			Commits:            get(SeriesCommits).tail(sec, 60), Grants: get(SeriesGrants).tail(sec, 60), Done: get(SeriesDone).tail(sec, 60),
 		},
 		Latency:  map[string]Stats{},
 		Agents:   map[string]AgentUsage{},
@@ -436,6 +441,7 @@ func (s Snapshot) Prometheus() string {
 	counter("aiculator_done_total", "Tasks finished since start.", s.Throughput.TotalDone)
 	counter("aiculator_failed_total", "Task failures since start.", s.Throughput.TotalFailed)
 	counter("aiculator_zombies_total", "Zombies caught since start.", s.Throughput.TotalZombies)
+	counter("aiculator_heartbeats_in_memory_total", "Heartbeats that did not need a write.", s.Throughput.HeartbeatsInMemory)
 	gauge("aiculator_tokens", "Tokens used, summed over all tasks.", s.Usage.Tokens)
 	gauge("aiculator_spent_microdollars", "Money spent, summed over all tasks.", s.Usage.Spent)
 	b.WriteString("# HELP aiculator_latency_seconds Latency by operation.\n# TYPE aiculator_latency_seconds gauge\n")
