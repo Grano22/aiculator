@@ -47,6 +47,29 @@ aiculator debug verbosity [LEVEL] [flags]
       --vmodule string   levels per component, such as engine=5
 ```
 
+## `aiculator doctor`
+
+Check this project's swarm for damage and leftovers, and fix them with --fix
+
+Checks the data directory, even with the server down: a stale pid or address file, or a
+server holding the lock without answering. With the server up, it also reports records repaired
+at startup, records kept in quarantine, worktrees of finished tasks, and leases long past their
+deadline.
+
+Damaged task records are repaired when the server starts, with the originals kept. --fix removes
+stale files and leftover worktrees. It never deletes a task or anything kept in quarantine.
+
+```text
+aiculator doctor [flags]
+```
+
+**Flags**
+
+```text
+      --fix    fix what can be fixed safely
+      --json   print as JSON
+```
+
 ## `aiculator down`
 
 Stop the swarm server for this project

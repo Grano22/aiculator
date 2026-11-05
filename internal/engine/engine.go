@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -146,6 +147,14 @@ type Engine struct {
 	planRev    uint64
 	quietSince map[int]time.Time
 	seen       map[string]seenAgent
+	repairs    []Repair
+}
+
+// Repair records one record that had to be fixed at startup.
+type Repair struct {
+	TaskID string    `json:"task_id"`
+	Did    []string  `json:"did"`
+	At     time.Time `json:"at"`
 }
 
 // seenAgent tracks when an agent started its current stretch of waiting, so that
@@ -203,11 +212,13 @@ func New(ctx context.Context, st *store.Store, cfg Config) (*Engine, error) {
 		quietSince: map[int]time.Time{},
 		seen:       map[string]seenAgent{},
 	}
-	stored, err := st.LoadTasks(ctx)
+	stored, unreadable, err := st.LoadTasks(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load tasks: %w", err)
 	}
+	stored = append(stored, e.recoverUnreadable(unreadable)...)
 	for _, s := range stored {
+		s = e.repairOnLoad(s)
 		e.index(core.Task{}, s.Task, s.Rev)
 		// Hooks are not fired from index during load; resume them here.
 		e.resume(s.Task)
@@ -220,6 +231,59 @@ func New(ctx context.Context, st *store.Store, cfg Config) (*Engine, error) {
 	go e.run()
 	go e.presenceLoop()
 	return e, nil
+}
+
+// repairOnLoad fixes a record that breaks the invariants, keeping the original in quarantine.
+// Without this, one bad record would make every agent's work stall or go wrong in a way that
+// is hard to trace back.
+func (e *Engine) repairOnLoad(s store.Stored) store.Stored {
+	if core.Validate(s.Task) == nil && core.ValidateAttrs(s.Task) == nil {
+		return s
+	}
+	fixed, did := core.Repair(s.Task, e.now())
+	raw, _ := json.Marshal(s.Task)
+	if err := e.st.Quarantine(s.Task.ID, s.Rev, raw, strings.Join(did, "; ")); err != nil {
+		log.Error("could not keep the original of a damaged task; leaving it as it is", "task", s.Task.ID, "err", err)
+		return s
+	}
+	rev, err := e.st.RawPut(fixed, s.Rev)
+	if err != nil {
+		log.Error("could not repair a damaged task", "task", s.Task.ID, "err", err)
+		return s
+	}
+	log.V(vlog.LevelDefault).Warn("repaired a damaged task", "task", s.Task.ID, "did", did)
+	e.repairs = append(e.repairs, Repair{TaskID: s.Task.ID, Did: did, At: e.now()})
+	return store.Stored{Task: fixed, Rev: rev}
+}
+
+// recoverUnreadable keeps each record that cannot be decoded, and puts a parked stand-in in
+// its place, so the swarm starts and a person can see what happened.
+func (e *Engine) recoverUnreadable(bad []store.Unreadable) []store.Stored {
+	var out []store.Stored
+	for _, b := range bad {
+		why := "unreadable record: " + b.Err.Error()
+		if err := e.st.Quarantine(b.ID, b.Rev, b.Raw, why); err != nil {
+			log.Error("could not keep an unreadable task; it is left out until restart", "task", b.ID, "err", err)
+			continue
+		}
+		now := e.now()
+		t := core.Task{ID: b.ID, Title: "Unreadable record, kept in quarantine", Tier: 1, State: core.Parked,
+			Reason: "unreadable_record", CreatedAt: now, UpdatedAt: now}
+		rev, err := e.st.RawPut(t, b.Rev)
+		if err != nil {
+			log.Error("could not replace an unreadable task", "task", b.ID, "err", err)
+			continue
+		}
+		log.Error("a task could not be read; the original is kept, and the task is parked", "task", b.ID, "err", b.Err)
+		e.repairs = append(e.repairs, Repair{TaskID: b.ID, Did: []string{why, "parked, with the original in quarantine"}, At: now})
+		out = append(out, store.Stored{Task: t, Rev: rev})
+	}
+	return out
+}
+
+// Repairs lists what was fixed when the engine started.
+func (e *Engine) Repairs(ctx context.Context) ([]Repair, error) {
+	return do(ctx, e, func() ([]Repair, error) { return slices.Clone(e.repairs), nil })
 }
 
 func (e *Engine) resume(t core.Task) {

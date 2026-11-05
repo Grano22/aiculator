@@ -130,7 +130,7 @@ func rootCmd() *cobra.Command {
 	addLoggingFlags(root)
 	// Declared here so that cobra does not claim -v for it, since -v is the verbosity.
 	root.Flags().Bool("version", false, "print the version")
-	root.AddCommand(exportCmd(), parallelCmd(), realmCmd(), initCmd(), importCmd(), sourceCmd(), syncCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
+	root.AddCommand(doctorCmd(), exportCmd(), parallelCmd(), realmCmd(), initCmd(), importCmd(), sourceCmd(), syncCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
 		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), pluginCmd(), debugCmd(), logsCmd(), genDocsCmd())
 	addPluginCommands(root)
 	return root

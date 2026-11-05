@@ -203,29 +203,92 @@ type Stored struct {
 	Rev  uint64
 }
 
-// LoadTasks reads every task. Startup recovery uses it.
-func (s *Store) LoadTasks(ctx context.Context) ([]Stored, error) {
+// Unreadable is a stored record that cannot be decoded. It is kept, not thrown away.
+type Unreadable struct {
+	ID  string
+	Raw []byte
+	Rev uint64
+	Err error
+}
+
+// LoadTasks reads every task. Startup recovery uses it. One record that cannot be decoded
+// must not stop the swarm from starting, so it is returned apart for the caller to handle.
+func (s *Store) LoadTasks(ctx context.Context) ([]Stored, []Unreadable, error) {
 	lister, err := s.kv.ListKeys(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer func() { _ = lister.Stop() }()
 	var out []Stored
+	var bad []Unreadable
 	for key := range lister.Keys() {
 		id, ok := strings.CutPrefix(key, taskPrefix)
 		if !ok {
 			continue
 		}
-		t, rev, err := s.GetTask(id)
-		if errors.Is(err, ErrNotFound) {
+		getCtx, cancel := opCtx()
+		e, err := s.kv.Get(getCtx, key)
+		cancel()
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			continue
 		}
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		out = append(out, Stored{t, rev})
+		var t core.Task
+		if err := json.Unmarshal(e.Value(), &t); err != nil {
+			bad = append(bad, Unreadable{ID: id, Raw: e.Value(), Rev: e.Revision(), Err: err})
+			continue
+		}
+		if t.ID == "" {
+			t.ID = id // The key says which task it is, even if the record lost it.
+		}
+		out = append(out, Stored{t, e.Revision()})
+	}
+	return out, bad, nil
+}
+
+// Quarantine keeps a record as it was before a repair replaced it, so nothing is lost.
+func (s *Store) Quarantine(id string, rev uint64, raw []byte, why string) error {
+	kv, err := s.quarantineKV()
+	if err != nil {
+		return err
+	}
+	b, err := json.Marshal(map[string]any{"task_id": id, "rev": rev, "why": why, "at": time.Now().UTC(), "raw": string(raw)})
+	if err != nil {
+		return err
+	}
+	ctx, cancel := opCtx()
+	defer cancel()
+	_, err = kv.Put(ctx, fmt.Sprintf("q.%s.%d", id, rev), b)
+	return err
+}
+
+// Quarantined lists what has been kept from repairs.
+func (s *Store) Quarantined(ctx context.Context) ([]json.RawMessage, error) {
+	kv, err := s.quarantineKV()
+	if err != nil {
+		return nil, err
+	}
+	lister, err := kv.ListKeys(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = lister.Stop() }()
+	var out []json.RawMessage
+	for k := range lister.Keys() {
+		e, err := kv.Get(ctx, k)
+		if err == nil {
+			out = append(out, e.Value())
+		}
 	}
 	return out, nil
+}
+
+// RawPut overwrites a task with compare-and-swap, without the state machine. Only repair uses
+// it, for a record the state machine cannot accept because it is already broken.
+func (s *Store) RawPut(t core.Task, rev uint64) (uint64, error) {
+	return s.UpdateTask(t, rev)
 }
 
 // Planning is the durable planner lease.
@@ -287,6 +350,14 @@ func (s *Store) RawPutForTest(t core.Task) error {
 	ctx, cancel := opCtx()
 	defer cancel()
 	_, err = s.kv.Put(ctx, taskPrefix+t.ID, b)
+	return err
+}
+
+// RawBytesForTest stores bytes under a task's key, as damage would. Tests use it.
+func (s *Store) RawBytesForTest(id string, b []byte) error {
+	ctx, cancel := opCtx()
+	defer cancel()
+	_, err := s.kv.Put(ctx, taskPrefix+id, b)
 	return err
 }
 

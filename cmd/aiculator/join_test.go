@@ -2075,3 +2075,43 @@ func TestParallelPlanAndVerifyEndToEnd(t *testing.T) {
 		t.Errorf("%s", out)
 	}
 }
+
+func TestDoctorFindsAndFixesLeftovers(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	if out := p.run("doctor"); !strings.Contains(out, "running") || !strings.Contains(out, "0 records were repaired") {
+		t.Fatalf("a healthy project: %s", out)
+	}
+	// A worktree left behind by a task that has since been canceled.
+	p.run("task", "add", "--id", "gone", "--title", "x", "--allow-empty")
+	name := strings.TrimSpace(p.run("work", "join", "--tier", "1"))
+	p.run("work", "wait", "--agent", name)
+	p.run("task", "cancel", "gone")
+	out, err := p.tryIn(p.root, "doctor")
+	if err == nil || !strings.Contains(out, "1 worktree belongs") {
+		t.Fatalf("the leftover worktree: %v %s", err, out)
+	}
+	p.run("doctor", "--fix")
+	if out := p.run("doctor"); !strings.Contains(out, "0 worktrees belong") {
+		t.Errorf("after --fix: %s", out)
+	}
+	// With the server gone, stale files are still found and can be removed.
+	p.run("down")
+	if err := os.WriteFile(filepath.Join(p.root, ".swarm/pid"), []byte("999999"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p.root, ".swarm/addr"), []byte("http://127.0.0.1:1"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out, err = p.tryIn(p.root, "doctor")
+	if err == nil || !strings.Contains(out, "999999") || !strings.Contains(out, "not running") {
+		t.Fatalf("stale files: %v %s", err, out)
+	}
+	p.run("doctor", "--fix")
+	if exists(filepath.Join(p.root, ".swarm/pid")) || exists(filepath.Join(p.root, ".swarm/addr")) {
+		t.Error("stale files were left")
+	}
+	if !exists(filepath.Join(p.root, ".swarm/nats")) {
+		t.Error("--fix removed data")
+	}
+}

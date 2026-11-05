@@ -23,7 +23,24 @@ type lazyBuckets struct {
 	mu    sync.Mutex
 	meta  jetstream.KeyValue
 	state jetstream.KeyValue
+	quar  jetstream.KeyValue
 	blobs jetstream.ObjectStore
+}
+
+func (s *Store) quarantineKV() (jetstream.KeyValue, error) {
+	s.lazy.mu.Lock()
+	defer s.lazy.mu.Unlock()
+	if s.lazy.quar != nil {
+		return s.lazy.quar, nil
+	}
+	ctx, cancel := opCtx()
+	defer cancel()
+	kv, err := s.js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{Bucket: "quarantine", History: 1, Storage: jetstream.FileStorage})
+	if err != nil {
+		return nil, fmt.Errorf("quarantine bucket: %w", err)
+	}
+	s.lazy.quar = kv
+	return kv, nil
 }
 
 // ErrTooLarge means a blob is over the size limit.

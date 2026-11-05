@@ -21,6 +21,14 @@ type ImportReq struct {
 }
 
 func (s *Server) metaRoutes(m *http.ServeMux) {
+	m.HandleFunc("GET /v1/doctor", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		h, err := s.S.Doctor(r.Context())
+		reply(w, h, err)
+	}))
+	m.HandleFunc("POST /v1/doctor/fix", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		removed, err := s.S.DoctorFix(r.Context())
+		reply(w, map[string]any{"removed_worktrees": removed}, err)
+	}))
 	m.HandleFunc("GET /v1/sync", s.authed(canView, func(w http.ResponseWriter, _ *http.Request, _ auth.Claims) {
 		if s.Sync == nil {
 			writeJSON(w, http.StatusOK, []any{})

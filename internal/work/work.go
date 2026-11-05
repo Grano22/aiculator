@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -428,6 +429,34 @@ func (m *Manager) removeWorktree(ctx context.Context, dir string) {
 	defer m.gitMu.Unlock()
 	_, _ = m.git(ctx, m.repo, "worktree", "remove", "--force", dir)
 	_ = os.RemoveAll(dir)
+}
+
+var worktreeName = regexp.MustCompile(`^(wt|review|check|merge)-(.+)-(\d+)$`)
+
+// WorktreeTasks lists the tasks that have a worktree on disk, from the folder names.
+func (m *Manager) WorktreeTasks() ([]string, error) {
+	entries, err := os.ReadDir(m.root)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	seen := map[string]bool{}
+	for _, e := range entries {
+		if m := worktreeName.FindStringSubmatch(e.Name()); m != nil && e.IsDir() {
+			seen[m[2]] = true
+		}
+	}
+	return slices.Sorted(maps.Keys(seen)), nil
+}
+
+// Prune lets git forget worktrees whose folders are gone.
+func (m *Manager) Prune(ctx context.Context) error {
+	m.gitMu.Lock()
+	defer m.gitMu.Unlock()
+	_, err := m.git(ctx, m.repo, "worktree", "prune")
+	return err
 }
 
 // Cleanup removes a finished task's worktrees. Its refs stay, as the audit trail.
