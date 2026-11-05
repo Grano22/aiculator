@@ -256,7 +256,7 @@ jobs:
           git add reports
           if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
           git commit -q -m "reports: ${GITHUB_SHA::7}"
-          for i in 1 2 3; do
+          for _ in 1 2 3; do
             git push origin HEAD:gh-pages && exit 0
             git pull --rebase -q origin gh-pages
           done
