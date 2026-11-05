@@ -3,9 +3,19 @@
 Run the whole set with:
 
 ```sh
-go test -race ./...     # Includes the crash test
-./scripts/formal.sh     # TLA+ and Alloy; needs Java
+go test -race ./...         # Includes the crash test
+./scripts/formal.sh         # TLA+ and Alloy; needs Java
+./scripts/coverage.sh       # Coverage of unit and end-to-end tests, held to minimums
+./scripts/bench.sh HEAD~1   # Benchmarks of this commit and another, side by side
 ```
+
+## Reports in CI
+
+Every CI run builds one HTML report, with nothing loaded from elsewhere, as the `ci-report` artifact. Each job also writes a short summary to its page. On master, the report is published to [reports/latest](https://grano22.github.io/aiculator/reports/latest/).
+
+- **Tests:** results from Linux and macOS under the race detector, and from the coverage run, by package, with the slowest tests and the output of every failure. Tests run in a shuffled order, so a test that only passes after another one fails. The seed is in the log. Only failed tests run again: one that then passes is marked flaky. It is listed on the report but doesn't fail the run. A package that failed to build, panicked or timed out always fails the run.
+- **Coverage:** by package and file, from unit tests and from the binary the end-to-end tests start, merged, with a line-by-line view. `scripts/coverage-min.txt` holds each package to a minimum.
+- **Performance:** a runner's speed varies between runs, so comparing with numbers from an earlier run proves little. `scripts/bench.sh` builds the base commit (the pull request's base, or the previous commit on master) and runs it in turns with this one, six times each, on the same runner. A change counts only if the Mann-Whitney U test gives p < 0.05, which is the test `benchstat` uses. A run fails if a benchmark is significantly more than 25% slower, allocates more than 10% more, or is over its ceiling in `scripts/perf-budgets.txt`. Medians from master are kept in a history and charted.
 
 ## Crash testing
 
@@ -43,7 +53,7 @@ Models named `Bug` break a rule on purpose and must fail, which proves the check
 | What | Measured on an M-series Mac | Budget |
 |---|---|---|
 | Add a task and wake a waiting agent, p99 | 0.32 ms | 5 ms, or 50 ms in CI |
-| One add-and-grant cycle | 55 µs, about 18,000 per second | 2 ms |
+| One add-and-grant cycle | 57 µs, about 18,000 per second | 2 ms |
 | One grant among 32 competing agents | 18 µs | 2 ms |
 | Grant with 20,000 tasks waiting, p99 | 32 µs | 10 ms |
 | Wake with 2,000 agents waiting, p99 | 0.78 ms | 25 ms |
@@ -52,6 +62,8 @@ Models named `Bug` break a rule on purpose and must fail, which proves the check
 | Restart with 20,000 tasks | 0.31 s | 5 s |
 | Dashboard snapshot with 20,000 tasks, p99 | 6 ms | 100 ms |
 | Heap per task | 1.3 KiB | 16 KiB |
+| Heartbeat in the engine | 1.5 µs | 20 µs in CI |
+| Heartbeat over HTTP, token check included | 49 µs | 400 µs in CI |
 | CLI start | 9 ms | 200 ms |
 | Server ready | 20 ms | 3 s |
 

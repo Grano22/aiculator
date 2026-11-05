@@ -1,0 +1,17 @@
+# Ceilings for benchmark medians on a CI runner, which is several times slower than a
+# laptop: each catches a change that loses an optimization outright, not a wobble. The
+# report also fails a run that is significantly slower than its base on the same runner,
+# which is the finer check. Names are package.Benchmark.
+#
+# name                                   unit        max
+internal/engine.HeartbeatWithWaiters     ns/op       20000
+internal/engine.HeartbeatWithWaiters     allocs/op   12
+internal/engine.GrantCycle               ns/op       500000
+internal/engine.GrantCycle               allocs/op   220
+internal/engine.AddAndGrant              ns/op       600000
+internal/engine.AddAndGrant              allocs/op   240
+internal/api.HTTPHeartbeat               ns/op       400000
+internal/api.HTTPHeartbeat               allocs/op   140
+internal/auth.Verify                     ns/op       2000
+internal/auth.Verify                     allocs/op   3
+internal/store.MarshalTaskPointer        B/op        900

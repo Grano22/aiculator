@@ -32,8 +32,33 @@ jobs:
           sudo apt-get install -y bubblewrap
           # Ubuntu blocks the unprivileged namespaces bubblewrap needs by default.
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      # Shuffled, so that a test that only passes after another one is caught. The order's
+      # seed is in the log, for running it again the same way.
       - name: Test with the race detector
-        run: go test -race -count=1 -timeout 15m ./...
+        id: test
+        run: |
+          mkdir -p results
+          go test -json -race -count=1 -shuffle=on -timeout 15m ./... > results/test.json || echo "failed=1" >> "$GITHUB_OUTPUT"
+      # Only the tests that failed run again. One that then passes is reported as flaky,
+      # and does not fail the run, but it is listed on the report for someone to fix.
+      - name: Run failed tests again
+        if: steps.test.outputs.failed == '1'
+        run: |
+          : > results/rerun.json
+          go run ./scripts/report failed results/test.json | while read -r pkg pattern; do
+            go test -json -race -count=1 -run "$pattern" "$pkg" >> results/rerun.json || true
+          done
+      - name: Report
+        run: |
+          rerun=()
+          if [ -f results/rerun.json ]; then rerun=(--rerun results/rerun.json); fi
+          go run ./scripts/report --title "Tests on ${{ runner.os }}" --tests "${{ runner.os }} race=results/test.json" "${rerun[@]}" --out results/report
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: tests-${{ runner.os }}
+          path: results
+          retention-days: 30
       - name: Prove the bubblewrap escape test really ran
         if: runner.os == 'Linux'
         run: |
@@ -94,15 +119,146 @@ jobs:
           go-version-file: go.mod
       - run: go test ./internal/core -run='^$' -fuzz=FuzzApply -fuzztime=60s
 
-  performance:
-    name: Performance budgets
+  coverage:
+    name: Coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      - run: go test -count=1 -v -run TestPerf -timeout 10m ./internal/engine ./cmd/aiculator
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      # Unit tests and the binary the end-to-end tests start, merged, then held to the
+      # minimums in scripts/coverage-min.txt.
+      - name: Measure coverage
+        id: cover
+        run: ./scripts/coverage.sh coverage || echo "status=$?" >> "$GITHUB_OUTPUT"
+      - name: Report
+        run: |
+          go run ./scripts/report --title "Coverage" --tests "Linux coverage=coverage/test.json" \
+            --cover coverage/coverage.out --cover-html coverage/coverage.html --out coverage/report || true
+          exit "${{ steps.cover.outputs.status || 0 }}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: coverage
+          path: coverage
+          retention-days: 30
+
+  performance:
+    name: Performance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Performance budgets under load
+        run: go test -count=1 -v -run TestPerf -timeout 10m ./internal/engine ./cmd/aiculator
+      # Runner speed varies between runs, so a number from another run proves little. The
+      # base is built and run here too, in turns with this commit, and the two compared.
+      - name: Benchmarks against the base
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: ./scripts/bench.sh "$BASE" bench 6
+      - name: Load the history from master
+        run: |
+          if git fetch --depth=1 origin gh-pages 2>/dev/null; then
+            git show FETCH_HEAD:reports/history.json > bench/history.json 2>/dev/null || rm -f bench/history.json
+          fi
+      - name: Report
+        env:
+          RECORD: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        run: |
+          record=()
+          if [ "$RECORD" = true ]; then record=(--record); fi
+          go run ./scripts/report --title "Performance" --bench-base bench/base.txt --bench-head bench/head.txt \
+            --budgets scripts/perf-budgets.txt --history bench/history.json "${record[@]}" \
+            --sha "$GITHUB_SHA" --ref "$GITHUB_REF_NAME" --out bench/report
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: performance
+          path: bench
+          retention-days: 90
+
+  report:
+    name: Report
+    needs: [test, coverage, performance]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: in
+      # One page with everything: each job already passed or failed on its own results,
+      # so this only gathers them.
+      - name: Build the report
+        run: |
+          args=()
+          for os in Linux macOS; do
+            [ -f "in/tests-$os/test.json" ] && args+=(--tests "$os race=in/tests-$os/test.json")
+            [ -f "in/tests-$os/rerun.json" ] && args+=(--rerun "in/tests-$os/rerun.json")
+          done
+          [ -f in/coverage/test.json ] && args+=(--tests "Linux coverage=in/coverage/test.json")
+          [ -f in/coverage/coverage.out ] && args+=(--cover in/coverage/coverage.out --cover-html in/coverage/coverage.html)
+          [ -f in/performance/head.txt ] && args+=(--bench-head in/performance/head.txt --budgets scripts/perf-budgets.txt)
+          [ -f in/performance/base.txt ] && args+=(--bench-base in/performance/base.txt)
+          [ -f in/performance/history.json ] && args+=(--history in/performance/history.json)
+          go run ./scripts/report --title "aiculator CI" --sha "$GITHUB_SHA" --ref "$GITHUB_REF_NAME" "${args[@]}" --out site || true
+          [ -f in/performance/history.json ] && cp in/performance/history.json site/history.json
+          true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ci-report
+          path: site
+          retention-days: 90
+
+  publish-report:
+    name: Publish the report
+    needs: report
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # The docs publish to the same branch, so the two take turns.
+    concurrency:
+      group: docs-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ci-report
+          path: site
+      - name: Commit to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf reports/latest
+          mkdir -p reports/latest
+          cp -R site/. reports/latest/
+          if [ -f site/history.json ]; then cp site/history.json reports/history.json; fi
+          git add reports
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git commit -q -m "reports: ${GITHUB_SHA::7}"
+          for i in 1 2 3; do
+            git push origin HEAD:gh-pages && exit 0
+            git pull --rebase -q origin gh-pages
+          done
+          exit 1
 
   cross-build:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
