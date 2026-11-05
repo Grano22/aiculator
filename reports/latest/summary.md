@@ -2,36 +2,36 @@
 
 | Tests | Passed | Failed | Flaky | Skipped | Time |
 |---|---:|---:|---:|---:|---:|
-| Linux race | 397 | 0 | 0 | 3 | 336s |
-| macOS race | 399 | 0 | 0 | 1 | 321s |
-| Linux coverage | 412 | 0 | 0 | 3 | 186s |
+| Linux race | 397 | 0 | 0 | 3 | 279s |
+| macOS race | 399 | 0 | 0 | 1 | 352s |
+| Linux coverage | 412 | 0 | 0 | 3 | 170s |
 
 **Coverage:** 82.3% of statements, unit and end-to-end tests together.
 
 | Benchmark | Unit | Base | Head | Change | p | Budget |
 |---|---|---:|---:|---:|---:|---:|
-| internal/api.HTTPHeartbeat | ns/op | 149324 | 149233 ±1% | ~ | 0.937 | 400000 |
-| internal/api.HTTPHeartbeat | B/op | 11344 | 11311 ±0% | -0.3% 🟢 | 0.015 |  |
+| internal/api.HTTPHeartbeat | ns/op | 95720 | 94993 ±1% | ~ | 0.093 | 400000 |
+| internal/api.HTTPHeartbeat | B/op | 11302 | 11301 ±0% | ~ | 0.937 |  |
 | internal/api.HTTPHeartbeat | allocs/op | 112 | 112 ±0% | ~ | 1.000 | 140 |
-| internal/auth.Verify | ns/op | 68.9 | 68.3 ±1% | -1.0% 🟢 | 0.026 | 2000 |
+| internal/auth.Verify | ns/op | 57.9 | 58.0 ±20% | ~ | 0.937 | 2000 |
 | internal/auth.Verify | B/op | 80.0 | 80.0 ±0% | ~ | 1.000 |  |
 | internal/auth.Verify | allocs/op | 1.0 | 1.0 ±0% | ~ | 1.000 | 3.0 |
-| internal/engine.AddAndGrant | ns/op | 183269 | 182065 ±11% | ~ | 0.589 | 600000 |
-| internal/engine.AddAndGrant | B/op | 18643 | 18602 ±1% | ~ | 0.310 |  |
-| internal/engine.AddAndGrant | allocs/op | 189 | 188 ±0% | -0.5% 🟢 | 0.015 | 240 |
-| internal/engine.GrantCycle | ns/op | 173691 | 173416 ±2% | ~ | 1.000 | 500000 |
-| internal/engine.GrantCycle | B/op | 16930 | 16960 ±0% | ~ | 0.589 |  |
-| internal/engine.GrantCycle | allocs/op | 176 | 175 ±1% | ~ | 0.589 | 220 |
-| internal/engine.HeartbeatWithWaiters | ns/op | 2714 | 2751 ±1% | +1.4% | 0.009 | 20000 |
-| internal/engine.HeartbeatWithWaiters | B/op | 853 | 853 ±0% | ~ | 1.000 |  |
+| internal/engine.AddAndGrant | ns/op | 107780 | 107903 ±11% | ~ | 0.589 | 600000 |
+| internal/engine.AddAndGrant | B/op | 19277 | 19259 ±1% | ~ | 0.699 |  |
+| internal/engine.AddAndGrant | allocs/op | 190 | 189 ±0% | ~ | 0.699 | 240 |
+| internal/engine.GrantCycle | ns/op | 97103 | 97018 ±3% | ~ | 1.000 | 500000 |
+| internal/engine.GrantCycle | B/op | 17171 | 17106 ±4% | ~ | 0.394 |  |
+| internal/engine.GrantCycle | allocs/op | 175 | 175 ±1% | ~ | 0.699 | 220 |
+| internal/engine.HeartbeatWithWaiters | ns/op | 1946 | 1921 ±1% | ~ | 0.093 | 20000 |
+| internal/engine.HeartbeatWithWaiters | B/op | 851 | 851 ±0% | ~ | 0.699 |  |
 | internal/engine.HeartbeatWithWaiters | allocs/op | 5.0 | 5.0 ±0% | ~ | 1.000 | 12.0 |
-| internal/store.MarshalTaskPointer | ns/op | 2928 | 2933 ±1% | ~ | 0.310 |  |
+| internal/store.MarshalTaskPointer | ns/op | 2078 | 2079 ±11% | ~ | 0.818 |  |
 | internal/store.MarshalTaskPointer | B/op | 712 | 712 ±0% | ~ | 1.000 | 900 |
 | internal/store.MarshalTaskPointer | allocs/op | 8.0 | 8.0 ±0% | ~ | 1.000 |  |
-| internal/store.MarshalTaskValue | ns/op | 3318 | 3320 ±1% | ~ | 0.818 |  |
-| internal/store.MarshalTaskValue | B/op | 1865 | 1865 ±0% | ~ | 1.000 |  |
+| internal/store.MarshalTaskValue | ns/op | 2352 | 2347 ±1% | ~ | 0.394 |  |
+| internal/store.MarshalTaskValue | B/op | 1864 | 1865 ±0% | ~ | 0.394 |  |
 | internal/store.MarshalTaskValue | allocs/op | 10.0 | 10.0 ±0% | ~ | 1.000 |  |
-| internal/vlog.Disabled | ns/op | 3.1 | 3.1 ±0% | ~ | 0.818 |  |
+| internal/vlog.Disabled | ns/op | 2.4 | 2.5 ±4% | ~ | 0.937 |  |
 | internal/vlog.Disabled | B/op | 0 | 0 ±0% | ~ | 1.000 |  |
 | internal/vlog.Disabled | allocs/op | 0 | 0 ±0% | ~ | 1.000 |  |
 

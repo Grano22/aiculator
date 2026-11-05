@@ -131,7 +131,7 @@
 				
 				<option value="file37">github.com/Grano22/aiculator/internal/core/task.go (95.2%)</option>
 				
-				<option value="file38">github.com/Grano22/aiculator/internal/driver/driver.go (70.4%)</option>
+				<option value="file38">github.com/Grano22/aiculator/internal/driver/driver.go (71.4%)</option>
 				
 				<option value="file39">github.com/Grano22/aiculator/internal/driver/proc_unix.go (66.7%)</option>
 				
@@ -11496,14 +11496,14 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
                         <span class="cov8" title="1">return sessionResult{ok: true, tokens: tokens, text: h.Text()}</span>
                 case &lt;-exited:
                         // The prompt may have finished just before the exit, so prefer its result.
-                        <span class="cov0" title="0">select </span>{
+                        <span class="cov8" title="1">select </span>{
                         case out := &lt;-done:
-                                <span class="cov0" title="0">if out.err == nil &amp;&amp; out.resp.StopReason == acp.StopReasonEndTurn </span>{
+                                <span class="cov8" title="1">if out.err == nil &amp;&amp; out.resp.StopReason == acp.StopReasonEndTurn </span>{
                                         <span class="cov0" title="0">return sessionResult{ok: true, text: h.Text()}
 </span>                                }
                         case &lt;-time.After(200 * time.Millisecond):<span class="cov0" title="0"></span>
                         }
-                        <span class="cov0" title="0">return sessionResult{note: "agent_crashed", text: h.Text()}</span>
+                        <span class="cov8" title="1">return sessionResult{note: "agent_crashed", text: h.Text()}</span>
                 case &lt;-tick.C:
                         // Saving also renews the lease. A rejection means the swarm has given
                         // this task away, for example because the agent went zombie.

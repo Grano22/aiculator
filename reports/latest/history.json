@@ -136,5 +136,51 @@
         "ns/op": 3.123
       }
     }
+  },
+  {
+    "sha": "2a6327ee1c5dce03cdf4127010e6ab989ea4632a",
+    "at": "2026-11-05T21:46:13.585874488Z",
+    "medians": {
+      "internal/api.HTTPHeartbeat": {
+        "B/op": 11301,
+        "allocs/op": 112,
+        "ns/op": 94993
+      },
+      "internal/auth.Verify": {
+        "B/op": 80,
+        "allocs/op": 1,
+        "ns/op": 57.995000000000005
+      },
+      "internal/engine.AddAndGrant": {
+        "B/op": 19258.5,
+        "allocs/op": 189,
+        "ns/op": 107902.5
+      },
+      "internal/engine.GrantCycle": {
+        "B/op": 17106,
+        "allocs/op": 175,
+        "ns/op": 97018
+      },
+      "internal/engine.HeartbeatWithWaiters": {
+        "B/op": 851,
+        "allocs/op": 5,
+        "ns/op": 1920.5
+      },
+      "internal/store.MarshalTaskPointer": {
+        "B/op": 712,
+        "allocs/op": 8,
+        "ns/op": 2078.5
+      },
+      "internal/store.MarshalTaskValue": {
+        "B/op": 1864.5,
+        "allocs/op": 10,
+        "ns/op": 2347
+      },
+      "internal/vlog.Disabled": {
+        "B/op": 0,
+        "allocs/op": 0,
+        "ns/op": 2.45
+      }
+    }
   }
 ]
