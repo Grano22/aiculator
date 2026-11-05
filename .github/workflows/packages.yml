@@ -221,6 +221,17 @@ jobs:
           if ($LASTEXITCODE -eq 0) { Write-Output "already published"; exit 0 }
           $open = gh pr list --repo microsoft/winget-pkgs --state open --search "Grano22.Aiculator version $env:VERSION" --json number --jq length
           if ($open -ne "0") { Write-Output "a pull request is already open"; exit 0 }
+          # wingetcreate branches from the fork, and fails when the fork is far behind, so
+          # bring the fork's master up to date with microsoft/winget-pkgs first. This runs as
+          # the fork's owner, with the same token wingetcreate uses. A fork that does not
+          # exist yet is made fresh by wingetcreate, so there is nothing to sync.
+          $env:GH_TOKEN = $env:WINGET_CREATE_GITHUB_TOKEN
+          $owner = gh api user --jq .login
+          gh api "repos/$owner/winget-pkgs" --silent 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh api -X POST "repos/$owner/winget-pkgs/merge-upstream" -f branch=master --jq .message
+            if ($LASTEXITCODE -ne 0) { Write-Output "::warning::could not sync $owner/winget-pkgs with upstream; submitting anyway" }
+          }
           Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
           .\wingetcreate.exe submit --no-open --prtitle "New version: Grano22.Aiculator version $env:VERSION" packaging\winget
           if ($LASTEXITCODE -ne 0) { exit 1 }
