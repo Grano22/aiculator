@@ -1,0 +1,28 @@
+# Minimum coverage per package, from scripts/coverage.sh: unit tests plus the binary the
+# end-to-end tests run. Each sits a little below what was measured, so that a drop fails
+# CI while small changes do not. Raise them as coverage grows; lowering one needs a reason.
+cmd/aiculator                76
+internal/api                 81
+internal/auth                72
+internal/client              79
+internal/connect             74
+internal/core                89
+internal/driver              68
+internal/engine              86
+internal/export              90
+internal/harness             84
+internal/meta                85
+internal/parallel            93
+internal/prompt              90
+internal/realm               78
+internal/sandbox             68
+internal/skillpack           79
+internal/store               74
+internal/swarm               77
+internal/tmpl                84
+internal/tui                 75
+internal/vlog                92
+internal/work                82
+pkg/observe                  96
+pkg/plugin                   91
+plugins/webdash              53

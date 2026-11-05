@@ -27,7 +27,15 @@ import (
 func buildBinary(t *testing.T) string {
 	t.Helper()
 	bin := filepath.Join(t.TempDir(), "swarm")
-	if out, err := exec.Command("go", "build", "-o", bin, ".").CombinedOutput(); err != nil {
+	args := []string{"build", "-o", bin, "."}
+	// With AICULATOR_COVERDIR set, as scripts/coverage.sh does, the binary records which code
+	// each run reached, including the server it starts. Otherwise these tests would not count.
+	// It cannot be GOCOVERDIR itself, because go test replaces that with a folder of its own.
+	if dir := os.Getenv("AICULATOR_COVERDIR"); dir != "" {
+		args = []string{"build", "-cover", "-coverpkg=github.com/Grano22/aiculator/...", "-o", bin, "."}
+		_ = os.Setenv("GOCOVERDIR", dir) // Every process the tests start inherits it.
+	}
+	if out, err := exec.Command("go", args...).CombinedOutput(); err != nil {
 		t.Fatalf("build: %v\n%s", err, out)
 	}
 	return bin

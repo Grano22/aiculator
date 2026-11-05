@@ -42,7 +42,9 @@ $RECYCLE.BIN/
 *.out
 *.prof
 *.pprof
-coverage.*
+coverage.out
+coverage.txt
+coverage.html
 *.cover
 *.coverprofile
 cover.html
@@ -91,3 +93,6 @@ node_modules/
 *.bak
 *.orig
 *.rej
+
+# Coverage reports from scripts/coverage.sh
+/coverage/

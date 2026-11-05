@@ -15,17 +15,7 @@ import (
 // Without this, the proofs would be about a model that could silently drift away
 // from the code.
 func TestSpecMatchesCode(t *testing.T) {
-	src, err := os.ReadFile("../../spec/tla/Swarm.tla")
-	if err != nil {
-		t.Fatal(err)
-	}
-	spec := map[string]bool{}
-	for _, m := range regexp.MustCompile(`<<"(\w+)", "(\w+)", "(\w+)">>`).FindAllStringSubmatch(string(src), -1) {
-		spec[m[1]+" "+m[2]+" "+m[3]] = true
-	}
-	if len(spec) < 30 {
-		t.Fatalf("parsed only %d transitions from the spec", len(spec))
-	}
+	spec := specTransitions(t)
 
 	kinds := []CmdKind{CmdPublish, CmdGrant, CmdHeartbeat, CmdProgress, CmdSubmit, CmdChecks, CmdVerdict, CmdMerged, CmdFail, CmdRelease, CmdExpire, CmdRecover, CmdUnpark, CmdCancel, CmdAmend}
 	actors := []string{"owner", "subm", "other", "system:x"}
@@ -83,4 +73,21 @@ func TestSpecMatchesCode(t *testing.T) {
 		t.Errorf("the spec allows transitions the code does not:\n%v", extra)
 	}
 	t.Logf("%d transitions agree", len(code))
+}
+
+// specTransitions reads the transition table from spec/tla/Swarm.tla.
+func specTransitions(t *testing.T) map[string]bool {
+	t.Helper()
+	src, err := os.ReadFile("../../spec/tla/Swarm.tla")
+	if err != nil {
+		t.Fatal(err)
+	}
+	spec := map[string]bool{}
+	for _, m := range regexp.MustCompile(`<<"(\w+)", "(\w+)", "(\w+)">>`).FindAllStringSubmatch(string(src), -1) {
+		spec[m[1]+" "+m[2]+" "+m[3]] = true
+	}
+	if len(spec) < 30 {
+		t.Fatalf("parsed only %d transitions from the spec", len(spec))
+	}
+	return spec
 }
