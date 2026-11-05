@@ -43,6 +43,9 @@ type CLI struct {
 	Snapshot func(ctx context.Context) (observe.Snapshot, error)
 	// Fleet reads every realm on this machine, as JSON that the caller passes on.
 	Fleet func(ctx context.Context, ttl time.Duration) (any, error)
+	// Analytics reads the flow analytics of one realm, or of this project when realm is
+	// empty. query is a URL query: window, tier, label and points.
+	Analytics func(ctx context.Context, realm, query string) (observe.Analytics, error)
 }
 
 // Event is a committed task change.

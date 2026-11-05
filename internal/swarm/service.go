@@ -33,6 +33,10 @@ type Service struct {
 	realm, realmPath string
 	plainFetcher     meta.Downloader
 
+	// Flow holds every task's state changes, read from the event log, for the analytics.
+	Flow     *observe.FlowIndex
+	flowDone chan struct{}
+
 	bg     context.Context
 	cancel context.CancelFunc
 	ready  chan struct{}
@@ -86,12 +90,37 @@ func New(ctx context.Context, o Options) (*Service, error) {
 	}
 	s.Engine = e
 	close(s.ready) // Hooks fired during recovery can now reach the engine.
+	s.startFlow()
 	return s, nil
+}
+
+// startFlow reads the event log into the flow index, then keeps it current. It runs beside
+// everything else: the analytics are ready when it has caught up, and until then say so.
+func (s *Service) startFlow() {
+	s.Flow = observe.NewFlowIndex()
+	s.flowDone = make(chan struct{})
+	go func() {
+		defer close(s.flowDone)
+		err := s.Store.ReadEvents(s.bg, func(t core.Task, at time.Time) {
+			s.Flow.Observe(observe.Revision{ID: t.ID, State: string(t.State), Tier: t.Tier, Attempt: t.Attempt, Reason: t.Reason, Labels: t.Labels, At: at})
+		}, s.Flow.SetReady)
+		if err != nil && s.bg.Err() == nil {
+			s.log.Error("flow analytics are off: the event log could not be read", "err", err)
+		}
+	}()
+}
+
+// Analytics reports how tasks flowed, for the dashboard.
+func (s *Service) Analytics(q observe.Query) observe.Analytics {
+	return s.Flow.Analyze(q, time.Now())
 }
 
 // Close stops background work and the engine.
 func (s *Service) Close() {
 	s.cancel()
+	if s.flowDone != nil {
+		<-s.flowDone
+	}
 	s.Engine.Close()
 }
 

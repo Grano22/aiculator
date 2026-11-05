@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -119,7 +120,10 @@ func securityHeaders(next http.Handler) http.Handler {
 // FleetHandler serves the page across realms. Reading the realms takes this user's own
 // tokens, so it runs in this command and not in any project's server: otherwise one project's
 // server would have to hold the keys to all the others.
-func FleetHandler(session string, fetch func(ctx context.Context) (any, error)) (http.Handler, error) {
+//
+// analytics, when set, answers /api/fleet/analytics?realm=NAME for one realm's flow charts.
+// The realm and filters go on to that realm's own server, which checks them.
+func FleetHandler(session string, fetch func(ctx context.Context) (any, error), analytics func(ctx context.Context, realm, query string) (any, error)) (http.Handler, error) {
 	sub, err := fs.Sub(assets, "static")
 	if err != nil {
 		return nil, err
@@ -129,10 +133,42 @@ func FleetHandler(session string, fetch func(ctx context.Context) (any, error)) 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFileFS(w, r, sub, "fleet.html")
 	})
-	mux.HandleFunc("GET /api/fleet", func(w http.ResponseWriter, r *http.Request) {
+	authorized := func(w http.ResponseWriter, r *http.Request) bool {
 		got := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if subtle.ConstantTimeCompare([]byte(got), []byte(session)) != 1 {
 			http.Error(w, "this page needs the link printed by aiculator web --all", http.StatusUnauthorized)
+			return false
+		}
+		return true
+	}
+	mux.HandleFunc("GET /api/fleet/analytics", func(w http.ResponseWriter, r *http.Request) {
+		if !authorized(w, r) {
+			return
+		}
+		if analytics == nil {
+			http.Error(w, "analytics are not available here", http.StatusNotFound)
+			return
+		}
+		q := r.URL.Query()
+		name := q.Get("realm")
+		q.Del("realm")
+		// Only the known filters go on, so nothing else in this URL reaches a server.
+		pass := url.Values{}
+		for _, k := range []string{"window", "tier", "label", "points"} {
+			if v := q.Get(k); v != "" {
+				pass.Set(k, v)
+			}
+		}
+		v, err := analytics(r.Context(), name, pass.Encode())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(v)
+	})
+	mux.HandleFunc("GET /api/fleet", func(w http.ResponseWriter, r *http.Request) {
+		if !authorized(w, r) {
 			return
 		}
 		v, err := fetch(r.Context())
@@ -152,7 +188,11 @@ func serveFleet(ctx context.Context, cli *plugin.CLI, ttl time.Duration, noOpen 
 		return err
 	}
 	session := hex.EncodeToString(raw[:])
-	h, err := FleetHandler(session, func(ctx context.Context) (any, error) { return cli.Fleet(ctx, ttl) })
+	var analytics func(ctx context.Context, realm, query string) (any, error)
+	if cli.Analytics != nil {
+		analytics = func(ctx context.Context, realm, query string) (any, error) { return cli.Analytics(ctx, realm, query) }
+	}
+	h, err := FleetHandler(session, func(ctx context.Context) (any, error) { return cli.Fleet(ctx, ttl) }, analytics)
 	if err != nil {
 		return err
 	}

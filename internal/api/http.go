@@ -6,8 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -140,6 +142,43 @@ func canView(c auth.Claims) bool   { return c.Admin || c.Viewer }
 func isPlanner(c auth.Claims) bool { return c.Admin || c.Planner }
 func anyone(auth.Claims) bool      { return true }
 
+// AnalyticsQuery reads the analytics filters from a URL: window (such as 6h, 7d or all),
+// tier, label (key=value, or key) and points.
+func AnalyticsQuery(v url.Values) (observe.Query, error) {
+	var q observe.Query
+	switch w := v.Get("window"); w {
+	case "", "all":
+	default:
+		d, err := parseSpan(w)
+		if err != nil || d <= 0 {
+			return q, fmt.Errorf("bad window %q: use a duration such as 6h or 7d, or all", w)
+		}
+		q.Window = d
+	}
+	for name, dst := range map[string]*int{"tier": &q.Tier, "points": &q.Points} {
+		if s := v.Get(name); s != "" {
+			n, err := strconv.Atoi(s)
+			if err != nil || n < 0 {
+				return q, fmt.Errorf("bad %s %q", name, s)
+			}
+			*dst = n
+		}
+	}
+	q.Label = v.Get("label")
+	if len(q.Label) > 200 {
+		return q, errors.New("label filter too long")
+	}
+	return q, nil
+}
+
+func parseSpan(s string) (time.Duration, error) {
+	if days, ok := strings.CutSuffix(s, "d"); ok {
+		n, err := strconv.ParseFloat(days, 64)
+		return time.Duration(n * float64(24*time.Hour)), err
+	}
+	return time.ParseDuration(s)
+}
+
 // LeaseReq is the body of the agent calls that act on a held task.
 type LeaseReq struct {
 	TaskID string `json:"task_id"`
@@ -243,6 +282,14 @@ func (s *Server) Routes() *http.ServeMux {
 	m.HandleFunc("GET /v1/observe", s.authed(canView, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
 		snap, err := s.S.Snapshot(r.Context(), s.Version)
 		reply(w, snap, err)
+	}))
+	m.HandleFunc("GET /v1/analytics", s.authed(canView, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		q, err := AnalyticsQuery(r.URL.Query())
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, Error{err.Error()})
+			return
+		}
+		writeJSON(w, http.StatusOK, s.S.Analytics(q))
 	}))
 	m.HandleFunc("GET /metrics", s.authed(canView, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
 		snap, err := s.S.Snapshot(r.Context(), s.Version)

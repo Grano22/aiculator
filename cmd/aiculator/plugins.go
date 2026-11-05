@@ -18,6 +18,7 @@ import (
 
 	"github.com/Grano22/aiculator/internal/api"
 	"github.com/Grano22/aiculator/internal/core"
+	"github.com/Grano22/aiculator/internal/realm"
 	"github.com/Grano22/aiculator/pkg/observe"
 	"github.com/Grano22/aiculator/pkg/plugin"
 )
@@ -72,6 +73,25 @@ func pluginCLI() *plugin.CLI {
 		},
 		Fleet: func(ctx context.Context, ttl time.Duration) (any, error) {
 			return fleetWithLinks(ctx, int64(ttl.Seconds()))
+		},
+		Analytics: func(ctx context.Context, name, query string) (observe.Analytics, error) {
+			var a observe.Analytics
+			c, err := adminClient()
+			if name != "" {
+				r, gerr := realm.Get(name)
+				if gerr != nil {
+					return a, gerr
+				}
+				c, err = realm.Local(r)
+			}
+			if err != nil {
+				return a, err
+			}
+			path := "/v1/analytics"
+			if query != "" {
+				path += "?" + query
+			}
+			return a, c.Get(ctx, path, &a)
 		},
 	}
 }

@@ -285,4 +285,11 @@ if (!token) {
   poll();
   setInterval(poll, INTERVAL_MS);
   follow();
+  const flow = window.AiculatorCharts.mount($("flow-analytics"), async (params) => {
+    const r = await fetch("../../v1/analytics?" + params.toString(), { headers: { Authorization: "Bearer " + token }, cache: "no-store" });
+    if (!r.ok) throw new Error("server answered " + r.status);
+    return r.json();
+  });
+  // The analytics change slowly and cost more to work out, so they refresh less often.
+  setInterval(() => { if (!paused && !document.hidden) flow.refresh(); }, 15000);
 }

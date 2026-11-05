@@ -62,7 +62,22 @@ function realmCell(v) {
   return td;
 }
 
+let liveRealms = [];
+let flow = null;
+
 function render(views) {
+  const names = views.filter((v) => v.live).map((v) => v.realm.name);
+  const changed = names.join("\n") !== liveRealms.join("\n");
+  liveRealms = names;
+  if (!flow) {
+    flow = window.AiculatorCharts.mount($("flow-analytics"), async (params) => {
+      const r = await fetch("api/fleet/analytics?" + params.toString(), { headers: { Authorization: "Bearer " + token } });
+      if (!r.ok) throw new Error("status " + r.status);
+      return r.json();
+    }, { realms: () => liveRealms });
+  } else if (changed) {
+    flow.refresh();
+  }
   const totals = { running: 0, ready: 0, work: 0, agents: 0, done: 0, parked: 0 };
   const realms = clear($("realms").tBodies[0]);
   const tasks = clear($("tasks").tBodies[0]);
@@ -134,3 +149,5 @@ $("pause").addEventListener("click", () => {
 });
 tick();
 setInterval(tick, INTERVAL_MS);
+// The analytics change slowly and cost more to work out, so they refresh less often.
+setInterval(() => { if (!paused && flow && !document.hidden) flow.refresh(); }, 15000);

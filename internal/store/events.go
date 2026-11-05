@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
@@ -222,4 +223,43 @@ func (s *Store) FollowTasks(ctx context.Context, durable string, filter []byte, 
 		case <-time.After(5 * time.Second):
 		}
 	}, nil
+}
+
+// ReadEvents calls fn for every event in the log, oldest first, with the time it was
+// recorded. It calls caughtUp once it has delivered everything that was there when it
+// started, then keeps delivering new events until ctx ends. Events are decoded one at a
+// time, so reading a long log does not hold it all in memory.
+func (s *Store) ReadEvents(ctx context.Context, fn func(t core.Task, at time.Time), caughtUp func()) error {
+	info, err := s.stream.Info(ctx)
+	if err != nil {
+		return err
+	}
+	last := info.State.LastSeq
+	cons, err := s.stream.OrderedConsumer(ctx, jetstream.OrderedConsumerConfig{})
+	if err != nil {
+		return err
+	}
+	var once sync.Once
+	if info.State.Msgs == 0 {
+		once.Do(caughtUp)
+	}
+	cc, err := cons.Consume(func(m jetstream.Msg) {
+		meta, err := m.Metadata()
+		if err != nil {
+			return
+		}
+		var t core.Task
+		if json.Unmarshal(m.Data(), &t) == nil {
+			fn(t, meta.Timestamp)
+		}
+		if meta.Sequence.Stream >= last {
+			once.Do(caughtUp)
+		}
+	})
+	if err != nil {
+		return err
+	}
+	<-ctx.Done()
+	cc.Stop()
+	return nil
 }

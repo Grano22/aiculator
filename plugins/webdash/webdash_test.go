@@ -105,7 +105,12 @@ func TestTheTokenLeavesTheAddressBar(t *testing.T) {
 }
 
 func TestFleetPageNeedsTheSessionToken(t *testing.T) {
-	h, err := FleetHandler("right", func(context.Context) (any, error) { return []string{"secret-realm"}, nil })
+	var gotRealm, gotQuery string
+	h, err := FleetHandler("right", func(context.Context) (any, error) { return []string{"secret-realm"}, nil },
+		func(_ context.Context, realm, query string) (any, error) {
+			gotRealm, gotQuery = realm, query
+			return map[string]string{"ok": "flow"}, nil
+		})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,6 +137,16 @@ func TestFleetPageNeedsTheSessionToken(t *testing.T) {
 	if code, body, _ := get("/api/fleet", "right"); code != 200 || !strings.Contains(body, "secret-realm") {
 		t.Errorf("%d %s", code, body)
 	}
+	if code, _, _ := get("/api/fleet/analytics?realm=shop", ""); code != 401 || gotRealm != "" {
+		t.Errorf("analytics without the token: %d", code)
+	}
+	if code, body, _ := get("/api/fleet/analytics?realm=shop&window=7d&tier=2&label=team%3Dweb&admin=1", "right"); code != 200 || !strings.Contains(body, "flow") {
+		t.Errorf("analytics: %d %s", code, body)
+	}
+	// Only the filters go on to the realm's server.
+	if gotRealm != "shop" || gotQuery != "label=team%3Dweb&tier=2&window=7d" {
+		t.Errorf("passed on %q %q", gotRealm, gotQuery)
+	}
 	code, body, hdr := get("/", "")
 	if code != 200 || !strings.Contains(body, "fleet.js") {
 		t.Errorf("%d %s", code, body)
@@ -149,9 +164,15 @@ func TestFleetScriptNeverParsesDataAsHTML(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, bad := range []string{"innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval("} {
-		if strings.Contains(string(b), bad) {
-			t.Errorf("fleet.js uses %s", bad)
+	for _, name := range []string{"static/fleet.js", "static/charts.js"} {
+		src, err := assets.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, bad := range []string{"innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function"} {
+			if strings.Contains(string(src), bad) {
+				t.Errorf("%s uses %s", name, bad)
+			}
 		}
 	}
 	// A link comes from a realm's own server, and is checked before it can become a link.

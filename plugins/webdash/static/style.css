@@ -77,3 +77,52 @@ td.title { white-space: normal; min-width: 160px; overflow-wrap: anywhere; }
 .path { color: var(--muted); font-size: 12px; }
 .realm-name { font-weight: 600; }
 td a, .realm-name a { color: var(--accent); }
+
+/* Flow analytics. Each state keeps one colour in every chart. */
+:root {
+  --c-draft: #9aa3b2; --c-ready: #5c7cfa; --c-claimed: #22b8cf; --c-running: #1c7ed6;
+  --c-review: #7950f2; --c-merging: #ae3ec9; --c-done: #2f9e44; --c-failed: #e03131;
+  --c-parked: #f08c00; --c-canceled: #6c757d; --c-reason: #d9480f; --c-new: #adb5bd;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-draft: #6b7385; --c-ready: #748ffc; --c-claimed: #3bc9db; --c-running: #4dabf7;
+    --c-review: #9775fa; --c-merging: #da77f2; --c-done: #51cf66; --c-failed: #ff6b6b;
+    --c-parked: #ffa94d; --c-canceled: #868e96; --c-reason: #ff8a4c; --c-new: #5c636e;
+  }
+}
+.s-draft { --c: var(--c-draft); } .s-ready { --c: var(--c-ready); } .s-claimed { --c: var(--c-claimed); }
+.s-running { --c: var(--c-running); } .s-review { --c: var(--c-review); } .s-merging { --c: var(--c-merging); }
+.s-done { --c: var(--c-done); } .s-failed { --c: var(--c-failed); } .s-parked { --c: var(--c-parked); }
+.s-canceled { --c: var(--c-canceled); } .s-reason { --c: var(--c-reason); } .s-new { --c: var(--c-new); }
+.flow-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
+.flow-head h2 { margin: 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+.filter { display: grid; gap: 2px; }
+select { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; min-height: 32px; max-width: 220px; }
+select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.flow-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; margin-top: 8px; }
+.flow-grid .panel { min-width: 0; }
+.flow-grid .panel.wide { grid-column: 1 / -1; }
+.flow-grid h3 { margin: 4px 0 2px; color: var(--text); }
+.flow-grid .panel > p { margin: 0 0 8px; }
+.chart { display: block; width: 100%; height: auto; }
+.chart text { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--text); }
+.sankey rect { fill: var(--c); }
+.sankey .band { fill: none; stroke: var(--c); stroke-opacity: .35; }
+.sankey .band:hover { stroke-opacity: .6; }
+.sankey .lbl { dominant-baseline: middle; }
+.cfd .area { fill: var(--c); fill-opacity: .85; stroke: var(--card); stroke-width: .5; }
+.cfd .area:hover { fill-opacity: 1; }
+.cfd .axis line { stroke: var(--line); }
+.cfd .axis text { fill: var(--muted); }
+.legend { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; }
+.legend li { display: flex; align-items: center; gap: 6px; }
+.swatch { width: 10px; height: 10px; border-radius: 2px; background: var(--c); display: inline-block; }
+.funnel { list-style: none; margin: 0; padding: 0; }
+.funnel li { padding: 5px 0; }
+.funnel .row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; margin-bottom: 4px; }
+.fbar { position: relative; height: 10px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.fbar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+.fbar .reached { background: var(--c-ready); opacity: .45; }
+.fbar .done { background: var(--c-done); }
