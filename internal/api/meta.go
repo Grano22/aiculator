@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/Grano22/aiculator/internal/auth"
+	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/meta"
 	"github.com/Grano22/aiculator/internal/store"
 	"github.com/Grano22/aiculator/internal/swarm"
@@ -28,6 +29,41 @@ func (s *Server) metaRoutes(m *http.ServeMux) {
 	m.HandleFunc("POST /v1/doctor/fix", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
 		removed, err := s.S.DoctorFix(r.Context())
 		reply(w, map[string]any{"removed_worktrees": removed}, err)
+	}))
+	m.HandleFunc("GET /v1/backup", s.authed(isAdmin, func(w http.ResponseWriter, _ *http.Request, _ auth.Claims) {
+		if s.Backup == nil {
+			writeJSON(w, http.StatusOK, []any{})
+			return
+		}
+		writeJSON(w, http.StatusOK, s.Backup.BackupStatus())
+	}))
+	m.HandleFunc("POST /v1/backup/snapshot", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		if s.Backup == nil {
+			writeJSON(w, http.StatusNotFound, Error{"no backups are configured"})
+			return
+		}
+		req, ok := decode[struct {
+			Rule string `json:"rule"`
+		}](w, r)
+		if !ok {
+			return
+		}
+		files, err := s.Backup.SnapshotNow(r.Context(), req.Rule)
+		reply(w, map[string]any{"files": files}, err)
+	}))
+	// A restore takes the whole copy from the caller, who read it from the backup files,
+	// so the server never reads paths that a request names.
+	m.HandleFunc("POST /v1/tasks/{id}/restore", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		t, ok := decode[core.Task](w, r)
+		if !ok {
+			return
+		}
+		if t.ID != r.PathValue("id") {
+			writeJSON(w, http.StatusBadRequest, Error{"the copy is of another task"})
+			return
+		}
+		res, err := s.S.Engine.Restore(r.Context(), t)
+		reply(w, res, err)
 	}))
 	m.HandleFunc("GET /v1/sync", s.authed(canView, func(w http.ResponseWriter, _ *http.Request, _ auth.Claims) {
 		if s.Sync == nil {

@@ -41,6 +41,68 @@ With the server running, `doctor` reports:
 files in `.swarm`: a stale `pid`, an `addr` that points at nothing or at another project's
 server, and whether the lock is free. `--fix` removes the stale files but never the data.
 
+## Backups of chosen tasks
+
+Some tasks matter more than others. Rules in `.agents/backups.yaml` keep copies of the
+tasks they match, outside the store, as plain files:
+
+```yaml
+dir: /Volumes/backup/aiculator   # default .swarm/backups; another disk is better
+rules:
+  - name: critical
+    match:
+      labels: {severity: critical}   # a value is a glob: "*" means any value
+    journal: true                    # a copy each time one changes
+    keep: 50                         # per task
+    meta: true                       # also keep its metadata
+  - name: releases
+    match:
+      ids: ["release-*", "hotfix-*"]
+      states: [review, merging, done]
+    every: 1h                        # a snapshot of all of them, every hour
+    keep: 48
+    keep_for: 7d
+  - name: everything
+    match: {all: true}
+    every: 1d
+    keep: 14
+```
+
+A rule matches a task when every field it sets matches. Within a list, any entry may
+match. The fields are `all`, `ids` (globs), `labels`, `tags`, `states` and
+`min_priority`.
+
+- **The journal** keeps a copy each time a matching task changes in a way that matters.
+  A heartbeat that only moves a deadline isn't copied. It follows the store's commit
+  stream, so it never slows a claim or a commit, and it catches up on restart: a copy
+  that wasn't written before a crash is written after it.
+- **Snapshots** keep every matching task at one moment, in one compressed file. One is
+  taken when the server starts if the last one is older than `every`.
+- **Retention:** `keep` copies are kept per task (journal) or per rule (snapshots), and
+  `keep_for` removes older ones. The newest copy is always kept.
+
+Every file is written under a temporary name and renamed, so a crash leaves a whole file
+or none.
+
+```sh
+aiculator backup status                 # what each rule has kept, and any error
+aiculator backup now [RULE]             # take a snapshot now
+aiculator backup versions TASK          # every kept copy of a task
+aiculator backup restore TASK           # newest copy that differs from the task now
+aiculator backup restore TASK --before 2h
+aiculator backup restore --from FILE --all --dry-run
+```
+
+A copy is history, not a command, so a restore makes it safe first:
+
+- Work that was in flight in the copy goes back to Ready.
+- The lease number moves on, so an agent still holding the old lease can't write.
+- A Done copy without an independent check is parked.
+- The record being replaced goes to quarantine, so a restore can be undone too.
+
+A restore puts back the task record only. Metadata kept with `meta: true` is in the copy
+for reference.
+
 ## A standby server
 
 ```sh

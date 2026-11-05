@@ -4,6 +4,74 @@
 
 Every command, generated from the program itself. Run any command with `--help` to see the same text.
 
+## `aiculator backup`
+
+Keep and restore copies of chosen tasks
+
+Keep and restore copies of chosen tasks.
+
+Rules in .agents/backups.yaml choose tasks by id pattern, label, tag, state or
+priority, or all of them, and keep a journal of each change, snapshots at an interval,
+or both. The server keeps them while it runs; these commands read them.
+
+```text
+aiculator backup
+```
+
+## `aiculator backup now`
+
+Take a snapshot now, for one rule or all of them
+
+```text
+aiculator backup now [RULE]
+```
+
+## `aiculator backup restore`
+
+Put kept copies of tasks back
+
+Put kept copies of tasks back.
+
+By default each task gets its newest copy that differs from the task as it is now. --before takes the newest copy at or before a
+time, and --from takes the copies in one journal or snapshot file; with --all, every task
+in that file. Work that was in flight in a copy goes back to ready, the lease moves on so
+no agent with an old lease can write, and the record being replaced is kept in quarantine.
+
+```text
+aiculator backup restore [TASK...] [flags]
+```
+
+**Flags**
+
+```text
+      --all             with --from, every task in the file
+      --before string   newest copy at or before this time: RFC 3339, a date, or a duration ago such as 2h
+      --dry-run         say what would be restored, and change nothing
+      --from string     restore from this journal or snapshot file
+```
+
+## `aiculator backup status`
+
+Show what each backup rule has kept
+
+```text
+aiculator backup status
+```
+
+## `aiculator backup versions`
+
+List the kept copies of a task, oldest first
+
+```text
+aiculator backup versions TASK [flags]
+```
+
+**Flags**
+
+```text
+      --json   print JSON
+```
+
 ## `aiculator debug`
 
 Debugging tools: verbosity levels, and changing them on a running server

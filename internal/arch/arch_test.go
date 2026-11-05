@@ -77,6 +77,8 @@ var allowed = map[string][]string{
 	"internal/harness": {}, "internal/vlog": {}, "pkg/observe": {},
 	"internal/store":  {"internal/core", "internal/meta"},
 	"internal/engine": {"internal/core", "internal/store", "internal/vlog", "pkg/observe"},
+	// Backups read the store beside the swarm, and are never on its path.
+	"internal/backup": {"internal/core", "internal/meta", "internal/store"},
 	"internal/swarm":  {"internal/core", "internal/engine", "internal/meta", "internal/store", "internal/vlog", "internal/work", "pkg/observe"},
 	// The API knows nothing of connectors or drivers: connectors reach it through an interface.
 	"internal/api": {"internal/auth", "internal/core", "internal/engine", "internal/meta", "internal/store", "internal/swarm", "internal/vlog", "pkg/observe"},
@@ -110,7 +112,7 @@ func TestEachPackageUsesOnlyWhatItMay(t *testing.T) {
 // anything else that talks to the outside, so that none of it can slow or break a claim.
 func TestCoreLayersDoNotReachOutward(t *testing.T) {
 	all := load(t)
-	outward := []string{"internal/connect", "internal/driver", "internal/api", "internal/realm", "internal/tui", "internal/export", "internal/parallel", "plugins/webdash"}
+	outward := []string{"internal/backup", "internal/connect", "internal/driver", "internal/api", "internal/realm", "internal/tui", "internal/export", "internal/parallel", "plugins/webdash"}
 	for _, name := range []string{"internal/core", "internal/store", "internal/engine", "internal/swarm", "internal/meta"} {
 		deps := map[string]bool{}
 		var walk func(string)

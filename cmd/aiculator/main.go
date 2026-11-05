@@ -130,7 +130,7 @@ func rootCmd() *cobra.Command {
 	addLoggingFlags(root)
 	// Declared here so that cobra does not claim -v for it, since -v is the verbosity.
 	root.Flags().Bool("version", false, "print the version")
-	root.AddCommand(doctorCmd(), exportCmd(), parallelCmd(), realmCmd(), initCmd(), importCmd(), sourceCmd(), syncCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
+	root.AddCommand(backupCmd(), doctorCmd(), exportCmd(), parallelCmd(), realmCmd(), initCmd(), importCmd(), sourceCmd(), syncCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
 		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), pluginCmd(), debugCmd(), logsCmd(), genDocsCmd())
 	addPluginCommands(root)
 	return root
@@ -251,6 +251,11 @@ func serve(ctx context.Context, o serveOpts) error {
 	if y := startSync(ctx, svc, o.repo, log); y != nil {
 		srv.Sync = y
 		defer y.Close()
+	}
+	// Backups read the store, so they stop before it closes, which is deferred earlier.
+	if b := startBackups(ctx, st, o.repo, log); b != nil {
+		srv.Backup = b
+		defer b.Close()
 	}
 	mux := srv.Routes()
 	mux.Handle("/mcp", srv.MCPHandler())

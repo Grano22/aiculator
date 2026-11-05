@@ -34,6 +34,15 @@ type Server struct {
 	// Term counts how many times a server has become leader for this data directory, so a
 	// client can tell that a standby took over.
 	Term uint64
+	// Backup reports on and takes backups, when configured.
+	Backup BackupAPI
+}
+
+// BackupAPI is what the routes need from backups, kept as an interface for the same reason
+// as SyncAPI.
+type BackupAPI interface {
+	BackupStatus() any
+	SnapshotNow(ctx context.Context, rule string) ([]string, error)
 }
 
 // SyncAPI is what the routes need from the synchronizer. It is an interface so that this
