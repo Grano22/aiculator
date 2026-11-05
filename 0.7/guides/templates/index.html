@@ -1,0 +1,2696 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Run a queue of coding tasks across AI harnesses, and verify the results yourself.">
+      
+      
+      
+        <link rel="canonical" href="https://Grano22.github.io/aiculator/0.7/guides/templates/">
+      
+      
+        <link rel="prev" href="../skills/">
+      
+      
+        <link rel="next" href="../template-demo/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Templates - Aiculator</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#templates" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Aiculator" class="md-header__button md-logo" aria-label="Aiculator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Aiculator
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Templates
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Grano22/aiculator" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Grano22/aiculator
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Showcase
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/install/" class="md-tabs__link">
+          
+  
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../join/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../concepts/architecture/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/cli/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../project/status/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Aiculator" class="md-nav__button md-logo" aria-label="Aiculator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Aiculator
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Grano22/aiculator" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Grano22/aiculator
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Showcase
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../join/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Join from an open harness
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run sandboxed workers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../planning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plan work
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../task-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Labels, priority and attachments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../connectors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Connectors: import and sync
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../realms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Realms: many projects
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parallel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parallel subagents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-templates-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where templates live
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anatomy-of-a-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anatomy of a template
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Components">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#subagents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subagents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backoff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backoff
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outputformat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OutputFormat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flow-and-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow and Step
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#toc-and-anchor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toc and Anchor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Note
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#forcing-a-kind-of-question" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forcing a kind of question
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#forcing-rich-markdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forcing rich Markdown
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subagent-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subagent flows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sections-a-model-keeps-current" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sections a model keeps current
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-well-this-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How well this works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#your-own-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Your own components
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-harness-copies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-harness copies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Safety
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keep-skills-current" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep skills current
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../template-demo/" class="md-nav__link">
+        
+  
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m2.5 19.6 1.3.6v-9L1.4 17c-.4 1.1.1 2.2 1.1 2.6M15.2 4.8l5 12-7.3 3-5-11.9v-.1zm.1-2c-.3 0-.5 0-.8.1L7.1 6c-.7.3-1.2 1-1.2 1.8 0 .2 0 .5.1.8l5 11.9c.3.8 1 1.2 1.8 1.2.3 0 .5 0 .8-.1l7.4-3.1c1-.4 1.5-1.6 1.1-2.6L17.1 4c-.3-.8-1.1-1.2-1.8-1.2m-4.8 7.1c-.6 0-1-.4-1-1s.4-1 1-1 1 .5 1 1-.4 1-1 1m-4.6 9.9c0 1.1.9 2 2 2h1.4l-3.4-8.3z"/></svg>
+  
+  <span class="md-ellipsis">
+    
+  
+    Template demo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dashboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboards
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recovery and failover
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Debugging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tasks and tiers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/verification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Verification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/harnesses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Harnesses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project/status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project/releasing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releasing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project/packaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package managers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-templates-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where templates live
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#anatomy-of-a-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anatomy of a template
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Components
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Components">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#subagents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subagents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backoff" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backoff
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outputformat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OutputFormat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flow-and-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow and Step
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#toc-and-anchor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toc and Anchor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Note
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#forcing-a-kind-of-question" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forcing a kind of question
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#forcing-rich-markdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Forcing rich Markdown
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#subagent-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subagent flows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sections-a-model-keeps-current" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sections a model keeps current
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-well-this-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How well this works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#your-own-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Your own components
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-harness-copies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-harness copies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Safety
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keep-skills-current" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep skills current
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Showcase
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../join/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Guides
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="templates">Templates<a class="headerlink" href="#templates" title="Permanent link">&para;</a></h1>
+<p>Templates let you write instructions once and reuse them. Use them for the rules you keep repeating: when to use subagents, how to retry, what format to reply in, and which steps to follow.</p>
+<div class="admonition warning">
+<p class="admonition-title">Instructions, not enforcement</p>
+<p>A template produces text for a model, and a model can still ignore text. Clear, specific rules are followed far more often, but anything that must hold needs a real check, such as a task's <code>--check</code> command.</p>
+</div>
+<div class="admonition example">
+<p class="admonition-title">See every feature working together</p>
+<p>The <a href="../template-demo/">template demo</a> walks through one template that uses all of this.</p>
+</div>
+<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--list
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--render<span class="w"> </span>agent-discipline<span class="w"> </span>--set<span class="w"> </span><span class="nv">retries</span><span class="o">=</span><span class="m">5</span><span class="w">   </span><span class="c1"># Preview; writes nothing</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span>agent-discipline<span class="w">                  </span><span class="c1"># Render and install</span>
+</code></pre></div>
+<p><code>--install</code> takes the same options as <code>skill --install</code>: patterns, <code>--harness</code>, <code>--global</code>, <code>--path</code> and <code>--copy</code>.</p>
+<h2 id="where-templates-live">Where templates live<a class="headerlink" href="#where-templates-live" title="Permanent link">&para;</a></h2>
+<p>Templates go in <code>.agents/templates/</code>. <code>.agent/templates/</code> and <code>.agent/template/</code> also work.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>.agents/templates/
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>├── my-rules.md.j2            # A single-file template
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>├── release-flow/             # A template with extra files
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│   ├── SKILL.md.j2
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│   └── references/guide.md   # Copied into the skill
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>├── partials/                 # For {% include %}
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>└── components/               # Your own &lt;Components&gt;
+</code></pre></div>
+<p>Single files can end in <code>.md.j2</code>, <code>.j2</code>, <code>.jinja</code> or <code>.mdx</code>.</p>
+<h2 id="anatomy-of-a-template">Anatomy of a template<a class="headerlink" href="#anatomy-of-a-template" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="x">---</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="x">template:                 # Removed from the output</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="x">  vars:</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="x">    retries: 3</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="x">name: my-rules</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="x">description: Working rules for this project. Use when the user asks to apply them.</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="x">metadata:</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="x">  version: "1.0.0"</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="x">---</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="x"># My rules</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="x">&lt;Toc /&gt;</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="x">&lt;Directive id="main-rule"&gt;Never push to main.&lt;/Directive&gt;</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="cp">{%</span> <span class="k">if</span> <span class="nv">harness.id</span> <span class="o">==</span> <span class="s2">"claude"</span> <span class="cp">%}</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="x">This line appears only in the Claude Code copy.</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="cp">{%</span> <span class="k">endif</span> <span class="cp">%}</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="cp">{%</span> <span class="k">include</span> <span class="s2">"partials/house-style.md"</span> <span class="cp">%}</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="x">&lt;Backoff timeout="120s" retries="</span><span class="cp">{{</span> <span class="nv">retries</span> <span class="cp">}}</span><span class="x">" /&gt;</span>
+</code></pre></div>
+<p>Rendering runs in two passes: Jinja2 first, then components. So <code>{{ retries }}</code> can feed a component's props.</p>
+<h2 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h2>
+<h3 id="subagents">Subagents<a class="headerlink" href="#subagents" title="Permanent link">&para;</a></h3>
+<p>Says when to use subagents.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">&lt;</span><span class="nt">Subagents</span> <span class="na">use</span><span class="o">=</span><span class="s">"when"</span> <span class="na">max</span><span class="o">=</span><span class="s">"4"</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  <span class="na">when</span><span class="o">=</span><span class="s">"the work splits into independent parts"</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  <span class="na">not_when</span><span class="o">=</span><span class="s">"the steps depend on each other"</span> <span class="p">/&gt;</span>
+</code></pre></div>
+<p><code>use</code> is <code>always</code>, <code>when</code> or <code>never</code>.</p>
+<h3 id="backoff">Backoff<a class="headerlink" href="#backoff" title="Permanent link">&para;</a></h3>
+<p>Sets a command timeout and a retry policy. The swarm computes the table of waits, because a model told to "double it each time" tends to get the numbers wrong.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">&lt;</span><span class="nt">Backoff</span> <span class="na">timeout</span><span class="o">=</span><span class="s">"120s"</span> <span class="na">retries</span><span class="o">=</span><span class="s">"3"</span> <span class="na">base</span><span class="o">=</span><span class="s">"2s"</span> <span class="na">factor</span><span class="o">=</span><span class="s">"2"</span> <span class="na">limit</span><span class="o">=</span><span class="s">"60s"</span> <span class="p">/&gt;</span>
+</code></pre></div>
+<p>Add <code>on="..."</code> to say which failures to retry.</p>
+<h3 id="outputformat">OutputFormat<a class="headerlink" href="#outputformat" title="Permanent link">&para;</a></h3>
+<p>Makes the model repeat a format in every reply.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">&lt;</span><span class="nt">OutputFormat</span><span class="p">&gt;</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>Done: what changed
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>Checked: what you ran and the result
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">&lt;/</span><span class="nt">OutputFormat</span><span class="p">&gt;</span>
+</code></pre></div>
+<p>Use <code>repeat="Final answers"</code> to apply it to only some replies.</p>
+<h3 id="flow-and-step">Flow and Step<a class="headerlink" href="#flow-and-step" title="Permanent link">&para;</a></h3>
+<p>Forces an order of steps, with interactive questions and exceptions for subagents, which cannot reach the user.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">&lt;</span><span class="nt">Flow</span> <span class="na">name</span><span class="o">=</span><span class="s">"confirm before acting"</span> <span class="na">id</span><span class="o">=</span><span class="s">"confirm-flow"</span><span class="p">&gt;</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="p">&lt;</span><span class="nt">Step</span> <span class="na">n</span><span class="o">=</span><span class="s">"1"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Plan"</span> <span class="na">id</span><span class="o">=</span><span class="s">"plan"</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  <span class="na">ask</span><span class="o">=</span><span class="s">"Does this plan look right?"</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  <span class="na">subagent</span><span class="o">=</span><span class="s">"Do not ask. Continue, and report your plan with the result."</span><span class="p">&gt;</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>List the changes you intend to make.
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="p">&lt;/</span><span class="nt">Step</span><span class="p">&gt;</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">&lt;/</span><span class="nt">Flow</span><span class="p">&gt;</span>
+</code></pre></div>
+<h3 id="directive">Directive<a class="headerlink" href="#directive" title="Permanent link">&para;</a></h3>
+<p>Marks a rule the model can cite by name. <code>level</code> is any word, and defaults to <code>must</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">&lt;</span><span class="nt">Directive</span> <span class="na">level</span><span class="o">=</span><span class="s">"must not"</span> <span class="na">id</span><span class="o">=</span><span class="s">"no-false-claims"</span><span class="p">&gt;</span>Say something works unless you ran it.<span class="p">&lt;/</span><span class="nt">Directive</span><span class="p">&gt;</span>
+</code></pre></div>
+<h3 id="toc-and-anchor">Toc and Anchor<a class="headerlink" href="#toc-and-anchor" title="Permanent link">&para;</a></h3>
+<p><code>&lt;Toc /&gt;</code> writes a table of contents with exact line numbers and anchors, so a model can jump to a section without reading the whole file:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>## Contents
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>- Subagents: line 28, anchor `subagents`
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>- Commands: timeouts and retries: line 39, anchor `backoff`
+</code></pre></div>
+<p><code>&lt;Anchor id="name" /&gt;</code> adds a searchable marker anywhere. Most components add their own.</p>
+<h3 id="note">Note<a class="headerlink" href="#note" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">&lt;</span><span class="nt">Note</span><span class="p">&gt;</span>Something worth pointing out.<span class="p">&lt;/</span><span class="nt">Note</span><span class="p">&gt;</span>
+</code></pre></div>
+<h2 id="forcing-a-kind-of-question">Forcing a kind of question<a class="headerlink" href="#forcing-a-kind-of-question" title="Permanent link">&para;</a></h2>
+<p>Bundled templates tell a model which interface to use, so you get a list to select from, and not a paragraph to answer.</p>
+<table>
+<thead>
+<tr>
+<th>Template</th>
+<th>Component</th>
+<th>What the user sees</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ui-select</code></td>
+<td><code>&lt;AskOne&gt;</code></td>
+<td>One choice from a list</td>
+</tr>
+<tr>
+<td><code>ui-checkbox</code></td>
+<td><code>&lt;AskMany&gt;</code></td>
+<td>Any number of choices, as checkboxes</td>
+</tr>
+<tr>
+<td><code>ui-tabs</code></td>
+<td><code>&lt;AskTabs&gt;</code> and <code>&lt;Tab&gt;</code></td>
+<td>Several questions in one form, with tabs</td>
+</tr>
+<tr>
+<td><code>ui-confirm</code></td>
+<td><code>&lt;AskConfirm&gt;</code></td>
+<td>A yes or no choice before a risky action</td>
+</tr>
+<tr>
+<td><code>ui-text</code></td>
+<td><code>&lt;AskText&gt;</code></td>
+<td>A place to type, when options cannot cover the answer</td>
+</tr>
+<tr>
+<td><code>ui-preview</code></td>
+<td><code>&lt;AskPreview&gt;</code></td>
+<td>Choices with a visible example of each</td>
+</tr>
+<tr>
+<td><code>ui-todos</code></td>
+<td><code>&lt;TodoList&gt;</code></td>
+<td>A live task list</td>
+</tr>
+<tr>
+<td><code>ui-plan</code></td>
+<td><code>&lt;PlanMode&gt;</code></td>
+<td>A plan to approve before anything changes</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span><span class="s1">'ui-*'</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span><span class="s1">'ui-*'</span><span class="w"> </span>--per-harness<span class="w"> </span>--harness<span class="w"> </span>claude,opencode<span class="w">   </span><span class="c1"># Names the exact tool</span>
+</code></pre></div>
+<p>They name the harness's real tool and settings when it has one, and that comes from each harness's docs:</p>
+<table>
+<thead>
+<tr>
+<th>Harness</th>
+<th>Questions</th>
+<th>Task list</th>
+<th>Plan mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Code</td>
+<td><code>AskUserQuestion</code>, with <code>multiSelect</code></td>
+<td><code>TaskCreate</code>, <code>TaskUpdate</code></td>
+<td><code>EnterPlanMode</code>, <code>ExitPlanMode</code></td>
+</tr>
+<tr>
+<td>Gemini CLI</td>
+<td><code>ask_user</code>, with <code>type</code> <code>choice</code>, <code>text</code> or <code>yesno</code></td>
+<td><code>write_todos</code></td>
+<td><code>enter_plan_mode</code>, <code>exit_plan_mode</code></td>
+</tr>
+<tr>
+<td>OpenCode</td>
+<td><code>question</code>; its docs do not state multi-select</td>
+<td><code>todowrite</code></td>
+<td>None in its tool docs</td>
+</tr>
+<tr>
+<td>Others</td>
+<td>None named: a numbered list, then stop and wait</td>
+<td>A Markdown checklist</td>
+<td>A numbered plan, then stop and wait</td>
+</tr>
+</tbody>
+</table>
+<p>On some Claude Code models the task tools must be switched on, so <code>ui-todos</code> also tells the model what to do without them. Whether <code>AskUserQuestion</code> offers <code>preview</code> depends on the session, so <code>&lt;AskPreview&gt;</code> falls back to labeled code blocks.</p>
+<p><code>ui-plan</code> deliberately has no <code>allowed-tools</code>. In Claude Code that field skips the permission prompt, and the prompt on <code>ExitPlanMode</code> is your approval of the plan.</p>
+<p>Without <code>--per-harness</code>, one shared skill names all three tools, because it cannot know which harness reads it.</p>
+<p>To ask a specific question, use the components in your own template:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">&lt;</span><span class="nt">AskOne</span> <span class="na">question</span><span class="o">=</span><span class="s">"Which database?"</span> <span class="na">subagent</span><span class="o">=</span><span class="s">"Use SQLite, and say so in your report."</span><span class="p">&gt;</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>- PostgreSQL (Recommended): best for most apps
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>- SQLite: no server to run
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="p">&lt;/</span><span class="nt">AskOne</span><span class="p">&gt;</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="p">&lt;</span><span class="nt">AskMany</span> <span class="na">question</span><span class="o">=</span><span class="s">"Which checks should I run?"</span> <span class="na">min</span><span class="o">=</span><span class="s">"1"</span><span class="p">&gt;</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>- Unit tests
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>- Security scan
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="p">&lt;/</span><span class="nt">AskMany</span><span class="p">&gt;</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="p">&lt;</span><span class="nt">AskTabs</span><span class="p">&gt;</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="p">&lt;</span><span class="nt">Tab</span> <span class="na">header</span><span class="o">=</span><span class="s">"Language"</span> <span class="na">question</span><span class="o">=</span><span class="s">"Which language?"</span><span class="p">&gt;</span>Go, or Python<span class="p">&lt;/</span><span class="nt">Tab</span><span class="p">&gt;</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="p">&lt;</span><span class="nt">Tab</span> <span class="na">header</span><span class="o">=</span><span class="s">"Extras"</span> <span class="na">question</span><span class="o">=</span><span class="s">"Which extras?"</span> <span class="na">multi</span><span class="o">=</span><span class="s">"true"</span><span class="p">&gt;</span>Docker, or CI<span class="p">&lt;/</span><span class="nt">Tab</span><span class="p">&gt;</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="p">&lt;/</span><span class="nt">AskTabs</span><span class="p">&gt;</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="p">&lt;</span><span class="nt">AskConfirm</span> <span class="na">question</span><span class="o">=</span><span class="s">"Delete 3 merged branches?"</span> <span class="p">/&gt;</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="p">&lt;</span><span class="nt">AskText</span> <span class="na">question</span><span class="o">=</span><span class="s">"What should the service be called?"</span> <span class="na">placeholder</span><span class="o">=</span><span class="s">"my-service"</span> <span class="p">/&gt;</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="p">&lt;</span><span class="nt">AskPreview</span> <span class="na">question</span><span class="o">=</span><span class="s">"Which layout?"</span><span class="p">&gt;</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>- Compact: `a | b`
+<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>- Spacious: `a  |  b`
+<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="p">&lt;/</span><span class="nt">AskPreview</span><span class="p">&gt;</span>
+<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>
+<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="p">&lt;</span><span class="nt">TodoList</span><span class="p">&gt;</span>
+<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>- Write the tests
+<a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a>- Make them pass
+<a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="p">&lt;/</span><span class="nt">TodoList</span><span class="p">&gt;</span>
+<a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a>
+<a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a><span class="p">&lt;</span><span class="nt">PlanMode</span><span class="p">&gt;</span>
+<a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a>- Which files change
+<a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a>- How you will verify it
+<a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a><span class="p">&lt;/</span><span class="nt">PlanMode</span><span class="p">&gt;</span>
+</code></pre></div>
+<p>Every question also covers two cases: a harness with no question tool, and a subagent that cannot reach the user.</p>
+<h2 id="forcing-rich-markdown">Forcing rich Markdown<a class="headerlink" href="#forcing-rich-markdown" title="Permanent link">&para;</a></h2>
+<p><code>rich-markdown</code> sets how a model formats its replies, using the right form for each thing. <code>&lt;RichMarkdown&gt;</code> includes every rule below, and <code>&lt;Render&gt;</code> adds a single one.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span>rich-markdown<span class="w">                    </span><span class="c1"># For a terminal</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span>rich-markdown<span class="w"> </span>--set<span class="w"> </span><span class="nv">surface</span><span class="o">=</span>rich<span class="w"> </span><span class="c1"># Where full Markdown renders</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">&lt;</span><span class="nt">RichMarkdown</span> <span class="na">only</span><span class="o">=</span><span class="s">"code,diff,table,fileref"</span> <span class="na">surface</span><span class="o">=</span><span class="s">"terminal"</span> <span class="p">/&gt;</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="p">&lt;</span><span class="nt">Render</span> <span class="na">kind</span><span class="o">=</span><span class="s">"callout"</span><span class="p">&gt;</span>Use this for production warnings only.<span class="p">&lt;/</span><span class="nt">Render</span><span class="p">&gt;</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th><code>kind</code></th>
+<th>What the model is told</th>
+<th>With <code>surface="terminal"</code> (the default)</th>
+<th>With <code>surface="rich"</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>code</code></td>
+<td>Fenced block with a language</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>inline</code></td>
+<td><code>code</code>, bold and italics, for the right things</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>shell</code></td>
+<td>A <code>sh</code> block to paste, with output apart</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>diff</code></td>
+<td>A <code>diff</code> block</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>table</code></td>
+<td>Comparisons, with short cells</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>list</code></td>
+<td>Numbered when order matters</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>checklist</code></td>
+<td><code>- [ ]</code> and <code>- [x]</code></td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>headings</code></td>
+<td><code>##</code> and <code>###</code> for longer answers</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>callout</code></td>
+<td>A quote with a bold label</td>
+<td>Same</td>
+<td>Also GitHub's <code>&gt; [!WARNING]</code></td>
+</tr>
+<tr>
+<td><code>quote</code></td>
+<td>Exact errors, logs and documents</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>fileref</code></td>
+<td><code>path/to/file.go:42</code></td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>tree</code></td>
+<td>A directory layout in a <code>text</code> block</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>link</code></td>
+<td>Descriptive text, and only URLs it has seen</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td><code>diagram</code></td>
+<td>Flows and relationships</td>
+<td>ASCII in a <code>text</code> block</td>
+<td>A <code>mermaid</code> block</td>
+</tr>
+<tr>
+<td><code>image</code></td>
+<td>Pictures</td>
+<td>A path and a description</td>
+<td><code>![alt](path)</code></td>
+</tr>
+<tr>
+<td><code>details</code></td>
+<td>Long optional material</td>
+<td>Left out, or at the end</td>
+<td><code>&lt;details&gt;</code></td>
+</tr>
+<tr>
+<td><code>math</code></td>
+<td>Formulas</td>
+<td>Plain text or code</td>
+<td><code>$...$</code> and <code>$$...$$</code></td>
+</tr>
+<tr>
+<td><code>footnote</code></td>
+<td>Asides and sources</td>
+<td>Short sentences and links</td>
+<td><code>[^1]</code></td>
+</tr>
+<tr>
+<td><code>rule</code></td>
+<td>Separate parts of a reply</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+</tbody>
+</table>
+<p>An unknown <code>kind</code> fails the render, so a typo cannot silently drop a rule.</p>
+<div class="admonition warning">
+<p class="admonition-title">What this controls, and what it does not</p>
+<p>These rules decide what the model writes. How it then looks depends on your harness and where it runs, which most harnesses do not document. Terminal rules are the cautious default for that reason, so check a sample in your own harness before you set <code>surface=rich</code>.</p>
+</div>
+<p>A long skill can keep its contents list short with <code>&lt;Toc depth="2" /&gt;</code>, which lists only the <code>##</code> sections.</p>
+<h2 id="subagent-flows">Subagent flows<a class="headerlink" href="#subagent-flows" title="Permanent link">&para;</a></h2>
+<p><code>subagent-flow</code> makes a model act as an orchestrator: it runs stages in order, delegates each one, and checks each result before moving on.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="p">&lt;</span><span class="nt">SubagentFlow</span> <span class="na">name</span><span class="o">=</span><span class="s">"research, build, review"</span><span class="p">&gt;</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="p">&lt;</span><span class="nt">Stage</span> <span class="na">n</span><span class="o">=</span><span class="s">"1"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Research"</span> <span class="na">parallel</span><span class="o">=</span><span class="s">"3"</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>  <span class="na">output</span><span class="o">=</span><span class="s">"Short findings with file paths"</span> <span class="na">done</span><span class="o">=</span><span class="s">"you could explain the change"</span><span class="p">&gt;</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>Split the unknowns into separate questions.
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="p">&lt;/</span><span class="nt">Stage</span><span class="p">&gt;</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="p">&lt;</span><span class="nt">Stage</span> <span class="na">n</span><span class="o">=</span><span class="s">"2"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Review"</span> <span class="na">agent</span><span class="o">=</span><span class="s">"a fresh subagent that did not write the code"</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>  <span class="na">done</span><span class="o">=</span><span class="s">"each problem is fixed or explained"</span><span class="p">&gt;</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>Ask it to look for bugs.
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="p">&lt;/</span><span class="nt">Stage</span><span class="p">&gt;</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="p">&lt;/</span><span class="nt">SubagentFlow</span><span class="p">&gt;</span>
+</code></pre></div>
+<p>To split one task among subagents in the same worktree, use the <code>parallel-subagents</code> template or <code>&lt;ParallelWork&gt;</code>. See <a href="../parallel/">Parallel subagents</a>.</p>
+<h2 id="sections-a-model-keeps-current">Sections a model keeps current<a class="headerlink" href="#sections-a-model-keeps-current" title="Permanent link">&para;</a></h2>
+<p><code>&lt;DynamicSection&gt;</code> marks text the model must keep true as it works. <code>living-section</code> is a ready-made one, for a progress file.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">&lt;</span><span class="nt">DynamicSection</span> <span class="na">id</span><span class="o">=</span><span class="s">"status"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Status"</span> <span class="na">file</span><span class="o">=</span><span class="s">"PROGRESS.md"</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>  <span class="na">update</span><span class="o">=</span><span class="s">"after every commit"</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>  <span class="na">keep</span><span class="o">=</span><span class="s">"what is done, what is blocked, and the next step"</span> <span class="p">/&gt;</span>
+</code></pre></div>
+<p>With <code>file</code>, the section lives in that project file, which is usually what you want. Without it, the section lives in the skill itself, between markers:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">&lt;</span><span class="nt">DynamicSection</span> <span class="na">id</span><span class="o">=</span><span class="s">"decisions"</span> <span class="na">title</span><span class="o">=</span><span class="s">"Decisions so far"</span><span class="p">&gt;</span>Nothing yet.<span class="p">&lt;/</span><span class="nt">DynamicSection</span><span class="p">&gt;</span>
+</code></pre></div>
+<p>Re-rendering keeps what a model wrote there, and <code>--check</code> does not count it as drift. A model's edit can shift the line numbers in a contents list until the next render, though the anchors stay right.</p>
+<h2 id="how-well-this-works">How well this works<a class="headerlink" href="#how-well-this-works" title="Permanent link">&para;</a></h2>
+<p>These are instructions, so a model can still ignore them. <code>scripts/gate_ui_templates.sh</code> tests them on a real Claude Code session, using Haiku, the cheapest model:</p>
+<table>
+<thead>
+<tr>
+<th>Probe</th>
+<th>Result on the real model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ui-select</code></td>
+<td>One call with <code>multiSelect: false</code>, recommendation first</td>
+</tr>
+<tr>
+<td><code>ui-checkbox</code></td>
+<td>One call with <code>multiSelect: true</code></td>
+</tr>
+<tr>
+<td><code>ui-tabs</code></td>
+<td>One call holding 3 questions</td>
+</tr>
+<tr>
+<td>No question tool</td>
+<td>Looks for the tool, then writes the numbered list</td>
+</tr>
+<tr>
+<td>As a subagent</td>
+<td>Does not ask, and reports its choice</td>
+</tr>
+<tr>
+<td><code>living-section</code></td>
+<td>Writes <code>PROGRESS.md</code> with the markers</td>
+</tr>
+<tr>
+<td><code>subagent-flow</code></td>
+<td>Three subagents, including a separate reviewer, and the bug fixed</td>
+</tr>
+<tr>
+<td><code>ui-confirm</code></td>
+<td>One choice, <code>Delete build directory</code> or <code>Keep it</code>, before acting</td>
+</tr>
+<tr>
+<td><code>ui-text</code></td>
+<td>Asks in its reply, and creates nothing</td>
+</tr>
+<tr>
+<td><code>ui-preview</code></td>
+<td>Every option carries a <code>preview</code></td>
+</tr>
+<tr>
+<td><code>ui-todos</code></td>
+<td><code>TaskCreate</code> per step, and <code>TaskUpdate</code> as each one starts and ends</td>
+</tr>
+<tr>
+<td><code>ui-plan</code></td>
+<td>Presents a numbered plan, and changes no file</td>
+</tr>
+<tr>
+<td><code>rich-markdown</code></td>
+<td>A <code>diff</code> block, a <code>sh</code> block, a table and <code>calc.go:3</code> in one reply</td>
+</tr>
+</tbody>
+</table>
+<p>Print mode has nobody to answer, so Claude Code does not offer <code>AskUserQuestion</code> there. For the mode probes, a small server offers a tool with the same name and schema, and records the arguments. So this proves what the model asks for, but not how the real interactive UI looks. Other harnesses have not been tested this way.</p>
+<p>Two more limits follow from this. The <code>ui-plan</code> probe proves the plan comes first and nothing changes, but not the real <code>EnterPlanMode</code> tool, which the model did not call in print mode. The <code>rich-markdown</code> probe checks the text the model wrote, not how a terminal displays it.</p>
+<h2 id="your-own-components">Your own components<a class="headerlink" href="#your-own-components" title="Permanent link">&para;</a></h2>
+<p>Create <code>components/Name.md</code> in a template directory, using Jinja2. Props become variables, and the tag's content becomes <code>children</code>. A project component with a bundled name replaces the bundled one.</p>
+<div class="highlight"><span class="filename">.agents/templates/components/Warn.md</span><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="x">&gt; **Warning</span><span class="cp">{%</span> <span class="k">if</span> <span class="nv">topic</span> <span class="k">is</span> <span class="nf">defined</span> <span class="cp">%}</span><span class="x"> about </span><span class="cp">{{</span> <span class="nv">topic</span> <span class="cp">}}{%</span> <span class="k">endif</span> <span class="cp">%}</span><span class="x">:** </span><span class="cp">{{</span> <span class="nv">children</span> <span class="o">|</span> <span class="nf">trim</span> <span class="cp">}}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="p">&lt;</span><span class="nt">Warn</span> <span class="na">topic</span><span class="o">=</span><span class="s">"deploys"</span><span class="p">&gt;</span>Check the staging logs first.<span class="p">&lt;/</span><span class="nt">Warn</span><span class="p">&gt;</span>
+</code></pre></div>
+<p>Tags inside code fences and inline code are left alone, so you can show examples.</p>
+<h2 id="per-harness-copies">Per-harness copies<a class="headerlink" href="#per-harness-copies" title="Permanent link">&para;</a></h2>
+<p>A skill installed the normal way is one file shared through links, so <code>harness.id</code> is <code>generic</code> in it. To vary by harness, render a separate copy into each harness's own directory:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--install<span class="w"> </span>my-rules<span class="w"> </span>--per-harness<span class="w"> </span>--harness<span class="w"> </span>claude,opencode
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--render<span class="w"> </span>my-rules<span class="w"> </span>--for<span class="w"> </span>claude<span class="w">     </span><span class="c1"># Preview one</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>harness.id</code>, <code>harness.name</code></td>
+<td>Which harness, or <code>generic</code></td>
+</tr>
+<tr>
+<td><code>harness.has_mcp</code>, <code>harness.has_acp</code></td>
+<td>What it supports</td>
+</tr>
+<tr>
+<td><code>harness.reads_agents</code></td>
+<td>Whether it reads <code>.agents/skills</code></td>
+</tr>
+<tr>
+<td><code>harness.question_tool</code></td>
+<td>Its question tool, if confirmed; empty otherwise</td>
+</tr>
+<tr>
+<td><code>skill.name</code></td>
+<td>The template's name</td>
+</tr>
+<tr>
+<td><code>aiculator.version</code></td>
+<td>The running version</td>
+</tr>
+</tbody>
+</table>
+<h2 id="safety">Safety<a class="headerlink" href="#safety" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Rendering cannot run code</strong> or read outside the template directories, so rendering a template from an untrusted repository does not endanger your machine. What the skill then tells a model to do still deserves review.</li>
+<li><strong>A typo in a variable name is an error,</strong> and it does not silently render as nothing.</li>
+<li><strong>A render is linted first.</strong> A template with a mistake cannot damage an installed skill.</li>
+<li><strong>Hand-written skills are never overwritten.</strong> Only directories a template generated are replaced.</li>
+</ul>
+<h2 id="keep-skills-current">Keep skills current<a class="headerlink" href="#keep-skills-current" title="Permanent link">&para;</a></h2>
+<p>Rendered skills are ordinary files, so a changed template leaves them stale. This fails if any have drifted, which suits CI:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>aiculator<span class="w"> </span>template<span class="w"> </span>--check
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../skills/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Skills">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Skills
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../template-demo/" class="md-footer__link md-footer__link--next" aria-label="Next: Template demo">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Template demo
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.code.select", "content.tooltips", "navigation.path", "navigation.tracking"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+    
+  </body>
+</html>
