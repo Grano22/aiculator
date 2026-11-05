@@ -986,6 +986,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recovery and failover
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/debugging/" class="md-nav__link">
         
   
@@ -1220,6 +1248,17 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#reports-in-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reports in CI
+      
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#crash-testing" class="md-nav__link">
@@ -1577,6 +1616,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#reports-in-ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reports in CI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#crash-testing" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1701,9 +1751,18 @@
 
 <h1 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h1>
 <p>Run the whole set with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-race<span class="w"> </span>./...<span class="w">     </span><span class="c1"># Includes the crash test</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./scripts/formal.sh<span class="w">     </span><span class="c1"># TLA+ and Alloy; needs Java</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-race<span class="w"> </span>./...<span class="w">         </span><span class="c1"># Includes the crash test</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>./scripts/formal.sh<span class="w">         </span><span class="c1"># TLA+ and Alloy; needs Java</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>./scripts/coverage.sh<span class="w">       </span><span class="c1"># Coverage of unit and end-to-end tests, held to minimums</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>./scripts/bench.sh<span class="w"> </span>HEAD~1<span class="w">   </span><span class="c1"># Benchmarks of this commit and another, side by side</span>
 </code></pre></div>
+<h2 id="reports-in-ci">Reports in CI<a class="headerlink" href="#reports-in-ci" title="Permanent link">&para;</a></h2>
+<p>Every CI run builds one HTML report, with nothing loaded from elsewhere, as the <code>ci-report</code> artifact. Each job also writes a short summary to its page. On master, the report is published to <a href="https://grano22.github.io/aiculator/reports/latest/">reports/latest</a>.</p>
+<ul>
+<li><strong>Tests:</strong> results from Linux and macOS under the race detector, and from the coverage run, by package, with the slowest tests and the output of every failure. Tests run in a shuffled order, so a test that only passes after another one fails. The seed is in the log. Only failed tests run again: one that then passes is marked flaky. It is listed on the report but doesn't fail the run. A package that failed to build, panicked or timed out always fails the run.</li>
+<li><strong>Coverage:</strong> by package and file, from unit tests and from the binary the end-to-end tests start, merged, with a line-by-line view. <code>scripts/coverage-min.txt</code> holds each package to a minimum.</li>
+<li><strong>Performance:</strong> a runner's speed varies between runs, so comparing with numbers from an earlier run proves little. <code>scripts/bench.sh</code> builds the base commit (the pull request's base, or the previous commit on master) and runs it in turns with this one, six times each, on the same runner. A change counts only if the Mann-Whitney U test gives p &lt; 0.05, which is the test <code>benchstat</code> uses. A run fails if a benchmark is significantly more than 25% slower, allocates more than 10% more, or is over its ceiling in <code>scripts/perf-budgets.txt</code>. Medians from master are kept in a history and charted.</li>
+</ul>
 <h2 id="crash-testing">Crash testing<a class="headerlink" href="#crash-testing" title="Permanent link">&para;</a></h2>
 <p><code>TestKill9Gate</code> starts a real server process, hammers it from several clients, and kills it with <code>SIGKILL</code> at a random moment, 100 times. After every restart it checks that:</p>
 <ul>
@@ -1767,7 +1826,7 @@
 </tr>
 <tr>
 <td>One add-and-grant cycle</td>
-<td>55 µs, about 18,000 per second</td>
+<td>57 µs, about 18,000 per second</td>
 <td>2 ms</td>
 </tr>
 <tr>
@@ -1809,6 +1868,16 @@
 <td>Heap per task</td>
 <td>1.3 KiB</td>
 <td>16 KiB</td>
+</tr>
+<tr>
+<td>Heartbeat in the engine</td>
+<td>1.5 µs</td>
+<td>20 µs in CI</td>
+</tr>
+<tr>
+<td>Heartbeat over HTTP, token check included</td>
+<td>49 µs</td>
+<td>400 µs in CI</td>
 </tr>
 <tr>
 <td>CLI start</td>

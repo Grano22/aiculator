@@ -1014,6 +1014,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Web">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flow-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow analytics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1145,6 +1162,34 @@
     
   
     Plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recovery and failover
   
 
     
@@ -1668,6 +1713,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Web">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flow-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow analytics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1892,6 +1954,18 @@
 <p><img alt="The web dashboard in dark mode." src="../../assets/screens/web-dark.png#only-dark" />
 <img alt="The web dashboard in light mode." src="../../assets/screens/web-light.png#only-light" /></p>
 <p>It follows your system's light or dark setting, works at phone width, and pauses while its tab is hidden.</p>
+<h3 id="flow-analytics">Flow analytics<a class="headerlink" href="#flow-analytics" title="Permanent link">&para;</a></h3>
+<p>Below the live numbers, four charts show how work has flowed. Filter them by time window (the last hour up to everything kept), by tier and by label. On <code>aiculator web --all</code>, a realm filter picks the project.</p>
+<p><img alt="Flow analytics: the state Sankey, failure reasons, the retry funnel and the cumulative flow." src="../../assets/screens/web-flow-dark.png#only-dark" />
+<img alt="Flow analytics: the state Sankey, failure reasons, the retry funnel and the cumulative flow." src="../../assets/screens/web-flow-light.png#only-light" /></p>
+<ul>
+<li><strong>States:</strong> a Sankey of the path each task took, Draft → Ready → Claimed → Running → Review → Merging → Done, and where it left that path for Failed, Parked or Canceled. A node bigger than what leaves it holds tasks that are still there. A task that failed and then made it counts once, on the path it finished; its retries are in the funnel.</li>
+<li><strong>Why tasks fall out:</strong> each time a task failed or was parked in the window: the state it was in, then the reason. Reasons are the swarm's codes, such as <code>no_progress</code>, <code>checks_failed</code>, <code>review_rejected</code>, <code>budget_exhausted</code>, <code>needs_resplit</code>, <code>unreadable_record</code> and <code>done_without_verification</code>. A note an agent wrote when it gave up shows as <code>agent_note</code>, so that its text never becomes a chart label.</li>
+<li><strong>Tries:</strong> how many tasks reached a first, second or third try, and how many finished on each one.</li>
+<li><strong>What caused retries:</strong> what ended the try before each new one. A failure's reason counts first. Otherwise it's the last reason the task had, such as an expired claim.</li>
+<li><strong>Cumulative flow:</strong> how many tasks were in each state over time, stacked with done at the bottom. A band that keeps growing, such as review, is a bottleneck.</li>
+</ul>
+<p>The charts come from the event log, which keeps every committed change, so a restart loses nothing. The server reads the log into a compact index when it starts, then follows it. Until it has caught up, the card says so. Tier and label filters use each task's tier and labels now. Working out the charts for 20,000 tasks takes about 9 ms.</p>
 <p>The dashboard is a <a href="../plugins/">plugin</a> compiled into the binary. <code>go build -tags noweb</code> leaves it out, saving about 0.1 MiB.</p>
 <h2 id="what-the-numbers-mean">What the numbers mean<a class="headerlink" href="#what-the-numbers-mean" title="Permanent link">&para;</a></h2>
 <h3 id="flow">Flow<a class="headerlink" href="#flow" title="Permanent link">&para;</a></h3>
@@ -2020,6 +2094,11 @@
 <td><code>GET /v1/observe</code></td>
 <td>Viewer</td>
 <td>The full snapshot as JSON</td>
+</tr>
+<tr>
+<td><code>GET /v1/analytics</code></td>
+<td>Viewer</td>
+<td>The flow analytics as JSON. Takes <code>window</code> (such as <code>6h</code>, <code>7d</code> or <code>all</code>), <code>tier</code>, <code>label</code> (<code>key=value</code> or <code>key</code>) and <code>points</code></td>
 </tr>
 <tr>
 <td><code>GET /v1/events</code></td>
