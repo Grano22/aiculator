@@ -1,0 +1,48 @@
+[
+  {
+    "sha": "fc702f844ee4631e663f5d94a5b369a47c6360e4",
+    "at": "2026-11-05T21:01:30.964758062Z",
+    "medians": {
+      "internal/api.HTTPHeartbeat": {
+        "B/op": 11279,
+        "allocs/op": 112,
+        "ns/op": 55279.5
+      },
+      "internal/auth.Verify": {
+        "B/op": 80,
+        "allocs/op": 1,
+        "ns/op": 41.575
+      },
+      "internal/engine.AddAndGrant": {
+        "B/op": 19215,
+        "allocs/op": 189.5,
+        "ns/op": 64786.5
+      },
+      "internal/engine.GrantCycle": {
+        "B/op": 16628,
+        "allocs/op": 176,
+        "ns/op": 56414.5
+      },
+      "internal/engine.HeartbeatWithWaiters": {
+        "B/op": 850,
+        "allocs/op": 5,
+        "ns/op": 1609.5
+      },
+      "internal/store.MarshalTaskPointer": {
+        "B/op": 712,
+        "allocs/op": 8,
+        "ns/op": 1580.5
+      },
+      "internal/store.MarshalTaskValue": {
+        "B/op": 1864,
+        "allocs/op": 10,
+        "ns/op": 1821
+      },
+      "internal/vlog.Disabled": {
+        "B/op": 0,
+        "allocs/op": 0,
+        "ns/op": 1.8405
+      }
+    }
+  }
+]
