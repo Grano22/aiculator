@@ -760,6 +760,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/parallel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Parallel subagents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/skills/" class="md-nav__link">
         
   
@@ -1319,6 +1375,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#aiculator-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator export
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#aiculator-harness" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1411,6 +1478,50 @@
     <span class="md-ellipsis">
       
         aiculator mcp remove
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-parallel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator parallel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-parallel-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator parallel plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-parallel-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator parallel snapshot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-parallel-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator parallel verify
       
     </span>
   </a>
@@ -2236,6 +2347,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#aiculator-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator export
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#aiculator-harness" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2328,6 +2450,50 @@
     <span class="md-ellipsis">
       
         aiculator mcp remove
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-parallel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator parallel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-parallel-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator parallel plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-parallel-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator parallel snapshot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aiculator-parallel-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aiculator parallel verify
       
     </span>
   </a>
@@ -2995,22 +3161,54 @@ the server logging at a high level by accident. The previous level then comes ba
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>  aiculator events
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  aiculator events | jq -r 'select(.state == "done") | .id'
 </code></pre></div>
+<h2 id="aiculator-export"><code>aiculator export</code><a class="headerlink" href="#aiculator-export" title="Permanent link">&para;</a></h2>
+<p>Write tasks or other data to a file: JSON, YAML, CSV, TSV, Excel, HTML or Markdown</p>
+<p>Exports what you choose, in the format you choose. Tasks are the default, and JSON is the
+default format, unless the file name in -o says otherwise.</p>
+<p>Values are always treated as text: HTML is escaped, Excel cells are stored as strings, and in
+CSV a value that a spreadsheet would run as a formula starts with a quote.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>aiculator export [tasks|agents|usage|flow|realms] [flags]
+</code></pre></div>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>  aiculator export                                   # All tasks, as JSON
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>  aiculator export -o tasks.xlsx                     # The file name picks the format
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>  aiculator export --format html -o report.html --state running,review
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>  aiculator export --fields id,title,labels.team,owner --format csv
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>  aiculator export --label team=core --sort priority -o core.yaml
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>  aiculator export --with-meta --fields id,meta.points -o points.csv
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>  aiculator export --all -o everything.xlsx          # Tasks from every realm
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>  aiculator export --list-fields                     # What can be selected
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>  aiculator export realms --format md
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>      --all                 tasks from every running realm, with a realm column
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>      --fields strings      what to include, such as id,title,labels.team; see --list-fields
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>      --format string       json, yaml, csv, tsv, xlsx, html or md; from the file name, or json
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>      --label stringArray   only with this label, as name=value
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>      --limit int           stop after this many rows
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>      --list-fields         list what can be selected, and write nothing
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>  -o, --output string       file to write; standard output if empty
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>      --sort string         sort by this field; -field for descending
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>      --state strings       only these states, such as running,review
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>      --where stringArray   only where a field has this value, as field=value
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>      --with-meta           add each task's properties, as meta.NAME; costs one request per task
+</code></pre></div>
 <h2 id="aiculator-harness"><code>aiculator harness</code><a class="headerlink" href="#aiculator-harness" title="Permanent link">&para;</a></h2>
 <p>List supported harnesses and how each connects</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>aiculator harness
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>aiculator harness
 </code></pre></div>
 <h2 id="aiculator-import"><code>aiculator import</code><a class="headerlink" href="#aiculator-import" title="Permanent link">&para;</a></h2>
 <p>Load tasks once from a configured source, such as Jira, Notion or a spreadsheet</p>
 <p>Reads a source named in .agents/sources.yaml, once, and creates a task for each item.
 Importing again is safe: an item that was imported before is left alone, or brought up to date with --update.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>aiculator import SOURCE [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>aiculator import SOURCE [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>      --config string   sources file; .agents/sources.yaml if empty
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>      --dry-run         show what would be imported, and change nothing
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>      --limit int       stop after this many items; 0 means all
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>      --query string    use this query instead of the configured one: JQL for Jira, a JSON filter for Notion
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>      --update          bring items that were imported before up to date
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>      --config string   sources file; .agents/sources.yaml if empty
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>      --dry-run         show what would be imported, and change nothing
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>      --limit int       stop after this many items; 0 means all
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>      --query string    use this query instead of the configured one: JQL for Jira, a JSON filter for Notion
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>      --update          bring items that were imported before up to date
 </code></pre></div>
 <h2 id="aiculator-init"><code>aiculator init</code><a class="headerlink" href="#aiculator-init" title="Permanent link">&para;</a></h2>
 <p>Set up this machine, step by step: harnesses, skills and MCP config</p>
@@ -3022,21 +3220,21 @@ create the git repository the swarm needs.</p>
 <p>Nothing is written until the last question is answered, so backing out with Ctrl-C changes
 nothing. Running it again is safe, and keeps what is already there.</p>
 <p>For a script, --yes takes every default, and flags answer single questions.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>aiculator init [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>aiculator init [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>      --all-harnesses    also offer harnesses that were not found on this machine
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>      --dry-run          say what would be done, and do nothing
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>      --harness string   set these up without asking: installed, all, or comma-separated ids
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>      --mcp              add MCP config without asking
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>      --no-mcp           do not add MCP config
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>      --no-skills        do not install the skills
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>      --no-start         do not start the server, with --scoped
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>      --planner          also allow these sessions to plan
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>      --sandbox string   sandbox for the server: auto, seatbelt, bwrap, docker or none (default "auto")
-<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>      --scoped           set up this project only, rather than the whole machine
-<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>      --tier int         tier for MCP sessions: 1 standard, 2 advanced, 3 ultra (default 1)
-<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>  -y, --yes              take every default and ask nothing
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>      --all-harnesses    also offer harnesses that were not found on this machine
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>      --dry-run          say what would be done, and do nothing
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>      --harness string   set these up without asking: installed, all, or comma-separated ids
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>      --mcp              add MCP config without asking
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>      --no-mcp           do not add MCP config
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>      --no-skills        do not install the skills
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>      --no-start         do not start the server, with --scoped
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>      --planner          also allow these sessions to plan
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>      --sandbox string   sandbox for the server: auto, seatbelt, bwrap, docker or none (default "auto")
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>      --scoped           set up this project only, rather than the whole machine
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>      --tier int         tier for MCP sessions: 1 standard, 2 advanced, 3 ultra (default 1)
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>  -y, --yes              take every default and ask nothing
 </code></pre></div>
 <h2 id="aiculator-join"><code>aiculator join</code><a class="headerlink" href="#aiculator-join" title="Permanent link">&para;</a></h2>
 <p>Connect installed harnesses to the swarm: server, skills and MCP config</p>
@@ -3045,142 +3243,196 @@ nothing. Running it again is safe, and keeps what is already there.</p>
 bundled skills into .agents/skills, links them to harnesses that need it, and registers the
 MCP bridge. Anything a harness can already find is left alone, at either level, so after
 aiculator init it only has to start the server. No secrets are written.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>aiculator join [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>aiculator join [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>      --harness string   installed, all, or comma-separated ids (default "installed")
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>      --no-start         do not start the server
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>      --planner          also allow these sessions to plan
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>      --sandbox string   sandbox for the server: auto, seatbelt, bwrap, docker or none (default "auto")
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>      --tier int         tier: 1 standard, 2 advanced, 3 ultra (default 1)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>      --harness string   installed, all, or comma-separated ids (default "installed")
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>      --no-start         do not start the server
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>      --planner          also allow these sessions to plan
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>      --sandbox string   sandbox for the server: auto, seatbelt, bwrap, docker or none (default "auto")
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>      --tier int         tier: 1 standard, 2 advanced, 3 ultra (default 1)
 </code></pre></div>
 <h2 id="aiculator-logs"><code>aiculator logs</code><a class="headerlink" href="#aiculator-logs" title="Permanent link">&para;</a></h2>
 <p>Show the logs of a server started with aiculator up</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>aiculator logs [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>aiculator logs [flags]
 </code></pre></div>
 <p><strong>Examples</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>  aiculator logs --tail 50
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>  aiculator logs -f --component engine
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>  aiculator logs -f --grep ship-api-3
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>  aiculator logs --tail 50
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>  aiculator logs -f --component engine
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>  aiculator logs -f --grep ship-api-3
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>      --component string   show only this component
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>  -f, --follow             keep printing new lines
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>      --grep string        show only lines containing this text
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>      --tail int           show only the last N matching lines
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>      --component string   show only this component
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>  -f, --follow             keep printing new lines
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>      --grep string        show only lines containing this text
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>      --tail int           show only the last N matching lines
 </code></pre></div>
 <h2 id="aiculator-mcp"><code>aiculator mcp</code><a class="headerlink" href="#aiculator-mcp" title="Permanent link">&para;</a></h2>
 <p>Serve the swarm's MCP tools over stdio (--auto, or a token in SWARM_TOKEN)</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>aiculator mcp [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>aiculator mcp [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>      --agent string     agent name; generated if empty
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>      --auto             find the local server and get a token by itself
-<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>      --harness string   harness id, used in the agent's name
-<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>      --planner          allow planning, with --auto
-<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>      --realm-switch     with --auto: let the session list other realms and move between them
-<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>      --tier int         tier, with --auto (default 1)
-<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>      --url string       server URL; --auto finds it (default "http://127.0.0.1:7777")
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>      --agent string     agent name; generated if empty
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>      --auto             find the local server and get a token by itself
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>      --harness string   harness id, used in the agent's name
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>      --planner          allow planning, with --auto
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>      --realm-switch     with --auto: let the session list other realms and move between them
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>      --tier int         tier, with --auto (default 1)
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>      --url string       server URL; --auto finds it (default "http://127.0.0.1:7777")
 </code></pre></div>
 <h2 id="aiculator-mcp-add"><code>aiculator mcp add</code><a class="headerlink" href="#aiculator-mcp-add" title="Permanent link">&para;</a></h2>
 <p>Add the swarm's MCP server, or any server, to a harness's config</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>aiculator mcp add [--harness TARGET] [--name NAME -- COMMAND ARGS...] [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>aiculator mcp add [--harness TARGET] [--name NAME -- COMMAND ARGS...] [flags]
 </code></pre></div>
 <p><strong>Examples</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>  aiculator mcp add                               every installed harness
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>  aiculator mcp add --harness opencode --tier 2
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>  aiculator mcp add --harness claude,cursor --global
-<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>  aiculator mcp add --harness ~/.local/bin/opencode   found from the executable
-<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>  aiculator mcp add --harness ./custom/mcp.json       a config file; format inferred
-<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>  aiculator mcp add --name docs --harness claude -- npx -y docs-server
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>  aiculator mcp add                               every installed harness
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>  aiculator mcp add --harness opencode --tier 2
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>  aiculator mcp add --harness claude,cursor --global
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>  aiculator mcp add --harness ~/.local/bin/opencode   found from the executable
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>  aiculator mcp add --harness ./custom/mcp.json       a config file; format inferred
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>  aiculator mcp add --name docs --harness claude -- npx -y docs-server
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>      --dry-run           show what would be written and change nothing
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>      --env stringArray   environment variable for a custom server, as KEY=VALUE; stored in plain text
-<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>      --format string     for a config path: mcpServers-json, opencode-json or codex-toml; inferred if empty
-<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>      --global            use the harness's user-level config
-<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>      --harness string    auto, all, ids, a harness executable, or a config file path (default "auto")
-<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>      --name string       server name (default "swarm")
-<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>      --planner           allow the swarm's own server to plan
-<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>      --tier int          tier for the swarm's own server (default 1)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>      --dry-run           show what would be written and change nothing
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>      --env stringArray   environment variable for a custom server, as KEY=VALUE; stored in plain text
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>      --format string     for a config path: mcpServers-json, opencode-json or codex-toml; inferred if empty
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>      --global            use the harness's user-level config
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>      --harness string    auto, all, ids, a harness executable, or a config file path (default "auto")
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>      --name string       server name (default "swarm")
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>      --planner           allow the swarm's own server to plan
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>      --tier int          tier for the swarm's own server (default 1)
 </code></pre></div>
 <h2 id="aiculator-mcp-print"><code>aiculator mcp print</code><a class="headerlink" href="#aiculator-mcp-print" title="Permanent link">&para;</a></h2>
 <p>Print the config piece to add a server by hand; changes nothing</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>aiculator mcp print [--harness TARGET] [--name NAME -- COMMAND ARGS...] [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>aiculator mcp print [--harness TARGET] [--name NAME -- COMMAND ARGS...] [flags]
 </code></pre></div>
 <p><strong>Examples</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>  aiculator mcp print --harness opencode
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>  aiculator mcp print --harness codex --planner
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>  aiculator mcp print --harness ./custom.toml
-<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>  aiculator mcp print --name docs --harness claude -- npx -y docs-server
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>  aiculator mcp print --harness opencode
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>  aiculator mcp print --harness codex --planner
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>  aiculator mcp print --harness ./custom.toml
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>  aiculator mcp print --name docs --harness claude -- npx -y docs-server
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>      --env stringArray   environment variable for a custom server, as KEY=VALUE; stored in plain text
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>      --format string     for a config path: mcpServers-json, opencode-json or codex-toml; inferred if empty
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>      --global            use the harness's user-level config
-<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>      --harness string    auto, all, ids, a harness executable, or a config file path (default "auto")
-<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>      --name string       server name (default "swarm")
-<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>      --planner           allow the swarm's own server to plan
-<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>      --tier int          tier for the swarm's own server (default 1)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>      --env stringArray   environment variable for a custom server, as KEY=VALUE; stored in plain text
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>      --format string     for a config path: mcpServers-json, opencode-json or codex-toml; inferred if empty
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>      --global            use the harness's user-level config
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>      --harness string    auto, all, ids, a harness executable, or a config file path (default "auto")
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>      --name string       server name (default "swarm")
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>      --planner           allow the swarm's own server to plan
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>      --tier int          tier for the swarm's own server (default 1)
 </code></pre></div>
 <h2 id="aiculator-mcp-remove"><code>aiculator mcp remove</code><a class="headerlink" href="#aiculator-mcp-remove" title="Permanent link">&para;</a></h2>
 <p>Remove a server from a harness's config, and nothing else</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>aiculator mcp remove [--harness TARGET] [--name NAME] [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>aiculator mcp remove [--harness TARGET] [--name NAME] [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>      --env stringArray   environment variable for a custom server, as KEY=VALUE; stored in plain text
-<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>      --format string     for a config path: mcpServers-json, opencode-json or codex-toml; inferred if empty
-<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>      --global            use the harness's user-level config
-<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>      --harness string    auto, all, ids, a harness executable, or a config file path (default "auto")
-<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>      --name string       server name (default "swarm")
-<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>      --planner           allow the swarm's own server to plan
-<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>      --tier int          tier for the swarm's own server (default 1)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>      --env stringArray   environment variable for a custom server, as KEY=VALUE; stored in plain text
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>      --format string     for a config path: mcpServers-json, opencode-json or codex-toml; inferred if empty
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>      --global            use the harness's user-level config
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>      --harness string    auto, all, ids, a harness executable, or a config file path (default "auto")
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>      --name string       server name (default "swarm")
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>      --planner           allow the swarm's own server to plan
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>      --tier int          tier for the swarm's own server (default 1)
+</code></pre></div>
+<h2 id="aiculator-parallel"><code>aiculator parallel</code><a class="headerlink" href="#aiculator-parallel" title="Permanent link">&para;</a></h2>
+<p>Work out what subagents can do at the same time in one working tree</p>
+<p>Worktrees keep tasks apart. This is the level below: one task split among subagents in one
+checkout. Give it the jobs and what each will change, and it says what can safely run at once.
+Jobs share a wave only if their claims cannot overlap, and a job that claims nothing runs alone.</p>
+<p>This needs no server, and it does not touch the swarm's state.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>aiculator parallel
+</code></pre></div>
+<h2 id="aiculator-parallel-plan"><code>aiculator parallel plan</code><a class="headerlink" href="#aiculator-parallel-plan" title="Permanent link">&para;</a></h2>
+<p>Plan jobs into waves that cannot conflict</p>
+<p>Reads jobs as YAML or JSON. A claim is a file or a directory ending in /. With symbol
+granularity it can also be file#symbol or file:10-40. Reads are what a job relies on staying the same while it works.</p>
+<p>Granularity is how finely claims are compared. The default, auto, uses the coarser of dir and
+file that loses no parallelism, and it treats file#symbol as the whole file. To let two jobs share
+one file, ask for symbol. Their claims are then checked against the file, but nothing can stop a
+subagent straying, and two in one file can overwrite each other.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>aiculator parallel plan [flags]
+</code></pre></div>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>  aiculator parallel plan --file jobs.yaml -o plan.json
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>  cat jobs.yaml | aiculator parallel plan --file - --max 3
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>  # jobs.yaml
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>  jobs:
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>    - id: api
+<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>      touches: [internal/api/users.go]
+<a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a>    - id: docs
+<a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>      touches: [docs/users.md]
+<a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a>      reads: [internal/api/users.go]
+<a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a>    - id: format
+<a id="__codelineno-35-12" name="__codelineno-35-12" href="#__codelineno-35-12"></a>      exclusive: true
+<a id="__codelineno-35-13" name="__codelineno-35-13" href="#__codelineno-35-13"></a>      deps: [api, docs]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>      --file string          the jobs, as YAML or JSON; - for standard input
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>      --granularity string   dir, file, symbol, repo or auto (default "auto")
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>      --json                 print the plan as JSON
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>      --max int              most subagents at once (default 4)
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>  -o, --output string        save the plan, for verify
+</code></pre></div>
+<h2 id="aiculator-parallel-snapshot"><code>aiculator parallel snapshot</code><a class="headerlink" href="#aiculator-parallel-snapshot" title="Permanent link">&para;</a></h2>
+<p>Record the working tree before a wave, without staging or committing anything</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>aiculator parallel snapshot
+</code></pre></div>
+<h2 id="aiculator-parallel-verify"><code>aiculator parallel verify</code><a class="headerlink" href="#aiculator-parallel-verify" title="Permanent link">&para;</a></h2>
+<p>Check that a wave changed only what its jobs claimed; exits 1 if not</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>aiculator parallel verify [flags]
+</code></pre></div>
+<p><strong>Flags</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>      --json           print as JSON
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>      --plan string    the plan saved by parallel plan -o
+<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>      --since string   what parallel snapshot printed before that wave
+<a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>      --wave int       which wave just finished (default 1)
 </code></pre></div>
 <h2 id="aiculator-plan"><code>aiculator plan</code><a class="headerlink" href="#aiculator-plan" title="Permanent link">&para;</a></h2>
 <p>Drive the planner lease by hand</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>aiculator plan
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>aiculator plan
 </code></pre></div>
 <h2 id="aiculator-plan-add"><code>aiculator plan add</code><a class="headerlink" href="#aiculator-plan-add" title="Permanent link">&para;</a></h2>
 <p>Add a draft task to the plan</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>aiculator plan add [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>aiculator plan add [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>      --check stringArray   acceptance command
-<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>      --dep strings         task id this depends on
-<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>      --epoch uint          planning epoch
-<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>      --id string           task id; generated if empty
-<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>      --priority int        higher runs sooner
-<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>      --review              also require an independent agent review
-<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>      --spec string         full instructions
-<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>      --tag strings         required capability tag
-<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a>      --tier int            tier: 1 standard, 2 advanced, 3 ultra (default 1)
-<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>      --title string        short title
-<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a>      --touches strings     path this task will change
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>      --check stringArray   acceptance command
+<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>      --dep strings         task id this depends on
+<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a>      --epoch uint          planning epoch
+<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a>      --id string           task id; generated if empty
+<a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a>      --priority int        higher runs sooner
+<a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a>      --review              also require an independent agent review
+<a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a>      --spec string         full instructions
+<a id="__codelineno-42-8" name="__codelineno-42-8" href="#__codelineno-42-8"></a>      --tag strings         required capability tag
+<a id="__codelineno-42-9" name="__codelineno-42-9" href="#__codelineno-42-9"></a>      --tier int            tier: 1 standard, 2 advanced, 3 ultra (default 1)
+<a id="__codelineno-42-10" name="__codelineno-42-10" href="#__codelineno-42-10"></a>      --title string        short title
+<a id="__codelineno-42-11" name="__codelineno-42-11" href="#__codelineno-42-11"></a>      --touches strings     path this task will change
 </code></pre></div>
 <h2 id="aiculator-plan-begin"><code>aiculator plan begin</code><a class="headerlink" href="#aiculator-plan-begin" title="Permanent link">&para;</a></h2>
 <p>Take the planner lease</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>aiculator plan begin [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>aiculator plan begin [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>      --ttl duration   lease length (default 1m0s)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>      --ttl duration   lease length (default 1m0s)
 </code></pre></div>
 <h2 id="aiculator-plan-commit"><code>aiculator plan commit</code><a class="headerlink" href="#aiculator-plan-commit" title="Permanent link">&para;</a></h2>
 <p>Publish the plan</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>aiculator plan commit [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>aiculator plan commit [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>      --epoch uint   planning epoch
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>      --epoch uint   planning epoch
 </code></pre></div>
 <h2 id="aiculator-plan-update"><code>aiculator plan update</code><a class="headerlink" href="#aiculator-plan-update" title="Permanent link">&para;</a></h2>
 <p>Publish hints to waiting agents</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>aiculator plan update [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>aiculator plan update [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>      --epoch uint             planning epoch
-<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>      --eta-ms int             estimated time to commit
-<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>      --expected stringArray   tasks expected, as TIER=COUNT
-<a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>      --phase string           what the planner is doing
-<a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>      --ttl duration           lease length (default 1m0s)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>      --epoch uint             planning epoch
+<a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a>      --eta-ms int             estimated time to commit
+<a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a>      --expected stringArray   tasks expected, as TIER=COUNT
+<a id="__codelineno-48-4" name="__codelineno-48-4" href="#__codelineno-48-4"></a>      --phase string           what the planner is doing
+<a id="__codelineno-48-5" name="__codelineno-48-5" href="#__codelineno-48-5"></a>      --ttl duration           lease length (default 1m0s)
 </code></pre></div>
 <h2 id="aiculator-plugin"><code>aiculator plugin</code><a class="headerlink" href="#aiculator-plugin" title="Permanent link">&para;</a></h2>
 <p>List plugins, both compiled in and on PATH</p>
@@ -3188,7 +3440,7 @@ aiculator init it only has to start the server. No secrets are written.</p>
 Build one in with a blank import in cmd/aiculator; the web dashboard is one, and go build
 -tags noweb leaves it out.</p>
 <p>Any program on PATH named aiculator-NAME also runs as aiculator NAME.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>aiculator plugin
+<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>aiculator plugin
 </code></pre></div>
 <h2 id="aiculator-realm"><code>aiculator realm</code><a class="headerlink" href="#aiculator-realm" title="Permanent link">&para;</a></h2>
 <p>See and name the projects on this machine that use the swarm</p>
@@ -3196,43 +3448,43 @@ Build one in with a blank import in cmd/aiculator; the web dashboard is one, and
 when its server starts. Realms never share tasks or tokens, so trouble in one stays there.</p>
 <p>Act on one from any folder with --realm NAME, such as: aiculator --realm shop task ls
 See them all with: aiculator top --all, or aiculator web --all</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>aiculator realm
+<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a>aiculator realm
 </code></pre></div>
 <h2 id="aiculator-realm-forget"><code>aiculator realm forget</code><a class="headerlink" href="#aiculator-realm-forget" title="Permanent link">&para;</a></h2>
 <p>Take a realm off the list; the project and its data are not touched</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>aiculator realm forget NAME
+<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a>aiculator realm forget NAME
 </code></pre></div>
 <h2 id="aiculator-realm-ls"><code>aiculator realm ls</code><a class="headerlink" href="#aiculator-realm-ls" title="Permanent link">&para;</a></h2>
 <p>List the realms, and which are running</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>aiculator realm ls [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a>aiculator realm ls [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>      --json   print as JSON
+<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a>      --json   print as JSON
 </code></pre></div>
 <h2 id="aiculator-realm-rename"><code>aiculator realm rename</code><a class="headerlink" href="#aiculator-realm-rename" title="Permanent link">&para;</a></h2>
 <p>Give a realm a new name</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>aiculator realm rename OLD NEW
+<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a>aiculator realm rename OLD NEW
 </code></pre></div>
 <h2 id="aiculator-serve"><code>aiculator serve</code><a class="headerlink" href="#aiculator-serve" title="Permanent link">&para;</a></h2>
 <p>Start the swarm server</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>aiculator serve [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a>aiculator serve [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>      --addr string              listen address; port 0 picks a free one (default "127.0.0.1:7777")
-<a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>      --aging strings            raise priority after a wait, as wait=boost, such as 1h=5,4h=20
-<a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a>      --aging-unit duration      waiting this long equals one priority point (default 1m0s)
-<a id="__codelineno-46-4" name="__codelineno-46-4" href="#__codelineno-46-4"></a>      --branch string            branch that receives merged work (default "swarm/integration")
-<a id="__codelineno-46-5" name="__codelineno-46-5" href="#__codelineno-46-5"></a>      --exit-grace duration      quiet time before agents are told to exit (default 30s)
-<a id="__codelineno-46-6" name="__codelineno-46-6" href="#__codelineno-46-6"></a>      --lease-ttl duration       lease length (default 2m0s)
-<a id="__codelineno-46-7" name="__codelineno-46-7" href="#__codelineno-46-7"></a>      --progress-ttl duration    time without file changes before an agent counts as a zombie (default 10m0s)
-<a id="__codelineno-46-8" name="__codelineno-46-8" href="#__codelineno-46-8"></a>      --repo string              git repository to work on; empty disables the work layer
-<a id="__codelineno-46-9" name="__codelineno-46-9" href="#__codelineno-46-9"></a>      --restart-grace duration   no lease expires this soon after a restart (default 15s)
-<a id="__codelineno-46-10" name="__codelineno-46-10" href="#__codelineno-46-10"></a>      --sandbox string           sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
-<a id="__codelineno-46-11" name="__codelineno-46-11" href="#__codelineno-46-11"></a>      --sync-always              fsync every write; survives power loss but is slower
+<div class="highlight"><pre><span></span><code><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a>      --addr string              listen address; port 0 picks a free one (default "127.0.0.1:7777")
+<a id="__codelineno-56-2" name="__codelineno-56-2" href="#__codelineno-56-2"></a>      --aging strings            raise priority after a wait, as wait=boost, such as 1h=5,4h=20
+<a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a>      --aging-unit duration      waiting this long equals one priority point (default 1m0s)
+<a id="__codelineno-56-4" name="__codelineno-56-4" href="#__codelineno-56-4"></a>      --branch string            branch that receives merged work (default "swarm/integration")
+<a id="__codelineno-56-5" name="__codelineno-56-5" href="#__codelineno-56-5"></a>      --exit-grace duration      quiet time before agents are told to exit (default 30s)
+<a id="__codelineno-56-6" name="__codelineno-56-6" href="#__codelineno-56-6"></a>      --lease-ttl duration       lease length (default 2m0s)
+<a id="__codelineno-56-7" name="__codelineno-56-7" href="#__codelineno-56-7"></a>      --progress-ttl duration    time without file changes before an agent counts as a zombie (default 10m0s)
+<a id="__codelineno-56-8" name="__codelineno-56-8" href="#__codelineno-56-8"></a>      --repo string              git repository to work on; empty disables the work layer
+<a id="__codelineno-56-9" name="__codelineno-56-9" href="#__codelineno-56-9"></a>      --restart-grace duration   no lease expires this soon after a restart (default 15s)
+<a id="__codelineno-56-10" name="__codelineno-56-10" href="#__codelineno-56-10"></a>      --sandbox string           sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
+<a id="__codelineno-56-11" name="__codelineno-56-11" href="#__codelineno-56-11"></a>      --sync-always              fsync every write; survives power loss but is slower
 </code></pre></div>
 <h2 id="aiculator-situation"><code>aiculator situation</code><a class="headerlink" href="#aiculator-situation" title="Permanent link">&para;</a></h2>
 <p>Show the state of the swarm</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>aiculator situation
+<div class="highlight"><pre><span></span><code><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a>aiculator situation
 </code></pre></div>
 <h2 id="aiculator-skill"><code>aiculator skill</code><a class="headerlink" href="#aiculator-skill" title="Permanent link">&para;</a></h2>
 <p>Manage skills in one place: .agents/skills</p>
@@ -3241,153 +3493,153 @@ that scan .agents/skills need nothing, and the others get a link. Skills in .age
 are picked up too. An edit in one place reaches every harness.</p>
 <p>Patterns use * for anything, ? for one character and [abc] for a set. Quote any pattern
 with a wildcard: an unquoted * alone also works, but zsh stops at an unmatched *-sth.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>aiculator skill [--install PATTERN...] [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a>aiculator skill [--install PATTERN...] [flags]
 </code></pre></div>
 <p><strong>Examples</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>  aiculator skill --install '*'                  all skills, to every installed harness
-<a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>  aiculator skill --install 'swarm-*' 'lint-?'   by pattern
-<a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a>  aiculator skill --install '*-tool' --global    into ~/.agents/skills and home directories
-<a id="__codelineno-49-4" name="__codelineno-49-4" href="#__codelineno-49-4"></a>  aiculator skill --install '*' --harness all    every supported harness, installed or not
-<a id="__codelineno-49-5" name="__codelineno-49-5" href="#__codelineno-49-5"></a>  aiculator skill --install x --harness claude,pi
-<a id="__codelineno-49-6" name="__codelineno-49-6" href="#__codelineno-49-6"></a>  aiculator skill --install x --path ./vendor/skills --harness none
-<a id="__codelineno-49-7" name="__codelineno-49-7" href="#__codelineno-49-7"></a>  aiculator skill --install x --source ~/my-skills
-<a id="__codelineno-49-8" name="__codelineno-49-8" href="#__codelineno-49-8"></a>  aiculator skill --list
-<a id="__codelineno-49-9" name="__codelineno-49-9" href="#__codelineno-49-9"></a>  aiculator skill --lint
-<a id="__codelineno-49-10" name="__codelineno-49-10" href="#__codelineno-49-10"></a>  aiculator skill --new my-skill --description "..."
-<a id="__codelineno-49-11" name="__codelineno-49-11" href="#__codelineno-49-11"></a>  aiculator skill --uninstall 'swarm-*' --purge
+<div class="highlight"><pre><span></span><code><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a>  aiculator skill --install '*'                  all skills, to every installed harness
+<a id="__codelineno-59-2" name="__codelineno-59-2" href="#__codelineno-59-2"></a>  aiculator skill --install 'swarm-*' 'lint-?'   by pattern
+<a id="__codelineno-59-3" name="__codelineno-59-3" href="#__codelineno-59-3"></a>  aiculator skill --install '*-tool' --global    into ~/.agents/skills and home directories
+<a id="__codelineno-59-4" name="__codelineno-59-4" href="#__codelineno-59-4"></a>  aiculator skill --install '*' --harness all    every supported harness, installed or not
+<a id="__codelineno-59-5" name="__codelineno-59-5" href="#__codelineno-59-5"></a>  aiculator skill --install x --harness claude,pi
+<a id="__codelineno-59-6" name="__codelineno-59-6" href="#__codelineno-59-6"></a>  aiculator skill --install x --path ./vendor/skills --harness none
+<a id="__codelineno-59-7" name="__codelineno-59-7" href="#__codelineno-59-7"></a>  aiculator skill --install x --source ~/my-skills
+<a id="__codelineno-59-8" name="__codelineno-59-8" href="#__codelineno-59-8"></a>  aiculator skill --list
+<a id="__codelineno-59-9" name="__codelineno-59-9" href="#__codelineno-59-9"></a>  aiculator skill --lint
+<a id="__codelineno-59-10" name="__codelineno-59-10" href="#__codelineno-59-10"></a>  aiculator skill --new my-skill --description "..."
+<a id="__codelineno-59-11" name="__codelineno-59-11" href="#__codelineno-59-11"></a>  aiculator skill --uninstall 'swarm-*' --purge
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a>      --copy                 copy instead of linking, for tools that do not follow links
-<a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a>      --description string   description for --new
-<a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a>      --force                refresh bundled skills and replace links; your own directories are never replaced
-<a id="__codelineno-50-4" name="__codelineno-50-4" href="#__codelineno-50-4"></a>      --global               use ~/.agents/skills and home directories
-<a id="__codelineno-50-5" name="__codelineno-50-5" href="#__codelineno-50-5"></a>      --harness string       installed, all, none, or comma-separated ids (default "installed")
-<a id="__codelineno-50-6" name="__codelineno-50-6" href="#__codelineno-50-6"></a>      --install strings      install skills matching these patterns
-<a id="__codelineno-50-7" name="__codelineno-50-7" href="#__codelineno-50-7"></a>      --lint                 check skills against the Agent Skills spec
-<a id="__codelineno-50-8" name="__codelineno-50-8" href="#__codelineno-50-8"></a>      --list                 list skills
-<a id="__codelineno-50-9" name="__codelineno-50-9" href="#__codelineno-50-9"></a>      --new string           create a skill with full metadata
-<a id="__codelineno-50-10" name="__codelineno-50-10" href="#__codelineno-50-10"></a>      --path strings         also install to this directory
-<a id="__codelineno-50-11" name="__codelineno-50-11" href="#__codelineno-50-11"></a>      --purge                with --uninstall, also delete from .agents/skills
-<a id="__codelineno-50-12" name="__codelineno-50-12" href="#__codelineno-50-12"></a>      --source strings       also read skills from this directory
-<a id="__codelineno-50-13" name="__codelineno-50-13" href="#__codelineno-50-13"></a>      --uninstall strings    remove skills matching these patterns from harnesses
+<div class="highlight"><pre><span></span><code><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a>      --copy                 copy instead of linking, for tools that do not follow links
+<a id="__codelineno-60-2" name="__codelineno-60-2" href="#__codelineno-60-2"></a>      --description string   description for --new
+<a id="__codelineno-60-3" name="__codelineno-60-3" href="#__codelineno-60-3"></a>      --force                refresh bundled skills and replace links; your own directories are never replaced
+<a id="__codelineno-60-4" name="__codelineno-60-4" href="#__codelineno-60-4"></a>      --global               use ~/.agents/skills and home directories
+<a id="__codelineno-60-5" name="__codelineno-60-5" href="#__codelineno-60-5"></a>      --harness string       installed, all, none, or comma-separated ids (default "installed")
+<a id="__codelineno-60-6" name="__codelineno-60-6" href="#__codelineno-60-6"></a>      --install strings      install skills matching these patterns
+<a id="__codelineno-60-7" name="__codelineno-60-7" href="#__codelineno-60-7"></a>      --lint                 check skills against the Agent Skills spec
+<a id="__codelineno-60-8" name="__codelineno-60-8" href="#__codelineno-60-8"></a>      --list                 list skills
+<a id="__codelineno-60-9" name="__codelineno-60-9" href="#__codelineno-60-9"></a>      --new string           create a skill with full metadata
+<a id="__codelineno-60-10" name="__codelineno-60-10" href="#__codelineno-60-10"></a>      --path strings         also install to this directory
+<a id="__codelineno-60-11" name="__codelineno-60-11" href="#__codelineno-60-11"></a>      --purge                with --uninstall, also delete from .agents/skills
+<a id="__codelineno-60-12" name="__codelineno-60-12" href="#__codelineno-60-12"></a>      --source strings       also read skills from this directory
+<a id="__codelineno-60-13" name="__codelineno-60-13" href="#__codelineno-60-13"></a>      --uninstall strings    remove skills matching these patterns from harnesses
 </code></pre></div>
 <h2 id="aiculator-source"><code>aiculator source</code><a class="headerlink" href="#aiculator-source" title="Permanent link">&para;</a></h2>
 <p>List and check the configured sources</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a>aiculator source
+<div class="highlight"><pre><span></span><code><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a>aiculator source
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a>      --config string   sources file; .agents/sources.yaml if empty
+<div class="highlight"><pre><span></span><code><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a>      --config string   sources file; .agents/sources.yaml if empty
 </code></pre></div>
 <h2 id="aiculator-source-check"><code>aiculator source check</code><a class="headerlink" href="#aiculator-source-check" title="Permanent link">&para;</a></h2>
 <p>Check a source's settings and credentials by reading from it</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a>aiculator source check NAME
+<div class="highlight"><pre><span></span><code><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a>aiculator source check NAME
 </code></pre></div>
 <h2 id="aiculator-source-ls"><code>aiculator source ls</code><a class="headerlink" href="#aiculator-source-ls" title="Permanent link">&para;</a></h2>
 <p>List the configured sources</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a>aiculator source ls
+<div class="highlight"><pre><span></span><code><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a>aiculator source ls
 </code></pre></div>
 <h2 id="aiculator-sync"><code>aiculator sync</code><a class="headerlink" href="#aiculator-sync" title="Permanent link">&para;</a></h2>
 <p>See how connected systems are being kept in step</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a>aiculator sync
+<div class="highlight"><pre><span></span><code><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a>aiculator sync
 </code></pre></div>
 <h2 id="aiculator-sync-hook-token"><code>aiculator sync hook-token</code><a class="headerlink" href="#aiculator-sync-hook-token" title="Permanent link">&para;</a></h2>
 <p>Show the token Notion sent when its webhook was set up</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a>aiculator sync hook-token SOURCE
+<div class="highlight"><pre><span></span><code><a id="__codelineno-66-1" name="__codelineno-66-1" href="#__codelineno-66-1"></a>aiculator sync hook-token SOURCE
 </code></pre></div>
 <h2 id="aiculator-sync-status"><code>aiculator sync status</code><a class="headerlink" href="#aiculator-sync-status" title="Permanent link">&para;</a></h2>
 <p>Show each source's sync: what was sent and received, latency and errors</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a>aiculator sync status
+<div class="highlight"><pre><span></span><code><a id="__codelineno-67-1" name="__codelineno-67-1" href="#__codelineno-67-1"></a>aiculator sync status
 </code></pre></div>
 <h2 id="aiculator-task"><code>aiculator task</code><a class="headerlink" href="#aiculator-task" title="Permanent link">&para;</a></h2>
 <p>Manage tasks</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a>aiculator task
+<div class="highlight"><pre><span></span><code><a id="__codelineno-68-1" name="__codelineno-68-1" href="#__codelineno-68-1"></a>aiculator task
 </code></pre></div>
 <h2 id="aiculator-task-add"><code>aiculator task add</code><a class="headerlink" href="#aiculator-task-add" title="Permanent link">&para;</a></h2>
 <p>Add a task</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a>aiculator task add [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-69-1" name="__codelineno-69-1" href="#__codelineno-69-1"></a>aiculator task add [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a>      --aging strings       raise priority after a wait, as wait=boost, such as 1h=5,4h=20
-<a id="__codelineno-60-2" name="__codelineno-60-2" href="#__codelineno-60-2"></a>      --allow-empty         allow a submission that changes no files
-<a id="__codelineno-60-3" name="__codelineno-60-3" href="#__codelineno-60-3"></a>      --budget int          budget in micro-dollars; 0 means no limit
-<a id="__codelineno-60-4" name="__codelineno-60-4" href="#__codelineno-60-4"></a>      --check stringArray   acceptance command
-<a id="__codelineno-60-5" name="__codelineno-60-5" href="#__codelineno-60-5"></a>      --dep strings         task id this depends on
-<a id="__codelineno-60-6" name="__codelineno-60-6" href="#__codelineno-60-6"></a>      --id string           task id; generated if empty
-<a id="__codelineno-60-7" name="__codelineno-60-7" href="#__codelineno-60-7"></a>      --label stringArray   label as name=value
-<a id="__codelineno-60-8" name="__codelineno-60-8" href="#__codelineno-60-8"></a>      --priority int        higher runs sooner
-<a id="__codelineno-60-9" name="__codelineno-60-9" href="#__codelineno-60-9"></a>      --review              also require an independent agent review
-<a id="__codelineno-60-10" name="__codelineno-60-10" href="#__codelineno-60-10"></a>      --spec string         full instructions
-<a id="__codelineno-60-11" name="__codelineno-60-11" href="#__codelineno-60-11"></a>      --tag strings         required capability tag
-<a id="__codelineno-60-12" name="__codelineno-60-12" href="#__codelineno-60-12"></a>      --tier int            tier: 1 standard, 2 advanced, 3 ultra (default 1)
-<a id="__codelineno-60-13" name="__codelineno-60-13" href="#__codelineno-60-13"></a>      --title string        short title
-<a id="__codelineno-60-14" name="__codelineno-60-14" href="#__codelineno-60-14"></a>      --touches strings     path this task will change
+<div class="highlight"><pre><span></span><code><a id="__codelineno-70-1" name="__codelineno-70-1" href="#__codelineno-70-1"></a>      --aging strings       raise priority after a wait, as wait=boost, such as 1h=5,4h=20
+<a id="__codelineno-70-2" name="__codelineno-70-2" href="#__codelineno-70-2"></a>      --allow-empty         allow a submission that changes no files
+<a id="__codelineno-70-3" name="__codelineno-70-3" href="#__codelineno-70-3"></a>      --budget int          budget in micro-dollars; 0 means no limit
+<a id="__codelineno-70-4" name="__codelineno-70-4" href="#__codelineno-70-4"></a>      --check stringArray   acceptance command
+<a id="__codelineno-70-5" name="__codelineno-70-5" href="#__codelineno-70-5"></a>      --dep strings         task id this depends on
+<a id="__codelineno-70-6" name="__codelineno-70-6" href="#__codelineno-70-6"></a>      --id string           task id; generated if empty
+<a id="__codelineno-70-7" name="__codelineno-70-7" href="#__codelineno-70-7"></a>      --label stringArray   label as name=value
+<a id="__codelineno-70-8" name="__codelineno-70-8" href="#__codelineno-70-8"></a>      --priority int        higher runs sooner
+<a id="__codelineno-70-9" name="__codelineno-70-9" href="#__codelineno-70-9"></a>      --review              also require an independent agent review
+<a id="__codelineno-70-10" name="__codelineno-70-10" href="#__codelineno-70-10"></a>      --spec string         full instructions
+<a id="__codelineno-70-11" name="__codelineno-70-11" href="#__codelineno-70-11"></a>      --tag strings         required capability tag
+<a id="__codelineno-70-12" name="__codelineno-70-12" href="#__codelineno-70-12"></a>      --tier int            tier: 1 standard, 2 advanced, 3 ultra (default 1)
+<a id="__codelineno-70-13" name="__codelineno-70-13" href="#__codelineno-70-13"></a>      --title string        short title
+<a id="__codelineno-70-14" name="__codelineno-70-14" href="#__codelineno-70-14"></a>      --touches strings     path this task will change
 </code></pre></div>
 <h2 id="aiculator-task-amend"><code>aiculator task amend</code><a class="headerlink" href="#aiculator-task-amend" title="Permanent link">&para;</a></h2>
 <p>Change a task's title, spec, priority, labels or aging, without touching its progress</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a>aiculator task amend ID [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-71-1" name="__codelineno-71-1" href="#__codelineno-71-1"></a>aiculator task amend ID [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a>      --aging strings       replace the aging steps, as wait=boost, such as 1h=5
-<a id="__codelineno-62-2" name="__codelineno-62-2" href="#__codelineno-62-2"></a>      --label stringArray   label as name=value; name= removes it
-<a id="__codelineno-62-3" name="__codelineno-62-3" href="#__codelineno-62-3"></a>      --priority int        new priority
-<a id="__codelineno-62-4" name="__codelineno-62-4" href="#__codelineno-62-4"></a>      --spec string         new instructions
-<a id="__codelineno-62-5" name="__codelineno-62-5" href="#__codelineno-62-5"></a>      --title string        new title
+<div class="highlight"><pre><span></span><code><a id="__codelineno-72-1" name="__codelineno-72-1" href="#__codelineno-72-1"></a>      --aging strings       replace the aging steps, as wait=boost, such as 1h=5
+<a id="__codelineno-72-2" name="__codelineno-72-2" href="#__codelineno-72-2"></a>      --label stringArray   label as name=value; name= removes it
+<a id="__codelineno-72-3" name="__codelineno-72-3" href="#__codelineno-72-3"></a>      --priority int        new priority
+<a id="__codelineno-72-4" name="__codelineno-72-4" href="#__codelineno-72-4"></a>      --spec string         new instructions
+<a id="__codelineno-72-5" name="__codelineno-72-5" href="#__codelineno-72-5"></a>      --title string        new title
 </code></pre></div>
 <h2 id="aiculator-task-attach"><code>aiculator task attach</code><a class="headerlink" href="#aiculator-task-attach" title="Permanent link">&para;</a></h2>
 <p>Store a file as a blob and attach it to a task</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a>aiculator task attach ID FILE [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-73-1" name="__codelineno-73-1" href="#__codelineno-73-1"></a>aiculator task attach ID FILE [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a>      --name string   property name; the file name if empty
+<div class="highlight"><pre><span></span><code><a id="__codelineno-74-1" name="__codelineno-74-1" href="#__codelineno-74-1"></a>      --name string   property name; the file name if empty
 </code></pre></div>
 <h2 id="aiculator-task-cancel"><code>aiculator task cancel</code><a class="headerlink" href="#aiculator-task-cancel" title="Permanent link">&para;</a></h2>
 <p>Cancel a task</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a>aiculator task cancel ID [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-75-1" name="__codelineno-75-1" href="#__codelineno-75-1"></a>aiculator task cancel ID [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-66-1" name="__codelineno-66-1" href="#__codelineno-66-1"></a>      --note string   reason
+<div class="highlight"><pre><span></span><code><a id="__codelineno-76-1" name="__codelineno-76-1" href="#__codelineno-76-1"></a>      --note string   reason
 </code></pre></div>
 <h2 id="aiculator-task-fetch"><code>aiculator task fetch</code><a class="headerlink" href="#aiculator-task-fetch" title="Permanent link">&para;</a></h2>
 <p>Save an attached file or foreign resource; a resource is downloaded only once</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-67-1" name="__codelineno-67-1" href="#__codelineno-67-1"></a>aiculator task fetch ID NAME [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-77-1" name="__codelineno-77-1" href="#__codelineno-77-1"></a>aiculator task fetch ID NAME [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-68-1" name="__codelineno-68-1" href="#__codelineno-68-1"></a>  -o, --output string   file to write; standard output if empty
+<div class="highlight"><pre><span></span><code><a id="__codelineno-78-1" name="__codelineno-78-1" href="#__codelineno-78-1"></a>  -o, --output string   file to write; standard output if empty
 </code></pre></div>
 <h2 id="aiculator-task-ls"><code>aiculator task ls</code><a class="headerlink" href="#aiculator-task-ls" title="Permanent link">&para;</a></h2>
 <p>List tasks</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-69-1" name="__codelineno-69-1" href="#__codelineno-69-1"></a>aiculator task ls
+<div class="highlight"><pre><span></span><code><a id="__codelineno-79-1" name="__codelineno-79-1" href="#__codelineno-79-1"></a>aiculator task ls
 </code></pre></div>
 <h2 id="aiculator-task-meta"><code>aiculator task meta</code><a class="headerlink" href="#aiculator-task-meta" title="Permanent link">&para;</a></h2>
 <p>Show a task's properties, files and foreign resources</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-70-1" name="__codelineno-70-1" href="#__codelineno-70-1"></a>aiculator task meta ID
+<div class="highlight"><pre><span></span><code><a id="__codelineno-80-1" name="__codelineno-80-1" href="#__codelineno-80-1"></a>aiculator task meta ID
 </code></pre></div>
 <h2 id="aiculator-task-priority"><code>aiculator task priority</code><a class="headerlink" href="#aiculator-task-priority" title="Permanent link">&para;</a></h2>
 <p>Show how a task's priority is worked out right now</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-71-1" name="__codelineno-71-1" href="#__codelineno-71-1"></a>aiculator task priority ID
+<div class="highlight"><pre><span></span><code><a id="__codelineno-81-1" name="__codelineno-81-1" href="#__codelineno-81-1"></a>aiculator task priority ID
 </code></pre></div>
 <h2 id="aiculator-task-prop"><code>aiculator task prop</code><a class="headerlink" href="#aiculator-task-prop" title="Permanent link">&para;</a></h2>
 <p>Set properties; JSON values keep their type, and NAME= removes one</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-72-1" name="__codelineno-72-1" href="#__codelineno-72-1"></a>aiculator task prop ID NAME=VALUE...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-82-1" name="__codelineno-82-1" href="#__codelineno-82-1"></a>aiculator task prop ID NAME=VALUE...
 </code></pre></div>
 <h2 id="aiculator-task-resource"><code>aiculator task resource</code><a class="headerlink" href="#aiculator-task-resource" title="Permanent link">&para;</a></h2>
 <p>Attach a foreign object by reference; its bytes are fetched only when asked for</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-73-1" name="__codelineno-73-1" href="#__codelineno-73-1"></a>aiculator task resource ID NAME URL [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-83-1" name="__codelineno-83-1" href="#__codelineno-83-1"></a>aiculator task resource ID NAME URL [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-74-1" name="__codelineno-74-1" href="#__codelineno-74-1"></a>      --kind string   what kind of object this is (default "http")
+<div class="highlight"><pre><span></span><code><a id="__codelineno-84-1" name="__codelineno-84-1" href="#__codelineno-84-1"></a>      --kind string   what kind of object this is (default "http")
 </code></pre></div>
 <h2 id="aiculator-task-show"><code>aiculator task show</code><a class="headerlink" href="#aiculator-task-show" title="Permanent link">&para;</a></h2>
 <p>Show one task</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-75-1" name="__codelineno-75-1" href="#__codelineno-75-1"></a>aiculator task show ID
+<div class="highlight"><pre><span></span><code><a id="__codelineno-85-1" name="__codelineno-85-1" href="#__codelineno-85-1"></a>aiculator task show ID
 </code></pre></div>
 <h2 id="aiculator-task-unpark"><code>aiculator task unpark</code><a class="headerlink" href="#aiculator-task-unpark" title="Permanent link">&para;</a></h2>
 <p>Return a parked task to the queue</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-76-1" name="__codelineno-76-1" href="#__codelineno-76-1"></a>aiculator task unpark ID [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-86-1" name="__codelineno-86-1" href="#__codelineno-86-1"></a>aiculator task unpark ID [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-77-1" name="__codelineno-77-1" href="#__codelineno-77-1"></a>      --add-budget int   budget to add, in micro-dollars
-<a id="__codelineno-77-2" name="__codelineno-77-2" href="#__codelineno-77-2"></a>      --note string      reason
+<div class="highlight"><pre><span></span><code><a id="__codelineno-87-1" name="__codelineno-87-1" href="#__codelineno-87-1"></a>      --add-budget int   budget to add, in micro-dollars
+<a id="__codelineno-87-2" name="__codelineno-87-2" href="#__codelineno-87-2"></a>      --note string      reason
 </code></pre></div>
 <h2 id="aiculator-template"><code>aiculator template</code><a class="headerlink" href="#aiculator-template" title="Permanent link">&para;</a></h2>
 <p>Render reusable instruction templates into skills</p>
@@ -3398,44 +3650,44 @@ aiculator skill --install does.</p>
 Add or replace one by creating components/NAME.md in a template directory.</p>
 <p>These produce instructions for a model. A model can still ignore text, so anything that
 must hold needs a real check, such as a task's --check command.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-78-1" name="__codelineno-78-1" href="#__codelineno-78-1"></a>aiculator template [--install PATTERN...] [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-88-1" name="__codelineno-88-1" href="#__codelineno-88-1"></a>aiculator template [--install PATTERN...] [flags]
 </code></pre></div>
 <p><strong>Examples</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-79-1" name="__codelineno-79-1" href="#__codelineno-79-1"></a>  aiculator template --list
-<a id="__codelineno-79-2" name="__codelineno-79-2" href="#__codelineno-79-2"></a>  aiculator template --new my-rules
-<a id="__codelineno-79-3" name="__codelineno-79-3" href="#__codelineno-79-3"></a>  aiculator template --render agent-discipline --set retries=5
-<a id="__codelineno-79-4" name="__codelineno-79-4" href="#__codelineno-79-4"></a>  aiculator template --install '*'
-<a id="__codelineno-79-5" name="__codelineno-79-5" href="#__codelineno-79-5"></a>  aiculator template --install 'agent-*' --global --set timeout=300s
-<a id="__codelineno-79-6" name="__codelineno-79-6" href="#__codelineno-79-6"></a>  aiculator template --install x --per-harness       a separate copy per harness
-<a id="__codelineno-79-7" name="__codelineno-79-7" href="#__codelineno-79-7"></a>  aiculator template --install x --path ./vendor/skills --harness none
-<a id="__codelineno-79-8" name="__codelineno-79-8" href="#__codelineno-79-8"></a>  aiculator template --check                         fail if a rendered skill is stale
+<div class="highlight"><pre><span></span><code><a id="__codelineno-89-1" name="__codelineno-89-1" href="#__codelineno-89-1"></a>  aiculator template --list
+<a id="__codelineno-89-2" name="__codelineno-89-2" href="#__codelineno-89-2"></a>  aiculator template --new my-rules
+<a id="__codelineno-89-3" name="__codelineno-89-3" href="#__codelineno-89-3"></a>  aiculator template --render agent-discipline --set retries=5
+<a id="__codelineno-89-4" name="__codelineno-89-4" href="#__codelineno-89-4"></a>  aiculator template --install '*'
+<a id="__codelineno-89-5" name="__codelineno-89-5" href="#__codelineno-89-5"></a>  aiculator template --install 'agent-*' --global --set timeout=300s
+<a id="__codelineno-89-6" name="__codelineno-89-6" href="#__codelineno-89-6"></a>  aiculator template --install x --per-harness       a separate copy per harness
+<a id="__codelineno-89-7" name="__codelineno-89-7" href="#__codelineno-89-7"></a>  aiculator template --install x --path ./vendor/skills --harness none
+<a id="__codelineno-89-8" name="__codelineno-89-8" href="#__codelineno-89-8"></a>  aiculator template --check                         fail if a rendered skill is stale
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-80-1" name="__codelineno-80-1" href="#__codelineno-80-1"></a>      --check             fail if a rendered skill no longer matches its template
-<a id="__codelineno-80-2" name="__codelineno-80-2" href="#__codelineno-80-2"></a>      --copy              copy instead of linking
-<a id="__codelineno-80-3" name="__codelineno-80-3" href="#__codelineno-80-3"></a>      --for string        with --render, render as this harness
-<a id="__codelineno-80-4" name="__codelineno-80-4" href="#__codelineno-80-4"></a>      --force             replace links; your own directories are never replaced
-<a id="__codelineno-80-5" name="__codelineno-80-5" href="#__codelineno-80-5"></a>      --global            use ~/.agents and home directories
-<a id="__codelineno-80-6" name="__codelineno-80-6" href="#__codelineno-80-6"></a>      --harness string    installed, all, none, or comma-separated ids (default "installed")
-<a id="__codelineno-80-7" name="__codelineno-80-7" href="#__codelineno-80-7"></a>      --install strings   render and install templates matching these patterns
-<a id="__codelineno-80-8" name="__codelineno-80-8" href="#__codelineno-80-8"></a>      --list              list templates
-<a id="__codelineno-80-9" name="__codelineno-80-9" href="#__codelineno-80-9"></a>      --new string        create a starter template
-<a id="__codelineno-80-10" name="__codelineno-80-10" href="#__codelineno-80-10"></a>      --path strings      also install to this directory
-<a id="__codelineno-80-11" name="__codelineno-80-11" href="#__codelineno-80-11"></a>      --per-harness       render a separate copy into each harness's own directory
-<a id="__codelineno-80-12" name="__codelineno-80-12" href="#__codelineno-80-12"></a>      --render string     print one rendered template; writes nothing
-<a id="__codelineno-80-13" name="__codelineno-80-13" href="#__codelineno-80-13"></a>      --set stringArray   template variable, as KEY=VALUE
-<a id="__codelineno-80-14" name="__codelineno-80-14" href="#__codelineno-80-14"></a>      --source strings    also read templates from this directory
+<div class="highlight"><pre><span></span><code><a id="__codelineno-90-1" name="__codelineno-90-1" href="#__codelineno-90-1"></a>      --check             fail if a rendered skill no longer matches its template
+<a id="__codelineno-90-2" name="__codelineno-90-2" href="#__codelineno-90-2"></a>      --copy              copy instead of linking
+<a id="__codelineno-90-3" name="__codelineno-90-3" href="#__codelineno-90-3"></a>      --for string        with --render, render as this harness
+<a id="__codelineno-90-4" name="__codelineno-90-4" href="#__codelineno-90-4"></a>      --force             replace links; your own directories are never replaced
+<a id="__codelineno-90-5" name="__codelineno-90-5" href="#__codelineno-90-5"></a>      --global            use ~/.agents and home directories
+<a id="__codelineno-90-6" name="__codelineno-90-6" href="#__codelineno-90-6"></a>      --harness string    installed, all, none, or comma-separated ids (default "installed")
+<a id="__codelineno-90-7" name="__codelineno-90-7" href="#__codelineno-90-7"></a>      --install strings   render and install templates matching these patterns
+<a id="__codelineno-90-8" name="__codelineno-90-8" href="#__codelineno-90-8"></a>      --list              list templates
+<a id="__codelineno-90-9" name="__codelineno-90-9" href="#__codelineno-90-9"></a>      --new string        create a starter template
+<a id="__codelineno-90-10" name="__codelineno-90-10" href="#__codelineno-90-10"></a>      --path strings      also install to this directory
+<a id="__codelineno-90-11" name="__codelineno-90-11" href="#__codelineno-90-11"></a>      --per-harness       render a separate copy into each harness's own directory
+<a id="__codelineno-90-12" name="__codelineno-90-12" href="#__codelineno-90-12"></a>      --render string     print one rendered template; writes nothing
+<a id="__codelineno-90-13" name="__codelineno-90-13" href="#__codelineno-90-13"></a>      --set stringArray   template variable, as KEY=VALUE
+<a id="__codelineno-90-14" name="__codelineno-90-14" href="#__codelineno-90-14"></a>      --source strings    also read templates from this directory
 </code></pre></div>
 <h2 id="aiculator-token"><code>aiculator token</code><a class="headerlink" href="#aiculator-token" title="Permanent link">&para;</a></h2>
 <p>Issue an agent token</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-81-1" name="__codelineno-81-1" href="#__codelineno-81-1"></a>aiculator token [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-91-1" name="__codelineno-91-1" href="#__codelineno-91-1"></a>aiculator token [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-82-1" name="__codelineno-82-1" href="#__codelineno-82-1"></a>      --agent string   agent name
-<a id="__codelineno-82-2" name="__codelineno-82-2" href="#__codelineno-82-2"></a>      --planner        allow this agent to plan
-<a id="__codelineno-82-3" name="__codelineno-82-3" href="#__codelineno-82-3"></a>      --tag strings    capability tag
-<a id="__codelineno-82-4" name="__codelineno-82-4" href="#__codelineno-82-4"></a>      --tier int       tier (default 1)
-<a id="__codelineno-82-5" name="__codelineno-82-5" href="#__codelineno-82-5"></a>      --ttl int        lifetime in seconds; 0 never expires
+<div class="highlight"><pre><span></span><code><a id="__codelineno-92-1" name="__codelineno-92-1" href="#__codelineno-92-1"></a>      --agent string   agent name
+<a id="__codelineno-92-2" name="__codelineno-92-2" href="#__codelineno-92-2"></a>      --planner        allow this agent to plan
+<a id="__codelineno-92-3" name="__codelineno-92-3" href="#__codelineno-92-3"></a>      --tag strings    capability tag
+<a id="__codelineno-92-4" name="__codelineno-92-4" href="#__codelineno-92-4"></a>      --tier int       tier (default 1)
+<a id="__codelineno-92-5" name="__codelineno-92-5" href="#__codelineno-92-5"></a>      --ttl int        lifetime in seconds; 0 never expires
 </code></pre></div>
 <h2 id="aiculator-top"><code>aiculator top</code><a class="headerlink" href="#aiculator-top" title="Permanent link">&para;</a></h2>
 <p>Live terminal dashboard: flow, throughput, latency, jitter, probes, liveness and usage</p>
@@ -3443,146 +3695,146 @@ must hold needs a real check, such as a task's --check command.</p>
 p pauses, q quits.</p>
 <p>Without a terminal, such as in a pipe, it prints one frame and exits.
 Rates reset when the server restarts. Task states and usage totals do not.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-83-1" name="__codelineno-83-1" href="#__codelineno-83-1"></a>aiculator top [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-93-1" name="__codelineno-93-1" href="#__codelineno-93-1"></a>aiculator top [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-84-1" name="__codelineno-84-1" href="#__codelineno-84-1"></a>      --all                 show every realm on this machine: 1 realms, 2 tasks, 3 agents
-<a id="__codelineno-84-2" name="__codelineno-84-2" href="#__codelineno-84-2"></a>      --color               with --once: keep color even in a pipe
-<a id="__codelineno-84-3" name="__codelineno-84-3" href="#__codelineno-84-3"></a>      --interval duration   how often to refresh (default 1s)
-<a id="__codelineno-84-4" name="__codelineno-84-4" href="#__codelineno-84-4"></a>      --json                print the raw snapshot as JSON and exit
-<a id="__codelineno-84-5" name="__codelineno-84-5" href="#__codelineno-84-5"></a>      --no-color            no color; NO_COLOR also works
-<a id="__codelineno-84-6" name="__codelineno-84-6" href="#__codelineno-84-6"></a>      --once                print one frame and exit
-<a id="__codelineno-84-7" name="__codelineno-84-7" href="#__codelineno-84-7"></a>      --view string         with --once: overview, tasks, agents, flow or usage (default "overview")
-<a id="__codelineno-84-8" name="__codelineno-84-8" href="#__codelineno-84-8"></a>      --width int           with --once: width in columns
+<div class="highlight"><pre><span></span><code><a id="__codelineno-94-1" name="__codelineno-94-1" href="#__codelineno-94-1"></a>      --all                 show every realm on this machine: 1 realms, 2 tasks, 3 agents
+<a id="__codelineno-94-2" name="__codelineno-94-2" href="#__codelineno-94-2"></a>      --color               with --once: keep color even in a pipe
+<a id="__codelineno-94-3" name="__codelineno-94-3" href="#__codelineno-94-3"></a>      --interval duration   how often to refresh (default 1s)
+<a id="__codelineno-94-4" name="__codelineno-94-4" href="#__codelineno-94-4"></a>      --json                print the raw snapshot as JSON and exit
+<a id="__codelineno-94-5" name="__codelineno-94-5" href="#__codelineno-94-5"></a>      --no-color            no color; NO_COLOR also works
+<a id="__codelineno-94-6" name="__codelineno-94-6" href="#__codelineno-94-6"></a>      --once                print one frame and exit
+<a id="__codelineno-94-7" name="__codelineno-94-7" href="#__codelineno-94-7"></a>      --view string         with --once: overview, tasks, agents, flow or usage (default "overview")
+<a id="__codelineno-94-8" name="__codelineno-94-8" href="#__codelineno-94-8"></a>      --width int           with --once: width in columns
 </code></pre></div>
 <h2 id="aiculator-unjoin"><code>aiculator unjoin</code><a class="headerlink" href="#aiculator-unjoin" title="Permanent link">&para;</a></h2>
 <p>Remove the swarm's MCP config and skill links from harnesses</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-85-1" name="__codelineno-85-1" href="#__codelineno-85-1"></a>aiculator unjoin [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-95-1" name="__codelineno-95-1" href="#__codelineno-95-1"></a>aiculator unjoin [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-86-1" name="__codelineno-86-1" href="#__codelineno-86-1"></a>      --harness string   installed, all, or comma-separated ids (default "all")
-<a id="__codelineno-86-2" name="__codelineno-86-2" href="#__codelineno-86-2"></a>      --purge            also delete the swarm skills from .agents/skills
+<div class="highlight"><pre><span></span><code><a id="__codelineno-96-1" name="__codelineno-96-1" href="#__codelineno-96-1"></a>      --harness string   installed, all, or comma-separated ids (default "all")
+<a id="__codelineno-96-2" name="__codelineno-96-2" href="#__codelineno-96-2"></a>      --purge            also delete the swarm skills from .agents/skills
 </code></pre></div>
 <h2 id="aiculator-up"><code>aiculator up</code><a class="headerlink" href="#aiculator-up" title="Permanent link">&para;</a></h2>
 <p>Start the swarm server for this project in the background</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-87-1" name="__codelineno-87-1" href="#__codelineno-87-1"></a>aiculator up [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-97-1" name="__codelineno-97-1" href="#__codelineno-97-1"></a>aiculator up [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-88-1" name="__codelineno-88-1" href="#__codelineno-88-1"></a>      --aging strings    raise priority after a wait, as wait=boost, such as 1h=5,4h=20
-<a id="__codelineno-88-2" name="__codelineno-88-2" href="#__codelineno-88-2"></a>      --sandbox string   sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
+<div class="highlight"><pre><span></span><code><a id="__codelineno-98-1" name="__codelineno-98-1" href="#__codelineno-98-1"></a>      --aging strings    raise priority after a wait, as wait=boost, such as 1h=5,4h=20
+<a id="__codelineno-98-2" name="__codelineno-98-2" href="#__codelineno-98-2"></a>      --sandbox string   sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
 </code></pre></div>
 <h2 id="aiculator-web"><code>aiculator web</code><a class="headerlink" href="#aiculator-web" title="Permanent link">&para;</a></h2>
 <p>Open the web dashboard</p>
 <p>Opens the live dashboard in your browser, using a read-only token that expires.</p>
 <p>The dashboard is compiled into this binary; go build -tags noweb leaves it out.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-89-1" name="__codelineno-89-1" href="#__codelineno-89-1"></a>aiculator web [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-99-1" name="__codelineno-99-1" href="#__codelineno-99-1"></a>aiculator web [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-90-1" name="__codelineno-90-1" href="#__codelineno-90-1"></a>      --all            show every realm on this machine, for as long as this command runs
-<a id="__codelineno-90-2" name="__codelineno-90-2" href="#__codelineno-90-2"></a>      --no-open        print the link and do not open a browser
-<a id="__codelineno-90-3" name="__codelineno-90-3" href="#__codelineno-90-3"></a>      --ttl duration   how long the link works (default 12h0m0s)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-100-1" name="__codelineno-100-1" href="#__codelineno-100-1"></a>      --all            show every realm on this machine, for as long as this command runs
+<a id="__codelineno-100-2" name="__codelineno-100-2" href="#__codelineno-100-2"></a>      --no-open        print the link and do not open a browser
+<a id="__codelineno-100-3" name="__codelineno-100-3" href="#__codelineno-100-3"></a>      --ttl duration   how long the link works (default 12h0m0s)
 </code></pre></div>
 <h2 id="aiculator-work"><code>aiculator work</code><a class="headerlink" href="#aiculator-work" title="Permanent link">&para;</a></h2>
 <p>Work the queue from a shell: the route for any harness, no restart needed</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-91-1" name="__codelineno-91-1" href="#__codelineno-91-1"></a>aiculator work
+<div class="highlight"><pre><span></span><code><a id="__codelineno-101-1" name="__codelineno-101-1" href="#__codelineno-101-1"></a>aiculator work
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-92-1" name="__codelineno-92-1" href="#__codelineno-92-1"></a>      --agent string   agent name from aiculator work join
+<div class="highlight"><pre><span></span><code><a id="__codelineno-102-1" name="__codelineno-102-1" href="#__codelineno-102-1"></a>      --agent string   agent name from aiculator work join
 </code></pre></div>
 <h2 id="aiculator-work-claim"><code>aiculator work claim</code><a class="headerlink" href="#aiculator-work-claim" title="Permanent link">&para;</a></h2>
 <p>Claim one specific ready task</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-93-1" name="__codelineno-93-1" href="#__codelineno-93-1"></a>aiculator work claim [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-103-1" name="__codelineno-103-1" href="#__codelineno-103-1"></a>aiculator work claim [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-94-1" name="__codelineno-94-1" href="#__codelineno-94-1"></a>      --task string   task id
+<div class="highlight"><pre><span></span><code><a id="__codelineno-104-1" name="__codelineno-104-1" href="#__codelineno-104-1"></a>      --task string   task id
 </code></pre></div>
 <h2 id="aiculator-work-fail"><code>aiculator work fail</code><a class="headerlink" href="#aiculator-work-fail" title="Permanent link">&para;</a></h2>
 <p>Give up; saved work and note go to the next attempt</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-95-1" name="__codelineno-95-1" href="#__codelineno-95-1"></a>aiculator work fail [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-105-1" name="__codelineno-105-1" href="#__codelineno-105-1"></a>aiculator work fail [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-96-1" name="__codelineno-96-1" href="#__codelineno-96-1"></a>      --cost int      cost since your last report, in micro-dollars
-<a id="__codelineno-96-2" name="__codelineno-96-2" href="#__codelineno-96-2"></a>      --lease uint    lease number from wait
-<a id="__codelineno-96-3" name="__codelineno-96-3" href="#__codelineno-96-3"></a>      --note string   note saved for later attempts
-<a id="__codelineno-96-4" name="__codelineno-96-4" href="#__codelineno-96-4"></a>      --task string   task id
-<a id="__codelineno-96-5" name="__codelineno-96-5" href="#__codelineno-96-5"></a>      --tokens int    tokens used since your last report
+<div class="highlight"><pre><span></span><code><a id="__codelineno-106-1" name="__codelineno-106-1" href="#__codelineno-106-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-106-2" name="__codelineno-106-2" href="#__codelineno-106-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-106-3" name="__codelineno-106-3" href="#__codelineno-106-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-106-4" name="__codelineno-106-4" href="#__codelineno-106-4"></a>      --task string   task id
+<a id="__codelineno-106-5" name="__codelineno-106-5" href="#__codelineno-106-5"></a>      --tokens int    tokens used since your last report
 </code></pre></div>
 <h2 id="aiculator-work-heartbeat"><code>aiculator work heartbeat</code><a class="headerlink" href="#aiculator-work-heartbeat" title="Permanent link">&para;</a></h2>
 <p>Extend your lease; this does not count as progress</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-97-1" name="__codelineno-97-1" href="#__codelineno-97-1"></a>aiculator work heartbeat [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-107-1" name="__codelineno-107-1" href="#__codelineno-107-1"></a>aiculator work heartbeat [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-98-1" name="__codelineno-98-1" href="#__codelineno-98-1"></a>      --cost int      cost since your last report, in micro-dollars
-<a id="__codelineno-98-2" name="__codelineno-98-2" href="#__codelineno-98-2"></a>      --lease uint    lease number from wait
-<a id="__codelineno-98-3" name="__codelineno-98-3" href="#__codelineno-98-3"></a>      --note string   note saved for later attempts
-<a id="__codelineno-98-4" name="__codelineno-98-4" href="#__codelineno-98-4"></a>      --task string   task id
-<a id="__codelineno-98-5" name="__codelineno-98-5" href="#__codelineno-98-5"></a>      --tokens int    tokens used since your last report
+<div class="highlight"><pre><span></span><code><a id="__codelineno-108-1" name="__codelineno-108-1" href="#__codelineno-108-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-108-2" name="__codelineno-108-2" href="#__codelineno-108-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-108-3" name="__codelineno-108-3" href="#__codelineno-108-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-108-4" name="__codelineno-108-4" href="#__codelineno-108-4"></a>      --task string   task id
+<a id="__codelineno-108-5" name="__codelineno-108-5" href="#__codelineno-108-5"></a>      --tokens int    tokens used since your last report
 </code></pre></div>
 <h2 id="aiculator-work-join"><code>aiculator work join</code><a class="headerlink" href="#aiculator-work-join" title="Permanent link">&para;</a></h2>
 <p>Register this session as a worker and print its agent name</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-99-1" name="__codelineno-99-1" href="#__codelineno-99-1"></a>aiculator work join [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-109-1" name="__codelineno-109-1" href="#__codelineno-109-1"></a>aiculator work join [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-100-1" name="__codelineno-100-1" href="#__codelineno-100-1"></a>      --agent string     agent name; generated if empty
-<a id="__codelineno-100-2" name="__codelineno-100-2" href="#__codelineno-100-2"></a>      --harness string   harness id, used in the agent's name
-<a id="__codelineno-100-3" name="__codelineno-100-3" href="#__codelineno-100-3"></a>      --planner          also allow this session to plan
-<a id="__codelineno-100-4" name="__codelineno-100-4" href="#__codelineno-100-4"></a>      --tier int         tier: 1 standard, 2 advanced, 3 ultra (default 1)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-110-1" name="__codelineno-110-1" href="#__codelineno-110-1"></a>      --agent string     agent name; generated if empty
+<a id="__codelineno-110-2" name="__codelineno-110-2" href="#__codelineno-110-2"></a>      --harness string   harness id, used in the agent's name
+<a id="__codelineno-110-3" name="__codelineno-110-3" href="#__codelineno-110-3"></a>      --planner          also allow this session to plan
+<a id="__codelineno-110-4" name="__codelineno-110-4" href="#__codelineno-110-4"></a>      --tier int         tier: 1 standard, 2 advanced, 3 ultra (default 1)
 </code></pre></div>
 <h2 id="aiculator-work-progress"><code>aiculator work progress</code><a class="headerlink" href="#aiculator-work-progress" title="Permanent link">&para;</a></h2>
 <p>Save your work; only real file changes count</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-101-1" name="__codelineno-101-1" href="#__codelineno-101-1"></a>aiculator work progress [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-111-1" name="__codelineno-111-1" href="#__codelineno-111-1"></a>aiculator work progress [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-102-1" name="__codelineno-102-1" href="#__codelineno-102-1"></a>      --cost int      cost since your last report, in micro-dollars
-<a id="__codelineno-102-2" name="__codelineno-102-2" href="#__codelineno-102-2"></a>      --lease uint    lease number from wait
-<a id="__codelineno-102-3" name="__codelineno-102-3" href="#__codelineno-102-3"></a>      --note string   note saved for later attempts
-<a id="__codelineno-102-4" name="__codelineno-102-4" href="#__codelineno-102-4"></a>      --task string   task id
-<a id="__codelineno-102-5" name="__codelineno-102-5" href="#__codelineno-102-5"></a>      --tokens int    tokens used since your last report
+<div class="highlight"><pre><span></span><code><a id="__codelineno-112-1" name="__codelineno-112-1" href="#__codelineno-112-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-112-2" name="__codelineno-112-2" href="#__codelineno-112-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-112-3" name="__codelineno-112-3" href="#__codelineno-112-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-112-4" name="__codelineno-112-4" href="#__codelineno-112-4"></a>      --task string   task id
+<a id="__codelineno-112-5" name="__codelineno-112-5" href="#__codelineno-112-5"></a>      --tokens int    tokens used since your last report
 </code></pre></div>
 <h2 id="aiculator-work-release"><code>aiculator work release</code><a class="headerlink" href="#aiculator-work-release" title="Permanent link">&para;</a></h2>
 <p>Hand back with no penalty, when the harness cannot do it</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-103-1" name="__codelineno-103-1" href="#__codelineno-103-1"></a>aiculator work release [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-113-1" name="__codelineno-113-1" href="#__codelineno-113-1"></a>aiculator work release [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-104-1" name="__codelineno-104-1" href="#__codelineno-104-1"></a>      --cost int      cost since your last report, in micro-dollars
-<a id="__codelineno-104-2" name="__codelineno-104-2" href="#__codelineno-104-2"></a>      --lease uint    lease number from wait
-<a id="__codelineno-104-3" name="__codelineno-104-3" href="#__codelineno-104-3"></a>      --note string   note saved for later attempts
-<a id="__codelineno-104-4" name="__codelineno-104-4" href="#__codelineno-104-4"></a>      --task string   task id
-<a id="__codelineno-104-5" name="__codelineno-104-5" href="#__codelineno-104-5"></a>      --tokens int    tokens used since your last report
+<div class="highlight"><pre><span></span><code><a id="__codelineno-114-1" name="__codelineno-114-1" href="#__codelineno-114-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-114-2" name="__codelineno-114-2" href="#__codelineno-114-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-114-3" name="__codelineno-114-3" href="#__codelineno-114-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-114-4" name="__codelineno-114-4" href="#__codelineno-114-4"></a>      --task string   task id
+<a id="__codelineno-114-5" name="__codelineno-114-5" href="#__codelineno-114-5"></a>      --tokens int    tokens used since your last report
 </code></pre></div>
 <h2 id="aiculator-work-situation"><code>aiculator work situation</code><a class="headerlink" href="#aiculator-work-situation" title="Permanent link">&para;</a></h2>
 <p>Show the swarm as this agent sees it</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-105-1" name="__codelineno-105-1" href="#__codelineno-105-1"></a>aiculator work situation
+<div class="highlight"><pre><span></span><code><a id="__codelineno-115-1" name="__codelineno-115-1" href="#__codelineno-115-1"></a>aiculator work situation
 </code></pre></div>
 <h2 id="aiculator-work-submit"><code>aiculator work submit</code><a class="headerlink" href="#aiculator-work-submit" title="Permanent link">&para;</a></h2>
 <p>Submit finished work for verification</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-106-1" name="__codelineno-106-1" href="#__codelineno-106-1"></a>aiculator work submit [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-116-1" name="__codelineno-116-1" href="#__codelineno-116-1"></a>aiculator work submit [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-107-1" name="__codelineno-107-1" href="#__codelineno-107-1"></a>      --cost int      cost since your last report, in micro-dollars
-<a id="__codelineno-107-2" name="__codelineno-107-2" href="#__codelineno-107-2"></a>      --lease uint    lease number from wait
-<a id="__codelineno-107-3" name="__codelineno-107-3" href="#__codelineno-107-3"></a>      --note string   note saved for later attempts
-<a id="__codelineno-107-4" name="__codelineno-107-4" href="#__codelineno-107-4"></a>      --task string   task id
-<a id="__codelineno-107-5" name="__codelineno-107-5" href="#__codelineno-107-5"></a>      --tokens int    tokens used since your last report
+<div class="highlight"><pre><span></span><code><a id="__codelineno-117-1" name="__codelineno-117-1" href="#__codelineno-117-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-117-2" name="__codelineno-117-2" href="#__codelineno-117-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-117-3" name="__codelineno-117-3" href="#__codelineno-117-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-117-4" name="__codelineno-117-4" href="#__codelineno-117-4"></a>      --task string   task id
+<a id="__codelineno-117-5" name="__codelineno-117-5" href="#__codelineno-117-5"></a>      --tokens int    tokens used since your last report
 </code></pre></div>
 <h2 id="aiculator-work-verdict"><code>aiculator work verdict</code><a class="headerlink" href="#aiculator-work-verdict" title="Permanent link">&para;</a></h2>
 <p>Approve (--pass) or reject another agent's work</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-108-1" name="__codelineno-108-1" href="#__codelineno-108-1"></a>aiculator work verdict [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-118-1" name="__codelineno-118-1" href="#__codelineno-118-1"></a>aiculator work verdict [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-109-1" name="__codelineno-109-1" href="#__codelineno-109-1"></a>      --cost int      cost since your last report, in micro-dollars
-<a id="__codelineno-109-2" name="__codelineno-109-2" href="#__codelineno-109-2"></a>      --lease uint    lease number from wait
-<a id="__codelineno-109-3" name="__codelineno-109-3" href="#__codelineno-109-3"></a>      --note string   note saved for later attempts
-<a id="__codelineno-109-4" name="__codelineno-109-4" href="#__codelineno-109-4"></a>      --pass          approve; leave out to reject
-<a id="__codelineno-109-5" name="__codelineno-109-5" href="#__codelineno-109-5"></a>      --task string   task id
-<a id="__codelineno-109-6" name="__codelineno-109-6" href="#__codelineno-109-6"></a>      --tokens int    tokens used since your last report
+<div class="highlight"><pre><span></span><code><a id="__codelineno-119-1" name="__codelineno-119-1" href="#__codelineno-119-1"></a>      --cost int      cost since your last report, in micro-dollars
+<a id="__codelineno-119-2" name="__codelineno-119-2" href="#__codelineno-119-2"></a>      --lease uint    lease number from wait
+<a id="__codelineno-119-3" name="__codelineno-119-3" href="#__codelineno-119-3"></a>      --note string   note saved for later attempts
+<a id="__codelineno-119-4" name="__codelineno-119-4" href="#__codelineno-119-4"></a>      --pass          approve; leave out to reject
+<a id="__codelineno-119-5" name="__codelineno-119-5" href="#__codelineno-119-5"></a>      --task string   task id
+<a id="__codelineno-119-6" name="__codelineno-119-6" href="#__codelineno-119-6"></a>      --tokens int    tokens used since your last report
 </code></pre></div>
 <h2 id="aiculator-work-wait"><code>aiculator work wait</code><a class="headerlink" href="#aiculator-work-wait" title="Permanent link">&para;</a></h2>
 <p>Get the next task, or be told to wait or exit</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-110-1" name="__codelineno-110-1" href="#__codelineno-110-1"></a>aiculator work wait [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-120-1" name="__codelineno-120-1" href="#__codelineno-120-1"></a>aiculator work wait [flags]
 </code></pre></div>
 <p><strong>Flags</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-111-1" name="__codelineno-111-1" href="#__codelineno-111-1"></a>      --hold duration   how long to hold if no work is available (default 25s)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-121-1" name="__codelineno-121-1" href="#__codelineno-121-1"></a>      --hold duration   how long to hold if no work is available (default 25s)
 </code></pre></div>
 
 
