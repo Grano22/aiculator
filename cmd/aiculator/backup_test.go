@@ -31,7 +31,8 @@ rules:
 
 	var out string
 	for range 200 {
-		if out = p.run("backup", "versions", "pay"); strings.Contains(out, "journal") {
+		// A new task is a draft for a moment, so the journal may hold that copy first.
+		if out = p.run("backup", "versions", "pay"); strings.Contains(out, "journal") && strings.Contains(out, "ready") {
 			break
 		}
 		time.Sleep(25 * time.Millisecond)
