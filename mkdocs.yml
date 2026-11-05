@@ -110,6 +110,7 @@ nav:
       - MCP config: guides/mcp.md
       - Dashboards: guides/dashboards.md
       - Plugins: guides/plugins.md
+      - Recovery and failover: guides/recovery.md
       - Debugging: guides/debugging.md
   - Concepts:
       - Architecture: concepts/architecture.md

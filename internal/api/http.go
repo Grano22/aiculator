@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +31,9 @@ type Server struct {
 	Sync SyncAPI
 	// Instance identifies this server, so a client can tell it from another on the same port.
 	Instance string
+	// Term counts how many times a server has become leader for this data directory, so a
+	// client can tell that a standby took over.
+	Term uint64
 }
 
 // SyncAPI is what the routes need from the synchronizer. It is an interface so that this
@@ -167,7 +171,7 @@ func (s *Server) Routes() *http.ServeMux {
 	m := http.NewServeMux()
 	m.HandleFunc("GET /v1/healthz", func(w http.ResponseWriter, r *http.Request) {
 		// Instance is a hash, so this says which server answered without saying where it is.
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "instance": s.Instance})
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "instance": s.Instance, "term": strconv.FormatUint(s.Term, 10)})
 	})
 
 	m.HandleFunc("POST /v1/agent/wait", s.authed(isAgent, func(w http.ResponseWriter, r *http.Request, c auth.Claims) {

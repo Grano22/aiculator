@@ -6,6 +6,13 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+### Added
+
+- **Architecture and path tests:** import rules between packages are checked in tests, the core is kept free of clocks, randomness and I/O, and every transition in the TLA+ spec is reached through the real state machine. A coverage gate counts the binary that the end-to-end tests run, and holds each package to a minimum.
+- **Repair at startup:** a task record that can't be read, or that breaks a rule, is quarantined and replaced by a safe version. A record that can't be read becomes a parked stand-in, and a Done task without an independent check is parked for a person to decide.
+- **`aiculator doctor`:** reports repaired and quarantined records, overdue leases, orphan worktrees, event log lag and stale `pid` or `addr` files, with or without a server running. `--fix` cleans up what is safe to clean up.
+- **Standby server:** `aiculator up --standby` keeps a second server waiting, which takes over on the same address if the first one dies. The leader is whoever holds the data directory lock, which `spec/tla/Election.tla` checks against an election based on health checks. `/v1/healthz` reports the leadership `term`.
+
 ## [0.6.0] - 2026-11-05
 
 ### Added

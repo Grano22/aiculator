@@ -145,25 +145,8 @@ func startServer(sb string) (string, error) {
 		}
 	}
 	_ = os.Remove(filepath.Join(abs, "addr"))
-	self, err := os.Executable()
+	cmd, logPath, err := spawnServe(root, abs, addr, sb, false)
 	if err != nil {
-		return "", err
-	}
-	logPath := filepath.Join(abs, "server.log")
-	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
-	if err != nil {
-		return "", err
-	}
-	defer logFile.Close()
-	args := append([]string{"serve", "--data", abs, "--addr", addr, "--repo", root, "--sandbox", sb}, loggingArgs()...)
-	if len(upAging) > 0 {
-		args = append(args, "--aging", strings.Join(upAging, ","))
-	}
-	cmd := exec.Command(self, args...)
-	cmd.Dir = root
-	cmd.Stdout, cmd.Stderr = logFile, logFile
-	detach(cmd)
-	if err := cmd.Start(); err != nil {
 		return "", err
 	}
 	exited := make(chan error, 1)
@@ -186,15 +169,110 @@ func startServer(sb string) (string, error) {
 	return "", fmt.Errorf("the server did not start in time; see %s", logPath)
 }
 
+// spawnServe starts a detached server writing to server.log.
+func spawnServe(root, abs, addr, sb string, standby bool) (*exec.Cmd, string, error) {
+	self, err := os.Executable()
+	if err != nil {
+		return nil, "", err
+	}
+	logPath := filepath.Join(abs, "server.log")
+	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, "", err
+	}
+	defer logFile.Close()
+	args := append([]string{"serve", "--data", abs, "--addr", addr, "--repo", root, "--sandbox", sb}, loggingArgs()...)
+	if len(upAging) > 0 {
+		args = append(args, "--aging", strings.Join(upAging, ","))
+	}
+	if standby {
+		args = append(args, "--standby")
+	}
+	cmd := exec.Command(self, args...)
+	cmd.Dir = root
+	cmd.Stdout, cmd.Stderr = logFile, logFile
+	detach(cmd)
+	if err := cmd.Start(); err != nil {
+		return nil, "", err
+	}
+	return cmd, logPath, nil
+}
+
+// startStandby starts a server that waits on the data directory and takes over when the
+// leader stops, on the leader's address so that sessions reconnect to the same place.
+func startStandby(sb string) (int, error) {
+	url, err := startServer(sb)
+	if err != nil {
+		return 0, err
+	}
+	pidPath := filepath.Join(dataDir, "standby.pid")
+	if pid := pidFile(pidPath); pid != 0 && processAlive(pid) {
+		return pid, nil
+	}
+	abs, err := filepath.Abs(dataDir)
+	if err != nil {
+		return 0, err
+	}
+	cmd, logPath, err := spawnServe(projectRoot(), abs, strings.TrimPrefix(url, "http://"), sb, true)
+	if err != nil {
+		return 0, err
+	}
+	exited := make(chan error, 1)
+	go func() { exited <- cmd.Wait() }()
+	for range 200 {
+		if pidFile(pidPath) == cmd.Process.Pid {
+			return cmd.Process.Pid, nil
+		}
+		select {
+		case <-exited:
+			return 0, fmt.Errorf("the standby exited during startup; see %s", logPath)
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+	return 0, fmt.Errorf("the standby did not start in time; see %s", logPath)
+}
+
+// stopPid stops a process and waits for it to exit.
+func stopPid(pid int) (bool, error) {
+	// A process that died just now needs no signal.
+	if err := stopProcess(pid); err != nil && processAlive(pid) {
+		return false, err
+	}
+	// The endpoint closes before the store finishes writing, so wait for the process
+	// itself. Then a new up, or removing .swarm, cannot meet it.
+	for range 400 {
+		if !processAlive(pid) {
+			return true, nil
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return false, nil
+}
+
 // upAging is passed on to the server that up starts.
 var upAging []string
 
 func upCmd() *cobra.Command {
 	var sb string
+	var standby bool
 	cmd := &cobra.Command{
 		Use:   "up",
 		Short: "Start the swarm server for this project in the background",
+		Long: `Start the swarm server for this project in the background.
+
+With --standby, also start a second server that waits and takes over if the first one
+stops or dies. The leader is whoever holds the lock on .swarm, so the two never write at
+once. Both must run on this machine.`,
 		RunE: func(*cobra.Command, []string) error {
+			if standby {
+				pid, err := startStandby(sb)
+				if err != nil {
+					return err
+				}
+				url, _ := serverURL()
+				fmt.Printf("%s\nstandby %d\n", url, pid)
+				return nil
+			}
 			url, err := startServer(sb)
 			if err != nil {
 				return err
@@ -205,6 +283,7 @@ func upCmd() *cobra.Command {
 	}
 	cmd.Flags().StringVar(&sb, "sandbox", "auto", "sandbox: auto, seatbelt, bwrap, docker or none")
 	cmd.Flags().StringSliceVar(&upAging, "aging", nil, "raise priority after a wait, as wait=boost, such as 1h=5,4h=20")
+	cmd.Flags().BoolVar(&standby, "standby", false, "also start a standby server that takes over if this one dies")
 	return cmd
 }
 
@@ -213,6 +292,14 @@ func downCmd() *cobra.Command {
 		Use:   "down",
 		Short: "Stop the swarm server for this project",
 		RunE: func(*cobra.Command, []string) error {
+			// The standby goes first, or it would take over from the leader being stopped.
+			if pid := pidFile(filepath.Join(dataDir, "standby.pid")); pid != 0 && processAlive(pid) {
+				if ok, err := stopPid(pid); err != nil {
+					return err
+				} else if ok {
+					fmt.Println("standby stopped")
+				}
+			}
 			url, ok := serverURL()
 			if !ok {
 				fmt.Println("no server is running")
@@ -226,18 +313,13 @@ func downCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("bad pid file: %w", err)
 			}
-			// A server that died just now needs no signal.
-			if err := stopProcess(pid); err != nil && processAlive(pid) {
+			stopped, err := stopPid(pid)
+			if err != nil {
 				return err
 			}
-			// The endpoint closes before the store finishes writing, so wait for the
-			// process itself. Then a new up, or removing .swarm, cannot meet it.
-			for range 400 {
-				if !processAlive(pid) {
-					fmt.Println("stopped")
-					return nil
-				}
-				time.Sleep(50 * time.Millisecond)
+			if stopped {
+				fmt.Println("stopped")
+				return nil
 			}
 			if healthy(url) {
 				return errors.New("the server did not stop")

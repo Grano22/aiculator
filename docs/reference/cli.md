@@ -615,6 +615,7 @@ aiculator serve [flags]
       --repo string              git repository to work on; empty disables the work layer
       --restart-grace duration   no lease expires this soon after a restart (default 15s)
       --sandbox string           sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
+      --standby                  if another server holds this data directory, wait and take over when it stops
       --sync-always              fsync every write; survives power loss but is slower
 ```
 
@@ -1007,6 +1008,12 @@ aiculator unjoin [flags]
 
 Start the swarm server for this project in the background
 
+Start the swarm server for this project in the background.
+
+With --standby, also start a second server that waits and takes over if the first one
+stops or dies. The leader is whoever holds the lock on .swarm, so the two never write at
+once. Both must run on this machine.
+
 ```text
 aiculator up [flags]
 ```
@@ -1016,6 +1023,7 @@ aiculator up [flags]
 ```text
       --aging strings    raise priority after a wait, as wait=boost, such as 1h=5,4h=20
       --sandbox string   sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
+      --standby          also start a standby server that takes over if this one dies
 ```
 
 ## `aiculator web`

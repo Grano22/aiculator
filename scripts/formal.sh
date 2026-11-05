@@ -29,10 +29,12 @@ tlc Swarm SwarmOneTaskDeep pass
 tlc SwarmLiveness SwarmLiveness pass
 tlc Planner Planner pass
 tlc Sync Sync pass
+tlc Election Election pass
 tlc Swarm SwarmBug_nofence violation
 tlc Swarm SwarmBug_selfverify violation
 tlc Planner PlannerBug_nohints violation
 tlc Sync SyncBug_noecho violation
+tlc Election ElectionBug_health violation
 
 echo "--- Alloy"
 java --enable-native-access=ALL-UNNAMED -jar "$ROOT/.tools/alloy/alloy.jar" exec -f -c '*' -o "$OUT/alloy" "$ROOT/spec/alloy/swarm.als" > "$OUT/alloy.log" 2>&1 || true

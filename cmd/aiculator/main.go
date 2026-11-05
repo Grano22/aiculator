@@ -145,6 +145,7 @@ func serveCmd() *cobra.Command {
 		restartGrace           time.Duration
 		agingUnit              time.Duration
 		agingArgs              []string
+		standby                bool
 	)
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -156,7 +157,7 @@ func serveCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return serve(ctx, serveOpts{addr, repo, branch, sb, syncAlways, leaseTTL, progressTTL, exitGrace, restartGrace, agingUnit, aging})
+			return serve(ctx, serveOpts{addr, repo, branch, sb, syncAlways, leaseTTL, progressTTL, exitGrace, restartGrace, agingUnit, aging, standby})
 		},
 	}
 	f := cmd.Flags()
@@ -171,6 +172,7 @@ func serveCmd() *cobra.Command {
 	f.DurationVar(&restartGrace, "restart-grace", 15*time.Second, "no lease expires this soon after a restart")
 	f.DurationVar(&agingUnit, "aging-unit", time.Minute, "waiting this long equals one priority point")
 	f.StringSliceVar(&agingArgs, "aging", nil, "raise priority after a wait, as wait=boost, such as 1h=5,4h=20")
+	f.BoolVar(&standby, "standby", false, "if another server holds this data directory, wait and take over when it stops")
 	return cmd
 }
 
@@ -182,6 +184,7 @@ type serveOpts struct {
 	restartGrace           time.Duration
 	agingUnit              time.Duration
 	aging                  []core.AgingStep
+	standby                bool
 }
 
 func serve(ctx context.Context, o serveOpts) error {
@@ -189,9 +192,13 @@ func serve(ctx context.Context, o serveOpts) error {
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return err
 	}
-	// The design relies on a single writer, so a second server must not start here.
-	unlock, err := lockDataDir(dataDir)
+	// The design relies on a single writer, so a second server must not start here, unless
+	// it is a standby, which waits for the first to go.
+	unlock, term, err := lead(ctx, o.standby, log)
 	if err != nil {
+		if o.standby && ctx.Err() != nil {
+			return nil
+		}
 		return err
 	}
 	defer unlock()
@@ -239,7 +246,7 @@ func serve(ctx context.Context, o serveOpts) error {
 	}
 	defer svc.Close()
 
-	srv := &api.Server{S: svc, Auth: authority, Version: version, Instance: realmID.instance}
+	srv := &api.Server{S: svc, Auth: authority, Version: version, Instance: realmID.instance, Term: term}
 	// Connectors are a side effect, so a bad sources file costs them, not the swarm.
 	if y := startSync(ctx, svc, o.repo, log); y != nil {
 		srv.Sync = y
@@ -253,6 +260,12 @@ func serve(ctx context.Context, o serveOpts) error {
 	}
 	defer stopPlugins()
 	ln, err := net.Listen("tcp", o.addr)
+	if err != nil && o.standby {
+		// The old leader's port may still be taken by something else after it died. Clients
+		// read the address file, so a new port only costs open sessions a reconnect.
+		log.Warn("leader address taken, picking another", "addr", o.addr, "err", err)
+		ln, err = net.Listen("tcp", "127.0.0.1:0")
+	}
 	if err != nil {
 		return err
 	}
