@@ -222,3 +222,8 @@ To release, keep `CHANGELOG.md` current, then run `scripts/release.sh --bump min
 Harnesses and sandboxes run as separate programs and are not linked. Each has its own license and terms of use.
 
 Aiculator itself is released under the [MIT License](LICENSE).
+
+## Support me
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/G2G83IZB4)
+[![Buy me a coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=grano22&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://www.buymeacoffee.com/grano22)
