@@ -125,13 +125,13 @@
 				
 				<option value="file34">github.com/Grano22/aiculator/internal/connect/notion.go (56.6%)</option>
 				
-				<option value="file35">github.com/Grano22/aiculator/internal/connect/sync.go (81.9%)</option>
+				<option value="file35">github.com/Grano22/aiculator/internal/connect/sync.go (82.2%)</option>
 				
 				<option value="file36">github.com/Grano22/aiculator/internal/core/repair.go (92.6%)</option>
 				
 				<option value="file37">github.com/Grano22/aiculator/internal/core/task.go (95.2%)</option>
 				
-				<option value="file38">github.com/Grano22/aiculator/internal/driver/driver.go (71.4%)</option>
+				<option value="file38">github.com/Grano22/aiculator/internal/driver/driver.go (70.4%)</option>
 				
 				<option value="file39">github.com/Grano22/aiculator/internal/driver/proc_unix.go (66.7%)</option>
 				
@@ -169,7 +169,7 @@
 				
 				<option value="file56">github.com/Grano22/aiculator/internal/skillpack/skillpack.go (82.4%)</option>
 				
-				<option value="file57">github.com/Grano22/aiculator/internal/store/events.go (78.5%)</option>
+				<option value="file57">github.com/Grano22/aiculator/internal/store/events.go (76.2%)</option>
 				
 				<option value="file58">github.com/Grano22/aiculator/internal/store/links.go (84.2%)</option>
 				
@@ -201,7 +201,7 @@
 				
 				<option value="file72">github.com/Grano22/aiculator/internal/work/work.go (84.8%)</option>
 				
-				<option value="file73">github.com/Grano22/aiculator/pkg/observe/analytics.go (96.4%)</option>
+				<option value="file73">github.com/Grano22/aiculator/pkg/observe/analytics.go (97.0%)</option>
 				
 				<option value="file74">github.com/Grano22/aiculator/pkg/observe/observe.go (99.3%)</option>
 				
@@ -9926,8 +9926,8 @@ func (w *worker) pushOne(ctx context.Context, id string, state core.State, seq u
                 <span class="cov8" title="1">delete(w.pending, id)
                 return
 </span>        }
-        <span class="cov0" title="0">select </span>{ // A newer state arrived during the call, so there is more to do.
-        case w.wake &lt;- struct{}{}:<span class="cov0" title="0"></span>
+        <span class="cov8" title="1">select </span>{ // A newer state arrived during the call, so there is more to do.
+        case w.wake &lt;- struct{}{}:<span class="cov8" title="1"></span>
         default:<span class="cov0" title="0"></span>
         }
 }
@@ -11496,14 +11496,14 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
                         <span class="cov8" title="1">return sessionResult{ok: true, tokens: tokens, text: h.Text()}</span>
                 case &lt;-exited:
                         // The prompt may have finished just before the exit, so prefer its result.
-                        <span class="cov8" title="1">select </span>{
+                        <span class="cov0" title="0">select </span>{
                         case out := &lt;-done:
-                                <span class="cov8" title="1">if out.err == nil &amp;&amp; out.resp.StopReason == acp.StopReasonEndTurn </span>{
+                                <span class="cov0" title="0">if out.err == nil &amp;&amp; out.resp.StopReason == acp.StopReasonEndTurn </span>{
                                         <span class="cov0" title="0">return sessionResult{ok: true, text: h.Text()}
 </span>                                }
                         case &lt;-time.After(200 * time.Millisecond):<span class="cov0" title="0"></span>
                         }
-                        <span class="cov8" title="1">return sessionResult{note: "agent_crashed", text: h.Text()}</span>
+                        <span class="cov0" title="0">return sessionResult{note: "agent_crashed", text: h.Text()}</span>
                 case &lt;-tick.C:
                         // Saving also renews the lease. A rejection means the swarm has given
                         // this task away, for example because the agent went zombie.
@@ -17752,7 +17752,7 @@ func (s *Store) StartProjector(ctx context.Context) error {
                 _, err = s.js.Publish(pubCtx, eventSubject+"."+id, m.Data(),
                         jetstream.WithMsgID(fmt.Sprintf("%s:%d", id, rev)))
                 if err != nil </span>{
-                        <span class="cov8" title="1">_ = m.NakWithDelay(100 * time.Millisecond)
+                        <span class="cov0" title="0">_ = m.NakWithDelay(100 * time.Millisecond)
                         return
 </span>                }
                 <span class="cov8" title="1">_ = m.Ack()</span>
@@ -17866,10 +17866,10 @@ func (s *Store) WaitProjected(ctx context.Context) error {
                 <span class="cov8" title="1">if info.AckFloor.Stream &gt;= last.Sequence </span>{
                         <span class="cov8" title="1">return nil
 </span>                }
-                <span class="cov8" title="1">select </span>{
+                <span class="cov0" title="0">select </span>{
                 case &lt;-ctx.Done():
                         <span class="cov0" title="0">return ctx.Err()</span>
-                case &lt;-time.After(5 * time.Millisecond):<span class="cov8" title="1"></span>
+                case &lt;-time.After(5 * time.Millisecond):<span class="cov0" title="0"></span>
                 }
         }
 }
@@ -22625,7 +22625,7 @@ func (x *FlowIndex) cfd(picked []*taskHistory, from, to int64, points int) CFD {
                                 <span class="cov8" title="1">j++
 </span>                        }
                         <span class="cov8" title="1">if j == 0 </span>{
-                                <span class="cov0" title="0">continue</span> // Not created yet.
+                                <span class="cov8" title="1">continue</span> // Not created yet.
                         }
                         <span class="cov8" title="1">if i, ok := idx[h.moves[j-1].state]; ok </span>{
                                 <span class="cov8" title="1">counts[i][k]++
