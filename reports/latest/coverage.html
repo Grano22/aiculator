@@ -125,7 +125,7 @@
 				
 				<option value="file34">github.com/Grano22/aiculator/internal/connect/notion.go (56.6%)</option>
 				
-				<option value="file35">github.com/Grano22/aiculator/internal/connect/sync.go (82.2%)</option>
+				<option value="file35">github.com/Grano22/aiculator/internal/connect/sync.go (81.9%)</option>
 				
 				<option value="file36">github.com/Grano22/aiculator/internal/core/repair.go (92.6%)</option>
 				
@@ -9926,8 +9926,8 @@ func (w *worker) pushOne(ctx context.Context, id string, state core.State, seq u
                 <span class="cov8" title="1">delete(w.pending, id)
                 return
 </span>        }
-        <span class="cov8" title="1">select </span>{ // A newer state arrived during the call, so there is more to do.
-        case w.wake &lt;- struct{}{}:<span class="cov8" title="1"></span>
+        <span class="cov0" title="0">select </span>{ // A newer state arrived during the call, so there is more to do.
+        case w.wake &lt;- struct{}{}:<span class="cov0" title="0"></span>
         default:<span class="cov0" title="0"></span>
         }
 }
@@ -17866,10 +17866,10 @@ func (s *Store) WaitProjected(ctx context.Context) error {
                 <span class="cov8" title="1">if info.AckFloor.Stream &gt;= last.Sequence </span>{
                         <span class="cov8" title="1">return nil
 </span>                }
-                <span class="cov0" title="0">select </span>{
+                <span class="cov8" title="1">select </span>{
                 case &lt;-ctx.Done():
                         <span class="cov0" title="0">return ctx.Err()</span>
-                case &lt;-time.After(5 * time.Millisecond):<span class="cov0" title="0"></span>
+                case &lt;-time.After(5 * time.Millisecond):<span class="cov8" title="1"></span>
                 }
         }
 }
@@ -17936,7 +17936,7 @@ func (s *Store) FollowTasks(ctx context.Context, durable string, filter []byte, 
 func (s *Store) ReadEvents(ctx context.Context, fn func(t core.Task, at time.Time), caughtUp func()) error {
         <span class="cov8" title="1">info, err := s.stream.Info(ctx)
         if err != nil </span>{
-                <span class="cov8" title="1">return err
+                <span class="cov0" title="0">return err
 </span>        }
         <span class="cov8" title="1">last := info.State.LastSeq
         cons, err := s.stream.OrderedConsumer(ctx, jetstream.OrderedConsumerConfig{})
