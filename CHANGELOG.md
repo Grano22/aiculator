@@ -6,6 +6,8 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-05
+
 ### Added
 
 - **`aiculator export`:** writes tasks, agents, usage, flow or realms as JSON, YAML, CSV, TSV, Excel, HTML or Markdown, with `--fields`, `--state`, `--label`, `--where`, `--sort`, `--limit`, `--with-meta` and `--all`. Values are always treated as text, so an export can't run a formula or a script from a ticket's title.
