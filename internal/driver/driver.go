@@ -22,6 +22,7 @@ import (
 	"github.com/Grano22/aiculator/internal/client"
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/harness"
+	"github.com/Grano22/aiculator/internal/procinfo"
 	"github.com/Grano22/aiculator/internal/sandbox"
 	"github.com/Grano22/aiculator/internal/swarm"
 	"github.com/Grano22/aiculator/internal/vlog"
@@ -71,8 +72,17 @@ type Options struct {
 	Heartbeat  time.Duration // How often to save work and renew the lease.
 	MaxTasks   int           // Stop after this many tasks; 0 means no limit.
 	StopOnWait bool          // Return instead of waiting; used by tests.
-	Log        *slog.Logger
-	Stderr     io.Writer
+	// Resolve finds the server's address, when URL is not fixed. It is asked again whenever
+	// the server cannot be reached, so a driver started before its server, or one whose
+	// server restarted on a new port or was taken over by a standby, finds it.
+	Resolve func() (string, error)
+	// WaitOnLimit sleeps until a usage limit resets, when the harness said when, instead of
+	// stopping. Without a reset time the driver stops either way.
+	WaitOnLimit bool
+	// Version is reported to the swarm when the driver connects.
+	Version string
+	Log     *slog.Logger
+	Stderr  io.Writer
 }
 
 // Stats summarizes a run.
@@ -108,9 +118,80 @@ func New(o Options) (*Driver, error) {
 	return &Driver{o: o, c: client.New(o.URL, o.Token)}, nil
 }
 
+// ErrLimited means the harness ran out of usage, credit or rate allowance.
+type ErrLimited struct {
+	Reason string
+	Until  time.Time
+}
+
+func (e *ErrLimited) Error() string {
+	if e.Until.IsZero() {
+		return "harness limit: " + e.Reason
+	}
+	return "harness limit: " + e.Reason + ", until " + e.Until.Format(time.RFC3339)
+}
+
+// connect finds the server when it moves, and says hello. It keeps trying until ctx ends, so
+// a driver can start before its server.
+func (d *Driver) connect(ctx context.Context) error {
+	warned := false
+	for {
+		if d.o.Resolve != nil {
+			if url, err := d.o.Resolve(); err == nil && url != "" {
+				if url != d.o.URL {
+					d.o.URL = url
+					d.c = client.New(url, d.o.Token)
+				}
+			} else if d.o.URL == "" {
+				if !warned {
+					d.o.Log.Info("waiting for a swarm server to start", "err", err)
+					warned = true
+				}
+				if !sleep(ctx, time.Second) {
+					return ctx.Err()
+				}
+				continue
+			}
+		}
+		info := procinfo.Self("acp", d.o.Manifest.Name, "aiculator-drive", d.o.Version, true)
+		err := d.c.Post(ctx, "/v1/agent/hello", info, nil)
+		var se *client.StatusError
+		switch {
+		case err == nil:
+			if warned {
+				d.o.Log.Info("connected to the swarm", "url", d.o.URL)
+			}
+			return nil
+		case errors.As(err, &se) && se.Code == http.StatusNotFound:
+			return nil // An older server, without sessions; work goes on.
+		case errors.As(err, &se) && se.Code < 500:
+			return err
+		}
+		if !warned {
+			d.o.Log.Info("waiting for the swarm server", "url", d.o.URL, "err", err)
+			warned = true
+		}
+		if !sleep(ctx, time.Second) {
+			return ctx.Err()
+		}
+	}
+}
+
+func sleep(ctx context.Context, d time.Duration) bool {
+	select {
+	case <-ctx.Done():
+		return false
+	case <-time.After(d):
+		return true
+	}
+}
+
 // Run takes tasks until the swarm says exit, the limit is reached, or ctx ends.
 func (d *Driver) Run(ctx context.Context) (Stats, error) {
 	var st Stats
+	if err := d.connect(ctx); err != nil {
+		return st, err
+	}
 	for ctx.Err() == nil {
 		if d.o.MaxTasks > 0 && st.Tasks >= d.o.MaxTasks {
 			st.ExitReason = "max_tasks"
@@ -126,10 +207,12 @@ func (d *Driver) Run(ctx context.Context) (Stats, error) {
 			if errors.As(err, &se) && se.Code < 500 {
 				return st, err // A bad token will not fix itself.
 			}
-			d.o.Log.Warn("wait failed; retrying", "err", err)
-			select {
-			case <-ctx.Done():
-			case <-time.After(time.Second):
+			d.o.Log.Warn("wait failed; finding the server again", "err", err)
+			if !sleep(ctx, time.Second) {
+				break
+			}
+			if err := d.connect(ctx); err != nil {
+				return st, err
 			}
 			continue
 		}
@@ -146,6 +229,17 @@ func (d *Driver) Run(ctx context.Context) (Stats, error) {
 		case engine.ActionTask:
 			st.Tasks++
 			if err := d.runTask(ctx, g, &st); err != nil {
+				var lim *ErrLimited
+				if errors.As(err, &lim) && d.o.WaitOnLimit && !lim.Until.IsZero() {
+					d.o.Log.Warn("the harness hit a limit; waiting for it to reset", "reason", lim.Reason, "until", lim.Until)
+					if !sleep(ctx, time.Until(lim.Until)+5*time.Second) {
+						return st, ctx.Err()
+					}
+					if err := d.connect(ctx); err != nil {
+						return st, err
+					}
+					continue
+				}
 				return st, err
 			}
 		}
@@ -178,6 +272,17 @@ func (d *Driver) runTask(ctx context.Context, g swarm.Grant, st *Stats) error {
 	case res.leaseLost:
 		log.Warn("lease lost; the harness was stopped") // The swarm already moved on.
 		return nil
+	case res.limit != "":
+		if g.Job != "review" {
+			if err := d.c.Post(bg, "/v1/agent/release", lq, nil); err != nil {
+				log.Warn("releasing task", "err", err)
+			}
+		}
+		lim := &ErrLimited{Reason: res.limit, Until: res.limitUntil}
+		if err := d.c.Post(bg, "/v1/agent/limit", api.LimitReq{Reason: res.limit, Until: res.limitUntil}, nil); err != nil {
+			log.Warn("reporting the limit", "err", err)
+		}
+		return lim
 	case res.harnessDown:
 		if g.Job != "review" {
 			if err := d.c.Post(bg, "/v1/agent/release", lq, nil); err != nil {
@@ -220,6 +325,37 @@ func parseVerdict(s string) bool {
 	return false
 }
 
+// tailBuffer keeps the last max bytes written to it.
+type tailBuffer struct {
+	mu  sync.Mutex
+	max int
+	b   []byte
+}
+
+func (t *tailBuffer) Write(p []byte) (int, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.b = append(t.b, p...)
+	if len(t.b) > t.max {
+		t.b = append(t.b[:0], t.b[len(t.b)-t.max:]...)
+	}
+	return len(p), nil
+}
+
+func (t *tailBuffer) String() string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return string(t.b)
+}
+
+// tail is the end of s: a harness that hit a limit says so last.
+func tail(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[len(s)-n:]
+}
+
 func truncate(s string, n int) string {
 	if len(s) <= n {
 		return s
@@ -229,8 +365,11 @@ func truncate(s string, n int) string {
 
 type sessionResult struct {
 	ok, leaseLost, harnessDown bool
-	tokens                     int64
-	note, text                 string
+	// limit is set when the harness said it ran out of usage, credit or rate allowance.
+	limit      string
+	limitUntil time.Time
+	tokens     int64
+	note, text string
 }
 
 // prompt builds the instructions. Notes go inside a clearly marked block, because
@@ -340,9 +479,14 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
 	if err != nil {
 		return sessionResult{harnessDown: true, note: "pipe_error: " + err.Error()}
 	}
+	// The end of what the harness prints to stderr is kept, because that is where many
+	// say they ran out of usage.
+	errTail := &tailBuffer{max: 4096}
+	cmd.Stderr = errTail
 	if d.o.Stderr != nil {
-		cmd.Stderr = d.o.Stderr
+		cmd.Stderr = io.MultiWriter(d.o.Stderr, errTail)
 	}
+	stderrTail := errTail.String
 	if v := vl.V(vlog.LevelChanges); v.Enabled() {
 		v.Info("launching harness", "command", d.o.Manifest.Command, "sandbox", d.o.Sandbox.Name(), "write_paths", writes)
 	}
@@ -398,10 +542,14 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
 				tokens = int64(out.resp.Usage.TotalTokens)
 			}
 			if out.err != nil {
-				return sessionResult{tokens: tokens, harnessDown: isAuthError(out.err), note: "agent_error: " + truncate(out.err.Error(), 300), text: h.Text()}
+				r := sessionResult{tokens: tokens, harnessDown: isAuthError(out.err), note: "agent_error: " + truncate(out.err.Error(), 300), text: h.Text()}
+				r.limit, r.limitUntil = limitOf(out.err.Error()+"\n"+tail(stderrTail(), 2000), tail(r.text, 2000), time.Now())
+				return r
 			}
 			if out.resp.StopReason != acp.StopReasonEndTurn {
-				return sessionResult{tokens: tokens, note: "agent_stopped: " + string(out.resp.StopReason), text: h.Text()}
+				r := sessionResult{tokens: tokens, note: "agent_stopped: " + string(out.resp.StopReason), text: h.Text()}
+				r.limit, r.limitUntil = limitOf(tail(stderrTail(), 2000), tail(r.text, 2000), time.Now())
+				return r
 			}
 			return sessionResult{ok: true, tokens: tokens, text: h.Text()}
 		case <-exited:
@@ -413,7 +561,9 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
 				}
 			case <-time.After(200 * time.Millisecond):
 			}
-			return sessionResult{note: "agent_crashed", text: h.Text()}
+			r := sessionResult{note: "agent_crashed", text: h.Text()}
+			r.limit, r.limitUntil = limitOf(tail(stderrTail(), 2000), tail(r.text, 2000), time.Now())
+			return r
 		case <-tick.C:
 			// Saving also renews the lease. A rejection means the swarm has given
 			// this task away, for example because the agent went zombie.

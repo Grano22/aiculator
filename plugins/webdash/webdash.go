@@ -70,20 +70,28 @@ func (Plugin) Setup(h *plugin.Host) error {
 // Commands implements plugin.Commander.
 func (Plugin) Commands(cli *plugin.CLI) []*cobra.Command {
 	var (
-		noOpen, all bool
-		ttl         time.Duration
+		noOpen, all, control bool
+		ttl                  time.Duration
 	)
 	cmd := &cobra.Command{
 		Use:   "web",
 		Short: "Open the web dashboard",
 		Long: `Opens the live dashboard in your browser, using a read-only token that expires.
+With --control, the page can also stop or kill agents and clear gone sessions.
 
 The dashboard is compiled into this binary; go build -tags noweb leaves it out.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if all {
 				return serveFleet(cmd.Context(), cli, ttl, noOpen)
 			}
-			url, token, err := cli.ViewerToken(cmd.Context(), ttl)
+			mint := cli.ViewerToken
+			if control {
+				if cli.ControlToken == nil {
+					return fmt.Errorf("this build cannot issue control links")
+				}
+				mint = cli.ControlToken
+			}
+			url, token, err := mint(cmd.Context(), ttl)
 			if err != nil {
 				return err
 			}
@@ -99,6 +107,7 @@ The dashboard is compiled into this binary; go build -tags noweb leaves it out.`
 	}
 	cmd.Flags().BoolVar(&all, "all", false, "show every realm on this machine, for as long as this command runs")
 	cmd.Flags().BoolVar(&noOpen, "no-open", false, "print the link and do not open a browser")
+	cmd.Flags().BoolVar(&control, "control", false, "a link whose page can also stop and kill agents and clear gone sessions")
 	cmd.Flags().DurationVar(&ttl, "ttl", 12*time.Hour, "how long the link works")
 	return []*cobra.Command{cmd}
 }

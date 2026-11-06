@@ -23,12 +23,15 @@ import (
 
 // Claims is the signed content of a token.
 type Claims struct {
-	Agent   string    `json:"agent"`
-	Tier    int       `json:"tier,omitempty"`
-	Tags    []string  `json:"tags,omitempty"`
-	Admin   bool      `json:"admin,omitempty"`
-	Planner bool      `json:"planner,omitempty"`
-	Viewer  bool      `json:"viewer,omitempty"` // May read dashboards and change nothing.
+	Agent   string   `json:"agent"`
+	Tier    int      `json:"tier,omitempty"`
+	Tags    []string `json:"tags,omitempty"`
+	Admin   bool     `json:"admin,omitempty"`
+	Planner bool     `json:"planner,omitempty"`
+	Viewer  bool     `json:"viewer,omitempty"` // May read dashboards and change nothing.
+	// Control lets a viewer stop agents and clear gone sessions, and nothing else: it is
+	// what the dashboard's buttons need, and far less than admin.
+	Control bool      `json:"control,omitempty"`
 	Expires time.Time `json:"exp,omitzero"`
 }
 
@@ -135,8 +138,9 @@ func (a *Authority) Verify(token string) (Claims, error) {
 	if a.verified == nil || len(a.verified) >= maxVerified {
 		a.verified = make(map[string]Claims, 64)
 	}
-	a.verified[token] = Claims{Agent: c.Agent, Tier: c.Tier, Tags: slices.Clone(c.Tags), Admin: c.Admin,
-		Planner: c.Planner, Viewer: c.Viewer, Expires: c.Expires}
+	cached := c
+	cached.Tags = slices.Clone(c.Tags)
+	a.verified[token] = cached
 	a.mu.Unlock()
 	return a.checkExpiry(c)
 }

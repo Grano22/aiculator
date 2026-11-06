@@ -204,6 +204,25 @@ func (c *Collector) agent(id string) *AgentUsage {
 	return a
 }
 
+// Forget drops an agent that has gone, so that it leaves the dashboards. Its tasks keep
+// their usage, which is where the totals come from.
+func (c *Collector) Forget(id string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.agents, id)
+}
+
+// LastSeen says when an agent was last heard from, and whether it ever was.
+func (c *Collector) LastSeen(id string) (time.Time, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	a := c.agents[id]
+	if a == nil || a.last.IsZero() {
+		return time.Time{}, false
+	}
+	return a.last, true
+}
+
 // Usage adds tokens and cost to an agent.
 func (c *Collector) Usage(id string, tokens, cost int64) {
 	c.mu.Lock()
@@ -416,6 +435,7 @@ type Snapshot struct {
 	Tasks      []TaskLive       `json:"tasks"`
 	Truncated  int              `json:"tasks_not_shown"`
 	Agents     []AgentLive      `json:"agents"`
+	Sessions   []SessionLive    `json:"sessions"`
 	Usage      Usage            `json:"usage"`
 	Planning   Planning         `json:"planning"`
 	Probes     []Probe          `json:"probes"`

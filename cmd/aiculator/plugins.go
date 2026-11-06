@@ -63,6 +63,10 @@ func pluginCLI() *plugin.CLI {
 			url, tok, err := issueLocal(ctx, api.TokenReq{Agent: name, Viewer: true, TTLSec: int64(ttl.Seconds())})
 			return url, tok, err
 		},
+		ControlToken: func(ctx context.Context, ttl time.Duration) (string, string, error) {
+			name := "control-" + randomSuffix()
+			return issueLocal(ctx, api.TokenReq{Agent: name, Viewer: true, Control: true, TTLSec: int64(ttl.Seconds())})
+		},
 		Snapshot: func(ctx context.Context) (observe.Snapshot, error) {
 			var s observe.Snapshot
 			c, err := adminClient()

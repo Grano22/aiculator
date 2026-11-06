@@ -39,6 +39,9 @@ type Commander interface {
 type CLI struct {
 	// ViewerToken mints a read-only token and returns the server's URL with it.
 	ViewerToken func(ctx context.Context, ttl time.Duration) (url, token string, err error)
+	// ControlToken is ViewerToken that may also stop agents and clear gone sessions, for a
+	// dashboard with buttons. It is nil where that is not offered.
+	ControlToken func(ctx context.Context, ttl time.Duration) (url, token string, err error)
 	// Snapshot reads the live dashboard data.
 	Snapshot func(ctx context.Context) (observe.Snapshot, error)
 	// Fleet reads every realm on this machine, as JSON that the caller passes on.

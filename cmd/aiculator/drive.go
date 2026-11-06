@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -39,6 +41,7 @@ func loadManifest(harness, path string) (driver.Manifest, error) {
 func driveCmd() *cobra.Command {
 	var (
 		harness, manifest, url, agent, sb string
+		onLimit                           string
 		maxTasks                          int
 		hold, heartbeat                   time.Duration
 	)
@@ -63,10 +66,26 @@ func driveCmd() *cobra.Command {
 				return err
 			}
 			log := vlog.Slog("driver")
-			d, err := driver.New(driver.Options{
+			if onLimit != "wait" && onLimit != "exit" {
+				return fmt.Errorf("--on-limit is wait or exit, not %q", onLimit)
+			}
+			o := driver.Options{
 				Manifest: m, URL: url, Token: token, AgentID: agent, Sandbox: s, SwarmBin: self, Hide: secretPaths(),
 				Hold: hold, Heartbeat: heartbeat, MaxTasks: maxTasks, Log: log, Stderr: os.Stderr,
-			})
+				WaitOnLimit: onLimit == "wait", Version: version,
+			}
+			if url == "" {
+				// Found from the project's data directory, again whenever the server cannot be
+				// reached: so the driver can start first, and follows a restart or a standby.
+				o.Resolve = func() (string, error) {
+					b, err := os.ReadFile(filepath.Join(dataDir, "addr"))
+					if err != nil {
+						return "", fmt.Errorf("no server running in %s yet", dataDir)
+					}
+					return strings.TrimSpace(string(b)), nil
+				}
+			}
+			d, err := driver.New(o)
 			if err != nil {
 				return err
 			}
@@ -80,7 +99,8 @@ func driveCmd() *cobra.Command {
 	f := cmd.Flags()
 	f.StringVar(&harness, "harness", "", "harness id, from aiculator harness")
 	f.StringVar(&manifest, "manifest", "", "YAML manifest file, instead of a preset")
-	f.StringVar(&url, "url", "http://127.0.0.1:7777", "server URL")
+	f.StringVar(&url, "url", "", "server URL; by default the project's server, waited for if it is not running yet")
+	f.StringVar(&onLimit, "on-limit", "wait", "when the harness runs out of usage: wait for the reset it reports, or exit")
 	f.StringVar(&agent, "agent", "driver", "agent name, for review notes")
 	f.StringVar(&sb, "sandbox", "auto", "sandbox: auto, seatbelt, bwrap, docker or none")
 	f.IntVar(&maxTasks, "max-tasks", 0, "stop after this many tasks; 0 means no limit")

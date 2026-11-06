@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -36,6 +37,10 @@ type Server struct {
 	// Term counts how many times a server has become leader for this data directory, so a
 	// client can tell that a standby took over.
 	Term uint64
+	// Host is this machine's name. Kill ends a process aiculator started, after checking it
+	// is one; with it unset, agents are only told to stop.
+	Host string
+	Kill func(pid int) error
 	// Backup reports on and takes backups, when configured.
 	Backup BackupAPI
 }
@@ -136,11 +141,14 @@ func (s *Server) authed(check func(auth.Claims) bool, h handler) http.HandlerFun
 	}
 }
 
-func isAgent(c auth.Claims) bool   { return c.Tier >= 1 }
-func isAdmin(c auth.Claims) bool   { return c.Admin }
-func canView(c auth.Claims) bool   { return c.Admin || c.Viewer }
-func isPlanner(c auth.Claims) bool { return c.Admin || c.Planner }
-func anyone(auth.Claims) bool      { return true }
+func isAgent(c auth.Claims) bool { return c.Tier >= 1 }
+func isAdmin(c auth.Claims) bool { return c.Admin }
+func canView(c auth.Claims) bool { return c.Admin || c.Viewer }
+
+// canControl is for the dashboard's buttons: stopping agents and clearing gone sessions.
+func canControl(c auth.Claims) bool { return c.Admin || (c.Viewer && c.Control) }
+func isPlanner(c auth.Claims) bool  { return c.Admin || c.Planner }
+func anyone(auth.Claims) bool       { return true }
 
 // AnalyticsQuery reads the analytics filters from a URL: window (such as 6h, 7d or all),
 // tier, label (key=value, or key) and points.
@@ -179,6 +187,29 @@ func parseSpan(s string) (time.Duration, error) {
 	return time.ParseDuration(s)
 }
 
+// stop tells agents to exit and, when asked, ends the processes of theirs that may be ended.
+func (s *Server) stop(ctx context.Context, q StopReq) (StopReply, error) {
+	// Read the processes before stopping, while every session is still listed.
+	var kill []observe.SessionLive
+	if q.Kill && s.Kill != nil && s.Host != "" {
+		kill = s.S.Killable(s.Host)
+	}
+	stopped, released, err := s.S.Stop(ctx, q.Agents)
+	out := StopReply{Stopped: stopped, Released: released}
+	if err != nil {
+		return out, err
+	}
+	for _, k := range kill {
+		if len(q.Agents) > 0 && !slices.Contains(q.Agents, k.Agent) {
+			continue
+		}
+		if s.Kill(k.PID) == nil {
+			out.Killed = append(out.Killed, k.Agent)
+		}
+	}
+	return out, nil
+}
+
 // LeaseReq is the body of the agent calls that act on a held task.
 type LeaseReq struct {
 	TaskID string `json:"task_id"`
@@ -187,6 +218,47 @@ type LeaseReq struct {
 	Cost   int64  `json:"cost,omitempty"`
 	Tokens int64  `json:"tokens,omitempty"`
 	Pass   bool   `json:"pass,omitempty"`
+}
+
+// LimitReq reports that an agent cannot work for now, such as when its plan's usage is used
+// up. Until, or RetryAfterSec from now, says when it can again; neither means until it says
+// hello again.
+type LimitReq struct {
+	Reason        string    `json:"reason"`
+	Until         time.Time `json:"until,omitzero"`
+	RetryAfterSec int64     `json:"retry_after_sec,omitempty"`
+}
+
+// UsageReq reports tokens and cost, for the task named or for the agent alone.
+type UsageReq struct {
+	TaskID string `json:"task_id,omitempty"`
+	Lease  uint64 `json:"lease,omitempty"`
+	Tokens int64  `json:"tokens"`
+	Cost   int64  `json:"cost,omitempty"`
+}
+
+// StopReq stops agents: those named, or all of them. Kill also ends the processes that
+// aiculator itself started for them on this machine, such as drivers.
+type StopReq struct {
+	Agents []string `json:"agents,omitempty"`
+	Kill   bool     `json:"kill,omitempty"`
+}
+
+// StopReply says what a stop did.
+type StopReply struct {
+	Stopped  []string `json:"stopped"`
+	Killed   []string `json:"killed,omitempty"`
+	Released []string `json:"released,omitempty"`
+}
+
+func (r LimitReq) until(now time.Time) time.Time {
+	if !r.Until.IsZero() {
+		return r.Until
+	}
+	if r.RetryAfterSec > 0 {
+		return now.Add(time.Duration(r.RetryAfterSec) * time.Second)
+	}
+	return time.Time{}
 }
 
 // WaitReq is the body of the wait call.
@@ -201,7 +273,9 @@ type TokenReq struct {
 	Tags    []string `json:"tags,omitempty"`
 	Planner bool     `json:"planner,omitempty"`
 	Viewer  bool     `json:"viewer,omitempty"`
-	TTLSec  int64    `json:"ttl_sec,omitempty"`
+	// Control, with Viewer, also allows stopping agents and clearing gone sessions.
+	Control bool  `json:"control,omitempty"`
+	TTLSec  int64 `json:"ttl_sec,omitempty"`
 }
 
 // PlanReq is the body of the planning calls.
@@ -230,6 +304,55 @@ func (s *Server) Routes() *http.ServeMux {
 		g, err := s.S.Wait(r.Context(), agentOf(c), time.Duration(q.HoldMs)*time.Millisecond)
 		reply(w, g, err)
 	}))
+	m.HandleFunc("POST /v1/agent/hello", s.authed(isAgent, func(w http.ResponseWriter, r *http.Request, c auth.Claims) {
+		q, ok := decode[observe.SessionInfo](w, r)
+		if !ok {
+			return
+		}
+		s.S.Hello(agentOf(c), q)
+		writeJSON(w, http.StatusOK, map[string]string{"agent": c.Agent})
+	}))
+	m.HandleFunc("POST /v1/agent/limit", s.authed(isAgent, func(w http.ResponseWriter, r *http.Request, c auth.Claims) {
+		q, ok := decode[LimitReq](w, r)
+		if !ok {
+			return
+		}
+		if q.Reason == "" {
+			q.Reason = "usage_limit"
+		}
+		released, err := s.S.ReportLimit(r.Context(), agentOf(c), q.Reason, q.until(time.Now()))
+		reply(w, map[string]any{"released": released}, err)
+	}))
+	m.HandleFunc("POST /v1/agent/usage", s.authed(isAgent, func(w http.ResponseWriter, r *http.Request, c auth.Claims) {
+		q, ok := decode[UsageReq](w, r)
+		if !ok {
+			return
+		}
+		v, err := s.S.ReportUsage(r.Context(), agentOf(c), q.TaskID, q.Lease, core.Usage{Tokens: q.Tokens, Cost: q.Cost})
+		reply(w, v, err)
+	}))
+	m.HandleFunc("GET /v1/whoami", s.authed(anyone, func(w http.ResponseWriter, _ *http.Request, c auth.Claims) {
+		writeJSON(w, http.StatusOK, map[string]any{"agent": c.Agent, "admin": c.Admin, "viewer": c.Viewer, "control": canControl(c)})
+	}))
+	m.HandleFunc("GET /v1/sessions", s.authed(canView, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		snap, err := s.S.Snapshot(r.Context(), s.Version)
+		reply(w, snap.Sessions, err)
+	}))
+	m.HandleFunc("POST /v1/sessions/forget", s.authed(canControl, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		q, ok := decode[StopReq](w, r)
+		if !ok {
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"forgotten": s.S.Forget(q.Agents)})
+	}))
+	m.HandleFunc("POST /v1/agents/stop", s.authed(canControl, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		q, ok := decode[StopReq](w, r)
+		if !ok {
+			return
+		}
+		out, err := s.stop(r.Context(), q)
+		reply(w, out, err)
+	}))
 	m.HandleFunc("POST /v1/agent/claim", s.authed(isAgent, func(w http.ResponseWriter, r *http.Request, c auth.Claims) {
 		q, ok := decode[LeaseReq](w, r)
 		if !ok {
@@ -249,7 +372,7 @@ func (s *Server) Routes() *http.ServeMux {
 		})
 	}
 	m.HandleFunc("POST /v1/agent/heartbeat", lease(func(ctx context.Context, a engine.Agent, q LeaseReq) (core.Task, error) {
-		return s.S.Engine.Heartbeat(ctx, a, q.TaskID, q.Lease)
+		return s.S.Engine.HeartbeatUsage(ctx, a, q.TaskID, q.Lease, core.Usage{Cost: q.Cost, Tokens: q.Tokens})
 	}))
 	m.HandleFunc("POST /v1/agent/progress", lease(func(ctx context.Context, a engine.Agent, q LeaseReq) (core.Task, error) {
 		return s.S.Progress(ctx, a, q.TaskID, q.Lease, "", q.Note, usage(q))
@@ -261,7 +384,7 @@ func (s *Server) Routes() *http.ServeMux {
 		return s.S.Engine.Fail(ctx, a, q.TaskID, q.Lease, q.Note, usage(q))
 	}))
 	m.HandleFunc("POST /v1/agent/release", lease(func(ctx context.Context, a engine.Agent, q LeaseReq) (core.Task, error) {
-		return s.S.Engine.Release(ctx, a, q.TaskID, q.Lease, q.Note)
+		return s.S.Engine.ReleaseUsage(ctx, a, q.TaskID, q.Lease, q.Note, core.Usage{Cost: q.Cost, Tokens: q.Tokens})
 	}))
 	m.HandleFunc("POST /v1/agent/verdict", lease(func(ctx context.Context, a engine.Agent, q LeaseReq) (core.Task, error) {
 		return s.S.Engine.Verdict(ctx, a, q.TaskID, q.Lease, q.Pass, q.Note)
@@ -364,7 +487,7 @@ func (s *Server) Routes() *http.ServeMux {
 		if !ok {
 			return
 		}
-		cl := auth.Claims{Agent: q.Agent, Tier: q.Tier, Tags: q.Tags, Planner: q.Planner, Viewer: q.Viewer}
+		cl := auth.Claims{Agent: q.Agent, Tier: q.Tier, Tags: q.Tags, Planner: q.Planner, Viewer: q.Viewer, Control: q.Control && q.Viewer}
 		if q.TTLSec > 0 {
 			cl.Expires = time.Now().Add(time.Duration(q.TTLSec) * time.Second)
 		}

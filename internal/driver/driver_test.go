@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 
 	"github.com/Grano22/aiculator/internal/api"
 	"github.com/Grano22/aiculator/internal/auth"
+	"github.com/Grano22/aiculator/internal/client"
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/sandbox"
@@ -555,3 +557,66 @@ func TestPromptMarksNotesUntrusted(t *testing.T) {
 }
 
 func emptyCaps() acp.AgentCapabilities { return acp.AgentCapabilities{} }
+
+// A harness out of usage hands its task back unharmed, tells the swarm when it resets, and
+// the swarm keeps work away from it until then.
+func TestUsageLimitHandsBackAndWaitsForTheReset(t *testing.T) {
+	r := newRig(t, engine.Config{})
+	r.add(engine.TaskSpec{ID: "ul", Title: "x", Spec: "FILE: u.txt", Checks: checkPath("u.txt")})
+	reset := time.Now().Add(time.Hour).Unix()
+	d := r.driver("spent", 1, "limited", fmt.Sprintf("FAKE_RESET=%d", reset))
+	_, err := d.Run(context.Background())
+	var lim *ErrLimited
+	if !errors.As(err, &lim) || lim.Reason != "usage_limit" || lim.Until.Unix() != reset {
+		t.Fatalf("err = %v", err)
+	}
+	if x := r.await("ul", core.Ready); x.Failures != 0 {
+		t.Fatalf("the task paid for the limit: %+v", x)
+	}
+	snap, err := r.svc.Snapshot(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, s := range snap.Sessions {
+		if s.Agent == "spent" {
+			found = true
+			if s.State != "limited" || s.Kind != "acp" || s.Harness != "limited" || s.LimitUntil.Unix() != reset {
+				t.Errorf("session %+v", s)
+			}
+		}
+	}
+	if !found {
+		t.Error("the driver's session is not listed")
+	}
+	// Until the reset, the swarm answers exit rather than handing it work.
+	tok, _ := r.auth.Issue(auth.Claims{Agent: "spent", Tier: 1})
+	var g swarm.Grant
+	if err := client.New(r.url, tok).Post(context.Background(), "/v1/agent/wait", api.WaitReq{}, &g); err != nil || g.Action != engine.ActionExit {
+		t.Errorf("a limited agent got %+v %v", g, err)
+	}
+}
+
+// A driver started before its server waits for it, then works.
+func TestDriverFindsAServerThatStartsLater(t *testing.T) {
+	r := newRig(t, engine.Config{})
+	r.add(engine.TaskSpec{ID: "late", Title: "x", Spec: "FILE: l.txt", Checks: checkPath("l.txt")})
+	d := r.driver("early", 1, "ok")
+	var up atomic.Bool
+	d.o.URL = ""
+	d.c = client.New("", d.o.Token)
+	d.o.Resolve = func() (string, error) {
+		if !up.Load() {
+			return "", errors.New("no server yet")
+		}
+		return r.url, nil
+	}
+	d.o.MaxTasks = 1
+	go func() { time.Sleep(1500 * time.Millisecond); up.Store(true) }()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if _, err := d.Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	r.await("late", core.Done)
+}

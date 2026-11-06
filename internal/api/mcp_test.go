@@ -33,7 +33,10 @@ type fixture struct {
 	auth *auth.Authority
 }
 
-func setup(t testing.TB) *fixture {
+func setup(t testing.TB) *fixture { return setupWith(t, nil) }
+
+// setupWith is setup, with a chance to configure the server first.
+func setupWith(t testing.TB, configure func(*api.Server)) *fixture {
 	t.Helper()
 	ctx := context.Background()
 	st, err := store.Open(ctx, store.Options{Dir: t.TempDir()})
@@ -49,6 +52,9 @@ func setup(t testing.TB) *fixture {
 		t.Fatal(err)
 	}
 	srv := &api.Server{S: svc, Auth: a}
+	if configure != nil {
+		configure(srv)
+	}
 	mux := srv.Routes()
 	mux.Handle("/mcp", srv.MCPHandler())
 	hs := httptest.NewServer(mux)

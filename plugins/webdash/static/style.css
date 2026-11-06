@@ -126,3 +126,9 @@ select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .fbar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
 .fbar .reached { background: var(--c-ready); opacity: .45; }
 .fbar .done { background: var(--c-done); }
+
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; margin-bottom: 8px; }
+.card-head h2 { margin: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; }
+button.danger { border-color: var(--bad); color: var(--bad); }
+button.danger:hover { background: var(--bad-bg); }

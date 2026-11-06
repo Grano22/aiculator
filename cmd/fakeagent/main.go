@@ -159,6 +159,10 @@ func (a *agent) Prompt(ctx context.Context, r acp.PromptRequest) (acp.PromptResp
 		return endTurn, nil
 	case "noauth":
 		return acp.PromptResponse{}, &acp.RequestError{Code: -32000, Message: "Authentication required"}
+	case "limited":
+		// What Claude Code says when a plan's usage runs out, with the reset as a Unix time.
+		reset := os.Getenv("FAKE_RESET")
+		return acp.PromptResponse{}, &acp.RequestError{Code: -32603, Message: "Claude AI usage limit reached|" + reset}
 	case "refuse":
 		return acp.PromptResponse{StopReason: acp.StopReasonRefusal}, nil
 	case "probe":

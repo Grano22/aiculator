@@ -566,7 +566,8 @@ func (e *Engine) commit(id string, c core.Cmd) (core.Task, error) {
 // which leaves the agent time to send the next one. A heartbeat that changes anything else,
 // such as the first one moving Claimed to Running, is always written.
 func (e *Engine) heartbeatInMemory(ent *entry, n core.Task, c core.Cmd) bool {
-	if c.Kind != core.CmdHeartbeat || n.State != ent.task.State || c.LeaseTTL <= 0 || e.cfg.DurableHeartbeats {
+	// Usage must reach the store, or a crash would lose what was spent.
+	if c.Kind != core.CmdHeartbeat || n.State != ent.task.State || c.LeaseTTL <= 0 || e.cfg.DurableHeartbeats || c.Cost != 0 || c.Tokens != 0 {
 		return false
 	}
 	return ent.durableLease.Sub(e.now()) > c.LeaseTTL/2
@@ -897,9 +898,15 @@ func (e *Engine) List(ctx context.Context) ([]core.Task, error) {
 
 // Heartbeat extends a lease. It proves the agent is alive, not that it is working.
 func (e *Engine) Heartbeat(ctx context.Context, a Agent, id string, lease uint64) (core.Task, error) {
+	return e.HeartbeatUsage(ctx, a, id, lease, core.Usage{})
+}
+
+// HeartbeatUsage is a heartbeat that also reports tokens and cost spent since the last
+// report, for agents that only learn their usage as they go.
+func (e *Engine) HeartbeatUsage(ctx context.Context, a Agent, id string, lease uint64, u core.Usage) (core.Task, error) {
 	e.touch(a)
 	return do(ctx, e, func() (core.Task, error) {
-		return e.commit(id, core.Cmd{Kind: core.CmdHeartbeat, Actor: a.ID, Lease: lease, LeaseTTL: e.cfg.LeaseTTL})
+		return e.commit(id, core.Cmd{Kind: core.CmdHeartbeat, Actor: a.ID, Lease: lease, LeaseTTL: e.cfg.LeaseTTL, Cost: u.Cost, Tokens: u.Tokens})
 	})
 }
 
@@ -932,8 +939,33 @@ func (e *Engine) Fail(ctx context.Context, a Agent, id string, lease uint64, not
 
 // Release hands a task back with no penalty, because the harness was at fault.
 func (e *Engine) Release(ctx context.Context, a Agent, id string, lease uint64, note string) (core.Task, error) {
+	return e.ReleaseUsage(ctx, a, id, lease, note, core.Usage{})
+}
+
+// ReleaseUsage is a release that also reports what the attempt spent.
+func (e *Engine) ReleaseUsage(ctx context.Context, a Agent, id string, lease uint64, note string, u core.Usage) (core.Task, error) {
 	return do(ctx, e, func() (core.Task, error) {
-		return e.commit(id, core.Cmd{Kind: core.CmdRelease, Actor: a.ID, Lease: lease, Note: note})
+		return e.commit(id, core.Cmd{Kind: core.CmdRelease, Actor: a.ID, Lease: lease, Note: note, Cost: u.Cost, Tokens: u.Tokens})
+	})
+}
+
+// ReleaseHeldBy hands back every task an agent is working on, as if it had released them
+// itself: with its own lease, so fencing applies as usual, and with no penalty. It is for an
+// agent that was stopped, or that said it cannot work, and returns the tasks released.
+func (e *Engine) ReleaseHeldBy(ctx context.Context, agent, note string) ([]string, error) {
+	return do(ctx, e, func() ([]string, error) {
+		var ids []string
+		for id, ent := range e.tasks {
+			t := ent.task
+			if t.Owner != agent || (t.State != core.Claimed && t.State != core.Running) {
+				continue
+			}
+			if _, err := e.commit(id, core.Cmd{Kind: core.CmdRelease, Actor: agent, Lease: t.LeaseEpoch, Note: note}); err == nil {
+				ids = append(ids, id)
+			}
+		}
+		slices.Sort(ids)
+		return ids, nil
 	})
 }
 

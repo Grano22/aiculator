@@ -4,6 +4,52 @@
 
 Every command, generated from the program itself. Run any command with `--help` to see the same text.
 
+## `aiculator agents`
+
+Stop or kill the agents working on the swarm
+
+```text
+aiculator agents
+```
+
+## `aiculator agents kill`
+
+Stop agents, and end the processes aiculator started for them
+
+Stop agents, as stop does, and end the processes that aiculator itself started for
+them on this machine: aiculator drive and the harness it runs. A harness you started
+yourself, such as an open Claude Code session, is told to exit and never killed.
+
+```text
+aiculator agents kill [AGENT...] [flags]
+```
+
+**Flags**
+
+```text
+      --all      every agent
+      --realms   in every running realm on this machine, not just this project
+```
+
+## `aiculator agents stop`
+
+Tell agents to exit, and hand back what they hold
+
+Tell agents to exit. Each gets exit from its next wait, or from the one it is in now,
+and what it holds goes back to the queue at once with no penalty. Its process keeps running
+until it reads the exit; kill also ends the processes aiculator started.
+
+```text
+aiculator agents stop [AGENT...] [flags]
+```
+
+**Flags**
+
+```text
+      --all      every agent
+      --realms   in every running realm on this machine, not just this project
+```
+
 ## `aiculator backup`
 
 Keep and restore copies of chosen tasks
@@ -140,10 +186,16 @@ aiculator doctor [flags]
 
 ## `aiculator down`
 
-Stop the swarm server for this project
+Stop the swarm server for this project, or with --all for every realm
 
 ```text
-aiculator down
+aiculator down [flags]
+```
+
+**Flags**
+
+```text
+      --all   stop the server of every realm on this machine
 ```
 
 ## `aiculator drive`
@@ -163,8 +215,9 @@ aiculator drive [flags]
       --hold duration        how long each wait call holds (default 30s)
       --manifest string      YAML manifest file, instead of a preset
       --max-tasks int        stop after this many tasks; 0 means no limit
+      --on-limit string      when the harness runs out of usage: wait for the reset it reports, or exit (default "wait")
       --sandbox string       sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
-      --url string           server URL (default "http://127.0.0.1:7777")
+      --url string           server URL; by default the project's server, waited for if it is not running yet
 ```
 
 ## `aiculator events`
@@ -662,6 +715,20 @@ Give a realm a new name
 aiculator realm rename OLD NEW
 ```
 
+## `aiculator realm stop`
+
+Stop the servers of the realms named, or of every realm with --all
+
+```text
+aiculator realm stop [NAME...] [flags]
+```
+
+**Flags**
+
+```text
+      --all   stop every realm on this machine
+```
+
 ## `aiculator serve`
 
 Start the swarm server
@@ -685,6 +752,32 @@ aiculator serve [flags]
       --sandbox string           sandbox: auto, seatbelt, bwrap, docker or none (default "auto")
       --standby                  if another server holds this data directory, wait and take over when it stops
       --sync-always              fsync every write; survives power loss but is slower
+```
+
+## `aiculator sessions`
+
+List the agents connected now: what they run, where, and what they are doing
+
+List the agents connected now: how each connects (acp, mcp, mcp-http or shell), the
+harness and model, its host, process and folder, what it is doing, and any usage limit it
+reported. A session that has gone quiet is listed as gone, and dropped after five minutes.
+
+```text
+aiculator sessions [flags]
+```
+
+**Flags**
+
+```text
+      --json   print JSON
+```
+
+## `aiculator sessions forget`
+
+Remove sessions from the list: those named, or every one that has gone
+
+```text
+aiculator sessions forget [AGENT...]
 ```
 
 ## `aiculator situation`
@@ -1099,6 +1192,7 @@ aiculator up [flags]
 Open the web dashboard
 
 Opens the live dashboard in your browser, using a read-only token that expires.
+With --control, the page can also stop or kill agents and clear gone sessions.
 
 The dashboard is compiled into this binary; go build -tags noweb leaves it out.
 
@@ -1110,6 +1204,7 @@ aiculator web [flags]
 
 ```text
       --all            show every realm on this machine, for as long as this command runs
+      --control        a link whose page can also stop and kill agents and clear gone sessions
       --no-open        print the link and do not open a browser
       --ttl duration   how long the link works (default 12h0m0s)
 ```

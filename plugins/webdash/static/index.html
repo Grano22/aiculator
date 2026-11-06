@@ -57,6 +57,20 @@
     <p id="tasks-empty" class="empty" hidden>Nothing in progress.</p>
   </section>
 
+  <section class="card wide">
+    <div class="card-head">
+      <h2>Sessions <span id="session-count" class="muted"></span></h2>
+      <div id="controls" class="controls" hidden>
+        <button id="forget-gone" type="button">Remove disconnected</button>
+        <button id="stop-all" type="button">Stop all agents</button>
+        <button id="kill-all" type="button" class="danger">Kill agent processes</button>
+      </div>
+    </div>
+    <div class="scroll"><table id="sessions"><thead><tr><th>Agent</th><th class="n">Tier</th><th>Kind</th><th>Harness</th><th>State</th><th>Task</th><th class="n">Seen</th><th class="n">Connected</th><th class="n">Wait hold</th><th>Where</th><th>Folder</th></tr></thead><tbody></tbody></table></div>
+    <p id="sessions-empty" class="empty" hidden>No session is connected. Connect one with <code>aiculator join</code>.</p>
+    <p id="control-note" class="muted small" hidden></p>
+  </section>
+
   <div class="columns">
     <section class="card">
       <h2>Agents</h2>

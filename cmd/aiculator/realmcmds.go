@@ -128,6 +128,6 @@ See them all with: aiculator top --all, or aiculator web --all`,
 			return realm.Forget(args[0])
 		},
 	}
-	cmd.AddCommand(ls, rename, forget)
+	cmd.AddCommand(ls, rename, forget, realmStopCmd())
 	return cmd
 }

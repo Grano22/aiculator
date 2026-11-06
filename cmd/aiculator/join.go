@@ -27,6 +27,7 @@ import (
 	"github.com/Grano22/aiculator/internal/client"
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/harness"
+	"github.com/Grano22/aiculator/internal/procinfo"
 	"github.com/Grano22/aiculator/internal/realm"
 	"github.com/Grano22/aiculator/internal/skillpack"
 	"github.com/Grano22/aiculator/internal/swarm"
@@ -288,47 +289,98 @@ once. Both must run on this machine.`,
 }
 
 func downCmd() *cobra.Command {
-	return &cobra.Command{
+	var all bool
+	cmd := &cobra.Command{
 		Use:   "down",
-		Short: "Stop the swarm server for this project",
+		Short: "Stop the swarm server for this project, or with --all for every realm",
 		RunE: func(*cobra.Command, []string) error {
-			// The standby goes first, or it would take over from the leader being stopped.
-			if pid := pidFile(filepath.Join(dataDir, "standby.pid")); pid != 0 && processAlive(pid) {
-				if ok, err := stopPid(pid); err != nil {
-					return err
-				} else if ok {
-					fmt.Println("standby stopped")
-				}
+			if all {
+				return stopRealms(nil)
 			}
-			url, ok := serverURL()
-			if !ok {
-				fmt.Println("no server is running")
-				return nil
+			msg, err := stopServer()
+			if msg != "" {
+				fmt.Println(msg)
 			}
-			b, err := os.ReadFile(filepath.Join(dataDir, "pid"))
-			if err != nil {
-				return err
-			}
-			pid, err := strconv.Atoi(strings.TrimSpace(string(b)))
-			if err != nil {
-				return fmt.Errorf("bad pid file: %w", err)
-			}
-			stopped, err := stopPid(pid)
-			if err != nil {
-				return err
-			}
-			if stopped {
-				fmt.Println("stopped")
-				return nil
-			}
-			if healthy(url) {
-				return errors.New("the server did not stop")
-			}
-			// A container with no init never reaps the process, so it looks alive forever.
-			fmt.Printf("stopped answering, but process %d has not exited\n", pid)
-			return nil
+			return err
 		},
 	}
+	cmd.Flags().BoolVar(&all, "all", false, "stop the server of every realm on this machine")
+	return cmd
+}
+
+// stopServer stops the server using dataDir, and its standby first, so that a clean stop
+// does not hand over.
+func stopServer() (string, error) {
+	var said []string
+	if pid := pidFile(filepath.Join(dataDir, "standby.pid")); pid != 0 && processAlive(pid) {
+		if ok, err := stopPid(pid); err != nil {
+			return "", err
+		} else if ok {
+			said = append(said, "standby stopped")
+		}
+	}
+	url, ok := serverURL()
+	if !ok {
+		return strings.Join(append(said, "no server is running"), "\n"), nil
+	}
+	b, err := os.ReadFile(filepath.Join(dataDir, "pid"))
+	if err != nil {
+		return "", err
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	if err != nil {
+		return "", fmt.Errorf("bad pid file: %w", err)
+	}
+	stopped, err := stopPid(pid)
+	if err != nil {
+		return "", err
+	}
+	if stopped {
+		return strings.Join(append(said, "stopped"), "\n"), nil
+	}
+	if healthy(url) {
+		return "", errors.New("the server did not stop")
+	}
+	// A container with no init never reaps the process, so it looks alive forever.
+	return strings.Join(append(said, fmt.Sprintf("stopped answering, but process %d has not exited", pid)), "\n"), nil
+}
+
+// stopRealms stops the servers of the realms named, or of every realm. One that fails does
+// not keep the others running.
+func stopRealms(names []string) error {
+	all, err := realm.List()
+	if err != nil {
+		return err
+	}
+	saved := dataDir
+	defer func() { dataDir = saved }()
+	var failed []string
+	found := 0
+	for _, r := range all {
+		if len(names) > 0 && !slices.Contains(names, r.Name) {
+			continue
+		}
+		found++
+		if _, err := os.Stat(filepath.Join(r.DataDir, "pid")); err != nil {
+			fmt.Printf("%-20s not running\n", r.Name)
+			continue
+		}
+		dataDir = r.DataDir
+		msg, err := stopServer()
+		if err != nil {
+			failed = append(failed, r.Name)
+			fmt.Printf("%-20s %v\n", r.Name, err)
+			continue
+		}
+		fmt.Printf("%-20s %s\n", r.Name, strings.ReplaceAll(msg, "\n", ", "))
+	}
+	if len(names) > 0 && found < len(names) {
+		return fmt.Errorf("some realms were not found; see aiculator realm ls")
+	}
+	if len(failed) > 0 {
+		return fmt.Errorf("could not stop: %s", strings.Join(failed, ", "))
+	}
+	return nil
 }
 
 func selectHarnesses(arg string) ([]harness.Harness, error) {
@@ -857,6 +909,8 @@ func (b bearer) RoundTrip(r *http.Request) (*http.Response, error) {
 // bridge forwards tool calls to the server, reconnecting if the server restarted.
 type bridge struct {
 	url, token string
+	// harness names what this bridge serves, for the session it opens.
+	harness string
 	// issue gets a token when one is needed, for a bridge that finds its server by itself.
 	issue   func(ctx context.Context) (url, token string, err error)
 	mu      sync.Mutex
@@ -887,6 +941,10 @@ func (b *bridge) connect(ctx context.Context) (*mcp.ClientSession, error) {
 		return nil, err
 	}
 	b.session = s
+	// Said again on each connection, so a server that restarted knows this session too.
+	hctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	_ = client.New(b.url, b.token).Post(hctx, "/v1/agent/hello", procinfo.Self("mcp", b.harness, "aiculator-bridge", version, false), nil)
 	return s, nil
 }
 
@@ -962,7 +1020,7 @@ func serveAutoBridge(ctx context.Context, q api.TokenReq, harnessID string, swit
 	}
 	var heldMu sync.Mutex
 	held := ""
-	b := &bridge{}
+	b := &bridge{harness: harnessID}
 	b.issue = func(ctx context.Context) (string, string, error) {
 		if !dataDirFlagSet {
 			heldMu.Lock()
@@ -1069,7 +1127,7 @@ func mcpCmd() *cobra.Command {
 			if token == "" {
 				return errors.New("SWARM_TOKEN is not set; or pass --auto")
 			}
-			b := &bridge{url: url, token: token}
+			b := &bridge{url: url, token: token, harness: harnessID}
 			session, err := b.connect(ctx)
 			if err != nil {
 				return err
@@ -1123,10 +1181,13 @@ func workCmd() *cobra.Command {
 				}
 				name = prefix + "-" + randomSuffix()
 			}
-			_, tok, err := issueLocal(cmd.Context(), api.TokenReq{Agent: name, Tier: tier, Planner: plannerFlag})
+			url, tok, err := issueLocal(cmd.Context(), api.TokenReq{Agent: name, Tier: tier, Planner: plannerFlag})
 			if err != nil {
 				return err
 			}
+			// What and where this session is, for the dashboards. Only the harness that runs
+			// this shell knows more, and it is this process's parent.
+			_ = client.New(url, tok).Post(cmd.Context(), "/v1/agent/hello", procinfo.Self("shell", harnessID, "aiculator-work", version, false), nil)
 			dir := filepath.Join(dataDir, "agents")
 			if err := os.MkdirAll(dir, 0o700); err != nil {
 				return err

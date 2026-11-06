@@ -174,6 +174,21 @@ function render(s) {
     row(agents, [a.id, num(a.tier), a.state, a.task || "-", num(span(a.seen_ago_ms)), num(count(a.tokens)), num(a.done), num(a.failed)]);
   }
 
+  const sessions = clear($("sessions").tBodies[0]);
+  const sl = s.sessions || [];
+  $("sessions-empty").hidden = sl.length > 0;
+  $("sessions").hidden = sl.length === 0;
+  $("session-count").textContent = "(" + sl.filter((x) => x.state !== "gone").length + " connected" + (sl.some((x) => x.state === "gone") ? ", " + sl.filter((x) => x.state === "gone").length + " gone" : "") + ")";
+  for (const x of sl) {
+    const st = el("td");
+    const cls = { working: "ok", waiting: "info", limited: "warn", stopping: "warn", gone: "bad" }[x.state] || "";
+    st.appendChild(el("span", x.state, "pill " + cls));
+    if (x.limit) st.appendChild(el("span", " " + x.limit + (x.limit_until ? " until " + new Date(x.limit_until).toLocaleTimeString() : ""), "muted small"));
+    const place = [x.host, x.pid ? "pid " + x.pid : "", x.parent ? "in " + x.parent : ""].filter(Boolean).join(", ");
+    row(sessions, [x.agent, num(x.tier), x.kind || "-", [(x.harness || "-") + (x.model ? " · " + x.model : ""), ""], st, x.task || "-",
+      num(span(x.seen_ago_ms)), num(span(x.connected_ms)), num(x.hold_ms ? span(x.hold_ms) : "-"), place || "-", [x.cwd || "-", "title"]]);
+  }
+
   const tiers = clear($("tiers").tBodies[0]);
   for (const x of u.by_tier || []) {
     row(tiers, [x.tier, num(x.tasks), num(count(x.tokens)), num(money(x.spent)), num(x.budget ? money(x.budget) : "-")]);
@@ -273,6 +288,39 @@ async function follow() {
   }
 }
 
+// The buttons appear only for a link made with aiculator web --control, which may use them.
+async function control(path, body, ask) {
+  if (ask && !window.confirm(ask)) return;
+  const note = $("control-note");
+  try {
+    const r = await fetch("../../v1/" + path, { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error("server answered " + r.status);
+    const out = await r.json();
+    const parts = [];
+    if (out.stopped) parts.push("stopped " + out.stopped.length);
+    if (out.killed) parts.push("killed " + out.killed.length);
+    if (out.released && out.released.length) parts.push("handed back " + out.released.length + " tasks");
+    if (out.forgotten) parts.push("removed " + out.forgotten.length);
+    note.textContent = parts.join(", ") || "done";
+  } catch (e) {
+    note.textContent = "Could not do that: " + e.message;
+  }
+  note.hidden = false;
+  poll();
+}
+async function setupControls() {
+  try {
+    const r = await fetch("../../v1/whoami", { headers: { Authorization: "Bearer " + token } });
+    if (!r.ok) return;
+    const me = await r.json();
+    if (!me.control) return;
+  } catch (_) { return; }
+  $("controls").hidden = false;
+  $("forget-gone").addEventListener("click", () => control("sessions/forget", {}, ""));
+  $("stop-all").addEventListener("click", () => control("agents/stop", {}, "Tell every agent to exit? What they hold goes back to the queue."));
+  $("kill-all").addEventListener("click", () => control("agents/stop", { kill: true }, "Stop every agent and end the processes aiculator started for them? Harnesses you started yourself are only told to exit."));
+}
+
 $("pause").addEventListener("click", () => {
   paused = !paused;
   $("pause").textContent = paused ? "Resume" : "Pause";
@@ -285,6 +333,7 @@ if (!token) {
   poll();
   setInterval(poll, INTERVAL_MS);
   follow();
+  setupControls();
   const flow = window.AiculatorCharts.mount($("flow-analytics"), async (params) => {
     const r = await fetch("../../v1/analytics?" + params.toString(), { headers: { Authorization: "Bearer " + token }, cache: "no-store" });
     if (!r.ok) throw new Error("server answered " + r.status);
