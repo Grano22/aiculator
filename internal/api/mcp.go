@@ -235,6 +235,10 @@ func (s *Server) NewMCPServer() *mcp.Server {
 		func(ctx context.Context, a engine.Agent, in heartbeatInput) (any, error) {
 			return s.S.Engine.ReleaseUsage(ctx, a, in.TaskID, in.Lease, "released by agent", core.Usage{Cost: in.Cost, Tokens: in.Tokens})
 		})
+	tool(c, srv, "estimate_tokens", "Predict how many tokens a task will take, from finished tasks like it: the likely amount, a low-to-high range, and what it rests on. Use it to pace yourself, or to decide whether to split a task.",
+		func(ctx context.Context, _ engine.Agent, in metaInput) (any, error) {
+			return s.S.Engine.Estimate(ctx, in.TaskID)
+		})
 	tool(c, srv, "report_usage", "Report tokens and cost used since your last report, for the task you hold or for yourself. Call it when your harness tells you what a turn cost, so budgets and estimates stay right.",
 		func(ctx context.Context, a engine.Agent, in usageInput) (any, error) {
 			return s.S.ReportUsage(ctx, a, in.TaskID, in.Lease, core.Usage{Tokens: in.Tokens, Cost: in.Cost})
@@ -314,7 +318,15 @@ func planTool[In any](s *mcp.Server, name, desc string, fn func(ctx context.Cont
 		})
 }
 
+type estimateSpecInput struct {
+	Task engine.TaskSpec `json:"task" jsonschema:"the task you are thinking of adding: title, spec, tier, tags and labels"`
+}
+
 func (s *Server) addPlannerTools(srv *mcp.Server) {
+	planTool(srv, "plan_estimate", "Predict how many tokens a task you are planning would take, from finished tasks like it, before adding it. A large estimate is a reason to split the task.",
+		func(ctx context.Context, _ string, in estimateSpecInput) (any, error) {
+			return s.S.Engine.EstimateSpec(ctx, in.Task)
+		})
 	planTool(srv, "plan_begin", "Take the planner lease BEFORE reading your input. Waiting agents are told a plan is coming, so they do not exit. Needs a planner token.",
 		func(ctx context.Context, planner string, in planBeginInput) (any, error) {
 			ep, err := s.S.Engine.PlanBegin(ctx, planner, planTTL(in.TTLSeconds))

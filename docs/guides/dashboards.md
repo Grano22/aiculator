@@ -16,10 +16,15 @@ aiculator top
 
 | Key | Action |
 |---|---|
-| `1` to `5`, or `tab` | Switch between overview, tasks, agents, flow and usage |
+| `1` to `5`, or `tab` | Switch between overview, tasks, sessions, flow and usage |
 | `↑` `↓`, or `j` `k` | Scroll |
+| `r` | Live mode on or off: redraws four times a second, so a change shows as it happens. `--live` starts in it |
 | `p` | Pause |
 | `q` | Quit |
+
+The overview has a table per tier: ready, working, in review, parked, failed and done, with the agents at that tier and how many are waiting. A tier with ready work and no agent is marked `!`, because nothing will pick that work up. The tasks view shows each lease and progress deadline next to their lengths (`lease ttl 2m00s, progress ttl 10m00s`). The sessions view shows each connected agent: how it connects, its harness, its state, any usage limit, its wait hold, and the host, process, parent and folder it runs in.
+
+Golden files in `internal/tui/testdata/golden` hold every screen after each step of a scripted swarm on a fake clock. A change to any screen shows in the test; `go test ./internal/tui -run Golden -update` accepts it.
 
 Without a terminal, it prints one frame and exits, so it works in scripts:
 
@@ -42,6 +47,18 @@ aiculator web --ttl 1h    # Expires sooner; the default is 12 hours
 ![The web dashboard in light mode.](../assets/screens/web-light.png#only-light)
 
 It follows your system's light or dark setting, works at phone width, and pauses while its tab is hidden.
+
+### Sessions and controls
+
+A table lists the connected sessions, the same as `aiculator sessions`: kind (`acp` for `aiculator drive`, `mcp` for the stdio bridge, `mcp-http` for a harness talking MCP directly, `shell` for `aiculator work`), harness and model, state, task, when it was last seen, how long it has been connected, its wait hold, and where it runs. A session that goes quiet shows as gone, and leaves the list after five minutes.
+
+`aiculator web --control` opens a link whose page also has three buttons:
+
+- **Remove disconnected** clears the gone sessions now.
+- **Stop all agents** tells every agent to exit. Each gets exit from its next wait, or from the wait it is in, and what it holds goes back to the queue with no penalty.
+- **Kill agent processes** also ends the processes aiculator started for agents on the server's machine, such as `aiculator drive` and the harness it runs. It checks that each process id still runs aiculator first. A harness you started yourself is only told to exit.
+
+A control link can do these and read the dashboard, and nothing else. The same is on the command line: `aiculator sessions forget`, `aiculator agents stop --all`, `aiculator agents kill --all`, with `--realms` for every project.
 
 ### Flow analytics
 
@@ -119,6 +136,8 @@ Totals by task and tier come from durable state, so they survive a restart. Rate
 | `GET /v1/readyz` | None | Is it ready. Returns 503 if a probe fails, with no details. |
 | `GET /metrics` | Viewer | Prometheus format |
 | `GET /v1/observe` | Viewer | The full snapshot as JSON |
+| `GET /v1/sessions` | Viewer | Connected sessions as JSON |
+| `GET /v1/events` | Viewer | Every change as JSON lines, each with a `seq`. `?since=SEQ` or `Last-Event-ID` resumes after it, so delivery is at least once; a `{"gap": true}` line says older events are gone |
 | `GET /v1/analytics` | Viewer | The flow analytics as JSON. Takes `window` (such as `6h`, `7d` or `all`), `tier`, `label` (`key=value` or `key`) and `points` |
 | `GET /v1/events` | Viewer | Every task change, as JSON lines |
 

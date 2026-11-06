@@ -224,15 +224,28 @@ aiculator drive [flags]
 
 Stream every task change as JSON lines
 
+Stream every task change as JSON lines. Each line has a seq. --since SEQ starts after
+that one, so a consumer that saves the last seq it handled misses nothing when it starts
+again. With --follow, a dropped connection is resumed from the last line printed, for as
+long as this runs. Delivery is at least once: after a crash, dedupe by seq.
+
 ```text
-aiculator events
+aiculator events [flags]
 ```
 
 **Examples**
 
 ```text
   aiculator events
+  aiculator events --since 1200 --follow
   aiculator events | jq -r 'select(.state == "done") | .id'
+```
+
+**Flags**
+
+```text
+      --follow       reconnect after a drop, resuming from the last event printed
+      --since uint   start after this event sequence; 0 means from now
 ```
 
 ## `aiculator export`
@@ -408,10 +421,12 @@ aiculator mcp [flags]
 ```text
       --agent string     agent name; generated if empty
       --auto             find the local server and get a token by itself
+      --effort string    with --tier auto: the effort or variant, such as low, high or max
       --harness string   harness id, used in the agent's name
+      --model string     with --tier auto: the model the harness runs; found from its environment if empty
       --planner          allow planning, with --auto
       --realm-switch     with --auto: let the session list other realms and move between them
-      --tier int         tier, with --auto (default 1)
+      --tier string      with --auto: 1 standard, 2 advanced, 3 ultra, or auto to choose from the model and effort (default "auto")
       --url string       server URL; --auto finds it (default "http://127.0.0.1:7777")
 ```
 
@@ -972,6 +987,29 @@ aiculator task cancel ID [flags]
       --note string   reason
 ```
 
+## `aiculator task estimate`
+
+Predict the tokens a task will take, from finished tasks like it
+
+Predict the tokens a task will take, from finished tasks like it: same tier, shared
+tags and labels, and words in common. Tokens count every try. With no ID, describe a task
+you are thinking of adding with --title, --spec, --tier, --tag and --label.
+
+```text
+aiculator task estimate [ID] [flags]
+```
+
+**Flags**
+
+```text
+      --json                   print JSON
+      --label stringToString   its labels, as key=value (default [])
+      --spec string            its spec
+      --tag strings            its tags
+      --tier int               its tier (default 1)
+      --title string           title of a task not added yet
+```
+
 ## `aiculator task fetch`
 
 Save an attached file or foreign resource; a resource is downloaded only once
@@ -1239,6 +1277,20 @@ aiculator work claim [flags]
       --task string   task id
 ```
 
+## `aiculator work estimate`
+
+Predict the tokens a task will take, from finished tasks like it
+
+```text
+aiculator work estimate [flags]
+```
+
+**Flags**
+
+```text
+      --task string   task id
+```
+
 ## `aiculator work fail`
 
 Give up; saved work and note go to the next attempt
@@ -1287,9 +1339,30 @@ aiculator work join [flags]
 
 ```text
       --agent string     agent name; generated if empty
+      --effort string    the effort or variant it runs at, such as low, high or max, for --tier auto
       --harness string   harness id, used in the agent's name
+      --model string     the model this session runs, for --tier auto; found from the environment if empty
       --planner          also allow this session to plan
-      --tier int         tier: 1 standard, 2 advanced, 3 ultra (default 1)
+      --tier string      tier: 1 standard, 2 advanced, 3 ultra, or auto to choose from the model and effort (default "auto")
+```
+
+## `aiculator work limit`
+
+Say your harness ran out of usage, credit or rate allowance, and until when
+
+Say your harness ran out of usage, credit or rate allowance. What you hold goes back
+with no penalty, and wait answers exit until the limit resets, so you stop spending turns.
+
+```text
+aiculator work limit [flags]
+```
+
+**Flags**
+
+```text
+      --reason string          what ran out: usage_limit, credit_exhausted, rate_limited (default "usage_limit")
+      --retry-after duration   or how long from now
+      --until string           when it resets, in RFC 3339, if your harness said
 ```
 
 ## `aiculator work progress`
@@ -1354,6 +1427,23 @@ aiculator work submit [flags]
       --tokens int    tokens used since your last report
 ```
 
+## `aiculator work usage`
+
+Report tokens and cost used, for the task you hold (--task, --lease) or for yourself
+
+```text
+aiculator work usage [flags]
+```
+
+**Flags**
+
+```text
+      --cost int      cost since your last report, in micro-dollars
+      --lease uint    lease number, with --task
+      --task string   task id, if the usage was for one you hold
+      --tokens int    tokens used since your last report
+```
+
 ## `aiculator work verdict`
 
 Approve (--pass) or reject another agent's work
@@ -1384,5 +1474,5 @@ aiculator work wait [flags]
 **Flags**
 
 ```text
-      --hold duration   how long to hold if no work is available (default 25s)
+      --hold string   how long to hold if no work is available; auto learns how long your harness lets a command run (default "auto")
 ```

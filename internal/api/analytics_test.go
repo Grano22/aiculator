@@ -101,3 +101,27 @@ func TestBackupAndRestoreRoutes(t *testing.T) {
 		t.Error("a bad id was restored")
 	}
 }
+
+func TestEstimateRoutes(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	if _, err := f.svc.Engine.AddTask(ctx, engine.TaskSpec{ID: "job", Title: "x"}); err != nil {
+		t.Fatal(err)
+	}
+	agentTok, _ := f.auth.Issue(auth.Claims{Agent: "w", Tier: 1})
+	agent := client.New(f.url, agentTok)
+	var est core.Estimate
+	if err := agent.Get(ctx, "/v1/tasks/job/estimate", &est); err != nil || est.Method != "none" {
+		t.Errorf("estimate: %+v %v", est, err)
+	}
+	if err := agent.Get(ctx, "/v1/tasks/nope/estimate", &est); status(err) != 404 {
+		t.Errorf("unknown task: %v", err)
+	}
+	if err := agent.Post(ctx, "/v1/estimate", engine.TaskSpec{Title: "y"}, &est); status(err) != 403 {
+		t.Errorf("an agent sized a plan: %v", err)
+	}
+	planTok, _ := f.auth.Issue(auth.Claims{Agent: "p", Planner: true, Tier: 1})
+	if err := client.New(f.url, planTok).Post(ctx, "/v1/estimate", engine.TaskSpec{Title: "y"}, &est); err != nil {
+		t.Errorf("planner: %v", err)
+	}
+}

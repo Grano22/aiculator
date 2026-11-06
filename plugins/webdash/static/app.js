@@ -256,11 +256,13 @@ async function poll() {
 }
 
 // Follows the event stream with fetch, because EventSource cannot send a token.
+let lastSeq = 0;
 async function follow() {
   const feed = $("feed");
   for (;;) {
     try {
-      const r = await fetch("../../v1/events", { headers: { Authorization: "Bearer " + token } });
+      // Resumes after the last event shown, so a dropped connection loses nothing.
+      const r = await fetch("../../v1/events" + (lastSeq ? "?since=" + lastSeq : ""), { headers: { Authorization: "Bearer " + token } });
       if (r.status === 401 || r.status === 403) return;
       const reader = r.body.getReader();
       const dec = new TextDecoder();
@@ -275,6 +277,11 @@ async function follow() {
           buf = buf.slice(i + 1);
           if (!line.trim()) continue;
           const t = JSON.parse(line);
+          if (t.gap) continue; // Older events were no longer kept; nothing to show for them.
+          if (t.seq) {
+            if (t.seq <= lastSeq) continue; // Already shown before a reconnect.
+            lastSeq = t.seq;
+          }
           $("feed-empty").hidden = true;
           const li = el("li");
           li.appendChild(el("time", new Date().toLocaleTimeString()));

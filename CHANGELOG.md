@@ -6,6 +6,36 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+### Added
+
+- **Sessions:** each agent says how it connects (acp, mcp, mcp-http or shell), its harness and model, and its host, process, parent and folder. They show in `aiculator sessions`, `top` and the web dashboard. Gone sessions leave after five minutes, or at once with `sessions forget` or a button.
+- **Stop and kill:**
+  - `aiculator agents stop` and `agents kill`, with `--all` and `--realms`. Stop ends a wait in progress with exit, and hands back held work at once.
+  - Kill also ends the processes aiculator started on the server's machine, after checking each process.
+  - `realm stop` and `down --all` stop project servers.
+  - `aiculator web --control` adds buttons for these.
+- **Usage limits:** drivers notice when a harness runs out of usage, credit, quota or rate allowance. They hand the task back with no penalty, report when the limit resets, and wait for it. The swarm answers exit to a limited agent until then. MCP gets `report_limit`, and the shell gets `work limit`.
+- **Late connect:** `aiculator drive` finds its project's server, waits for one that hasn't started, and follows it across a restart or a standby takeover.
+- **Usage over MCP:** heartbeat and release take tokens and cost, and `report_usage` (`work usage`) reports at any time.
+- **Adaptive waits:** each session's waits are held as long as its harness has shown a call may run, so an idle agent makes fewer calls and spends fewer tokens.
+- **Join with a tier, or auto:**
+  - The skill takes a tier up front, asks for one otherwise, and Enter means auto.
+  - `work join --tier auto` and the bridge's `join_swarm` pick the tier from the model family and the effort or variant.
+- **Token estimates:** `aiculator task estimate`, `estimate_tokens`, `plan_estimate` and `/v1/tasks/{id}/estimate` predict a task's tokens from finished tasks like it.
+- **At-least-once events:** each event has a `seq`. `/v1/events?since=SEQ` and `aiculator events --since --follow` resume without losing any, and the web feed resumes after a drop.
+- **top:**
+  - `r` toggles live mode.
+  - A tiers table marks work no agent can take.
+  - TTLs are shown, and view 3 lists sessions.
+  - Golden files test every screen after each step of a scripted swarm.
+
+### Fixed
+
+- **top:**
+  - Rates on a young server no longer blow up: 2 grants in the first second read 4 a minute, not 120.
+  - `top --once` lines are cut to the width.
+  - A cut value no longer runs into the next column.
+
 ## [0.7.0] - 2026-11-05
 
 ### Added

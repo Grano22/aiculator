@@ -2,11 +2,16 @@ package api_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"testing"
+	"time"
 
 	"github.com/Grano22/aiculator/internal/api"
 	"github.com/Grano22/aiculator/internal/auth"
 	"github.com/Grano22/aiculator/internal/client"
+	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/pkg/observe"
 )
 
@@ -73,4 +78,76 @@ func TestStoppingNeedsControlAndKillsOnlyOurOwn(t *testing.T) {
 	if c, err := f.auth.Verify(tok["token"]); err != nil || c.Control {
 		t.Errorf("an agent token got control: %+v %v", c, err)
 	}
+}
+
+// A client that reconnects with the last sequence it handled gets everything after it, once.
+func TestEventStreamResumesWithoutLosingAnything(t *testing.T) {
+	f := setupProjected(t)
+	ctx := context.Background()
+	viewer, _ := f.auth.Issue(auth.Claims{Agent: "eye", Viewer: true})
+	read := func(since uint64, n int) []api.Event {
+		t.Helper()
+		cctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		req, _ := http.NewRequestWithContext(cctx, http.MethodGet, fmt.Sprintf("%s/v1/events?since=%d", f.url, since), nil)
+		req.Header.Set("Authorization", "Bearer "+viewer)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		var out []api.Event
+		dec := json.NewDecoder(resp.Body)
+		for len(out) < n {
+			var e api.Event
+			if err := dec.Decode(&e); err != nil {
+				t.Fatalf("after %d events: %v", len(out), err)
+			}
+			if e.Seq == 0 {
+				continue // A gap note, not an event.
+			}
+			out = append(out, e)
+		}
+		return out
+	}
+	for i := range 6 {
+		if _, err := f.svc.Engine.AddTask(ctx, engine.TaskSpec{ID: fmt.Sprintf("e%d", i), Title: "x"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := f.svc.Store.WaitProjected(ctx); err != nil {
+		t.Fatal(err)
+	}
+	first := read(1, 3) // From the start of the log.
+	rest := read(first[len(first)-1].Seq, 3)
+	seen := map[uint64]bool{}
+	for _, e := range append(first, rest...) {
+		if seen[e.Seq] {
+			t.Errorf("event %d came twice", e.Seq)
+		}
+		seen[e.Seq] = true
+	}
+	for i := 1; i < len(rest); i++ {
+		if rest[i].Seq <= rest[i-1].Seq {
+			t.Errorf("out of order: %d then %d", rest[i-1].Seq, rest[i].Seq)
+		}
+	}
+	if rest[0].Seq != first[2].Seq+1 || rest[0].ID == "" {
+		t.Errorf("resumed at %d (%s), want %d", rest[0].Seq, rest[0].ID, first[2].Seq+1)
+	}
+	// Bad input is refused.
+	req, _ := http.NewRequest(http.MethodGet, f.url+"/v1/events?since=x", nil)
+	req.Header.Set("Authorization", "Bearer "+viewer)
+	if resp, err := http.DefaultClient.Do(req); err != nil || resp.StatusCode != 400 {
+		t.Errorf("since=x: %v %v", resp, err)
+	}
+}
+
+// setupProjected is setup with the event log running, as in a real server.
+func setupProjected(t *testing.T) *fixture {
+	f := setup(t)
+	if err := f.svc.Store.StartProjector(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	return f
 }

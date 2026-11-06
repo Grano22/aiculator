@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -144,36 +147,82 @@ func topAll(cmd *cobra.Command, interval time.Duration, once, asJSON, noColor, f
 // eventsCmd streams every committed task change as JSON lines, so that any program in
 // any language can follow the swarm without being compiled in.
 func eventsCmd() *cobra.Command {
-	return &cobra.Command{
+	var since uint64
+	var follow bool
+	cmd := &cobra.Command{
 		Use:   "events",
 		Short: "Stream every task change as JSON lines",
+		Long: `Stream every task change as JSON lines. Each line has a seq. --since SEQ starts after
+that one, so a consumer that saves the last seq it handled misses nothing when it starts
+again. With --follow, a dropped connection is resumed from the last line printed, for as
+long as this runs. Delivery is at least once: after a crash, dedupe by seq.`,
 		Example: `  aiculator events
+  aiculator events --since 1200 --follow
   aiculator events | jq -r 'select(.state == "done") | .id'`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			c, err := adminClient()
-			if err != nil {
-				return err
-			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.URL+"/v1/events", nil)
-			if err != nil {
-				return err
+			last := since
+			for {
+				err := streamOnce(ctx, last, func(line []byte, seq uint64) {
+					_, _ = os.Stdout.Write(append(line, '\n'))
+					if seq > last {
+						last = seq
+					}
+				})
+				if ctx.Err() != nil {
+					return nil
+				}
+				if !follow {
+					return err
+				}
+				fmt.Fprintf(os.Stderr, "events: %v; resuming after %d\n", err, last)
+				select {
+				case <-ctx.Done():
+					return nil
+				case <-time.After(time.Second):
+				}
 			}
-			req.Header.Set("Authorization", "Bearer "+c.Token)
-			resp, err := c.HTTP.Do(req)
-			if err != nil {
-				return err
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("server answered %s", resp.Status)
-			}
-			_, err = io.Copy(os.Stdout, resp.Body)
-			if errors.Is(err, context.Canceled) {
-				return nil
-			}
-			return err
 		},
 	}
+	cmd.Flags().Uint64Var(&since, "since", 0, "start after this event sequence; 0 means from now")
+	cmd.Flags().BoolVar(&follow, "follow", false, "reconnect after a drop, resuming from the last event printed")
+	return cmd
+}
+
+func streamOnce(ctx context.Context, since uint64, fn func(line []byte, seq uint64)) error {
+	c, err := adminClient()
+	if err != nil {
+		return err
+	}
+	url := c.URL + "/v1/events"
+	if since > 0 {
+		url += "?since=" + strconv.FormatUint(since, 10)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("server answered %s", resp.Status)
+	}
+	sc := bufio.NewScanner(resp.Body)
+	sc.Buffer(make([]byte, 1<<20), 8<<20)
+	for sc.Scan() {
+		var head struct {
+			Seq uint64 `json:"seq"`
+		}
+		_ = json.Unmarshal(sc.Bytes(), &head)
+		fn(sc.Bytes(), head.Seq)
+	}
+	if err := sc.Err(); err != nil && !errors.Is(err, context.Canceled) {
+		return err
+	}
+	return errors.New("the stream ended")
 }

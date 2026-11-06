@@ -3,11 +3,11 @@ name: swarm-plan
 description: Turns a spec into a task graph for the agent swarm from an open coding session, keeping waiting workers informed while planning. Use when the user asks to plan work for the swarm, split a spec into swarm tasks, or feed the queue.
 license: MIT
 compatibility: Requires the aiculator binary on PATH, with a server running for this project (aiculator up).
-allowed-tools: mcp__swarm__plan_begin mcp__swarm__plan_update mcp__swarm__plan_add mcp__swarm__plan_commit mcp__swarm__situation Bash(aiculator plan:*) Bash(aiculator situation) Read
+allowed-tools: mcp__swarm__plan_begin mcp__swarm__plan_update mcp__swarm__plan_add mcp__swarm__plan_commit mcp__swarm__plan_estimate mcp__swarm__situation Bash(aiculator plan:*) Bash(aiculator situation) Bash(aiculator task estimate:*) Read
 argument-hint: "[spec or path to a spec]"
 when_to_use: The user wants a spec turned into swarm tasks, or asks to plan work for the swarm.
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   aiculator.kind: planner
   aiculator.channels: mcp shell
   aiculator.min-version: "0.1.0"
@@ -33,3 +33,4 @@ If you stop renewing, the lease expires, the drafts are canceled and workers see
 - **Always give a check.** A task with `--check` is verified by the swarm running that command. Without one, it waits for another agent's review. A check must fail before the work and pass after it.
 - **Declare `--touches`:** overlapping tasks then do not run at once, which avoids merge conflicts.
 - **Keep tasks small** and self-contained, since a worker sees only its own spec and the code.
+- **Size them from history:** `plan_estimate`, or `aiculator task estimate --title "..." --spec "..." --tier N`, predicts the tokens a task would take from finished tasks like it. One estimated far above the rest is a reason to split it, and an estimate is a fair starting `--budget`.

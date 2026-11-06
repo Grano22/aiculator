@@ -68,3 +68,31 @@ rules:
 		t.Errorf("after restore: %s", out)
 	}
 }
+
+// Joining with auto picks the tier from the model and effort, says why on stderr, and keeps
+// stdout to the agent name for scripts.
+func TestWorkJoinAutoTier(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	name, errOut, err := p.runSplit("work", "join", "--tier", "auto", "--model", "claude-opus-5-5")
+	if err != nil {
+		t.Fatal(err, errOut)
+	}
+	name = strings.TrimSpace(name)
+	if strings.Contains(name, " ") || !strings.Contains(errOut, "tier 3 (ultra)") {
+		t.Fatalf("stdout %q stderr %q", name, errOut)
+	}
+	low, errOut, err := p.runSplit("work", "join", "--model", "claude-haiku-5-5", "--effort", "low")
+	if err != nil || !strings.Contains(errOut, "tier 1") {
+		t.Fatalf("haiku at low effort: %v %q", err, errOut)
+	}
+	out := p.run("sessions")
+	for _, want := range []string{strings.TrimSpace(name), strings.TrimSpace(low), "shell"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("sessions lack %q:\n%s", want, out)
+		}
+	}
+	if _, _, err := p.runSplit("work", "join", "--tier", "4"); err == nil {
+		t.Error("tier 4 was accepted")
+	}
+}

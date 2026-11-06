@@ -29,6 +29,7 @@ import (
 	"github.com/Grano22/aiculator/internal/sandbox"
 	"github.com/Grano22/aiculator/internal/store"
 	"github.com/Grano22/aiculator/internal/swarm"
+	"github.com/Grano22/aiculator/internal/tui"
 	"github.com/Grano22/aiculator/internal/vlog"
 	"github.com/Grano22/aiculator/internal/work"
 )
@@ -340,6 +341,58 @@ func printJSON(v any) error {
 	return enc.Encode(v)
 }
 
+func estimateCmd() *cobra.Command {
+	var spec engine.TaskSpec
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "estimate [ID]",
+		Short: "Predict the tokens a task will take, from finished tasks like it",
+		Long: `Predict the tokens a task will take, from finished tasks like it: same tier, shared
+tags and labels, and words in common. Tokens count every try. With no ID, describe a task
+you are thinking of adding with --title, --spec, --tier, --tag and --label.`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c, err := adminClient()
+			if err != nil {
+				return err
+			}
+			var est core.Estimate
+			if len(args) == 1 {
+				err = c.Get(cmd.Context(), "/v1/tasks/"+args[0]+"/estimate", &est)
+			} else {
+				if spec.Title == "" {
+					return errors.New("name a task, or describe one with --title")
+				}
+				err = c.Post(cmd.Context(), "/v1/estimate", spec, &est)
+			}
+			if err != nil {
+				return err
+			}
+			if asJSON {
+				return printJSON(est)
+			}
+			if est.Method == "none" {
+				fmt.Println("no finished task has reported tokens yet, so there is nothing to go on")
+				return nil
+			}
+			fmt.Printf("about %s tokens (most like it took %s to %s), from %d finished tasks (%s)\n",
+				tui.Count(est.Tokens), tui.Count(est.Low), tui.Count(est.High), est.Basis, est.Method)
+			if len(est.Similar) > 0 {
+				fmt.Println("most like it: " + strings.Join(est.Similar, ", "))
+			}
+			return nil
+		},
+	}
+	f := cmd.Flags()
+	f.StringVar(&spec.Title, "title", "", "title of a task not added yet")
+	f.StringVar(&spec.Spec, "spec", "", "its spec")
+	f.IntVar(&spec.Tier, "tier", 1, "its tier")
+	f.StringSliceVar(&spec.Tags, "tag", nil, "its tags")
+	f.StringToStringVar(&spec.Labels, "label", nil, "its labels, as key=value")
+	f.BoolVar(&asJSON, "json", false, "print JSON")
+	return cmd
+}
+
 func taskCmd() *cobra.Command {
 	cmd := &cobra.Command{Use: "task", Short: "Manage tasks"}
 	var s engine.TaskSpec
@@ -450,7 +503,7 @@ func taskCmd() *cobra.Command {
 	}
 	unpark.Flags().StringVar(&note, "note", "", "reason")
 	unpark.Flags().Int64Var(&addBudget, "add-budget", 0, "budget to add, in micro-dollars")
-	cmd.AddCommand(add, ls, show, cancelCmd, unpark, amendCmd(), priorityCmd())
+	cmd.AddCommand(add, ls, show, cancelCmd, unpark, amendCmd(), priorityCmd(), estimateCmd())
 	cmd.AddCommand(metaCmds()...)
 	return cmd
 }

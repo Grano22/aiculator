@@ -195,7 +195,8 @@ func TestGoldenScreensFollowTheSwarm(t *testing.T) {
 
 	// One agent runs out of usage; then everyone is stopped.
 	g3 := sc.wait(codex)
-	if _, err := svc.ReportLimit(ctx, codex, "usage_limit", clk.Now().Add(3*time.Hour)); err != nil {
+	// Sessions keep time by the wall clock, not the engine's, so the limit must be from now.
+	if _, err := svc.ReportLimit(ctx, codex, "usage_limit", time.Now().Add(3*time.Hour)); err != nil {
 		t.Fatal(err)
 	}
 	_ = g3

@@ -969,6 +969,36 @@ func (e *Engine) ReleaseHeldBy(ctx context.Context, agent, note string) ([]strin
 	})
 }
 
+// Estimate predicts the tokens a task will take, from the finished tasks most like it.
+func (e *Engine) Estimate(ctx context.Context, id string) (core.Estimate, error) {
+	return do(ctx, e, func() (core.Estimate, error) {
+		ent := e.tasks[id]
+		if ent == nil {
+			return core.Estimate{}, fmt.Errorf("%w: %s", ErrNotFound, id)
+		}
+		return core.EstimateTokens(ent.task, e.history()), nil
+	})
+}
+
+// EstimateSpec is Estimate for a task not added yet, so a planner can size work first.
+func (e *Engine) EstimateSpec(ctx context.Context, s TaskSpec) (core.Estimate, error) {
+	return do(ctx, e, func() (core.Estimate, error) {
+		t := core.Task{Title: s.Title, Spec: s.Spec, Tier: max(s.Tier, 1), Tags: s.Tags, Labels: s.Labels}
+		return core.EstimateTokens(t, e.history()), nil
+	})
+}
+
+// history is the finished tasks with usage, the estimator's evidence.
+func (e *Engine) history() []core.Task {
+	out := make([]core.Task, 0, len(e.tasks))
+	for _, ent := range e.tasks {
+		if ent.task.State == core.Done && ent.task.Tokens > 0 {
+			out = append(out, ent.task)
+		}
+	}
+	return out
+}
+
 // Verdict records an independent review.
 func (e *Engine) Verdict(ctx context.Context, a Agent, id string, lease uint64, pass bool, note string) (core.Task, error) {
 	e.touch(a)

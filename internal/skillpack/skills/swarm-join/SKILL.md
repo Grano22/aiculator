@@ -3,50 +3,57 @@ name: swarm-join
 description: Joins this already-open coding session to the project's agent swarm as a worker, so it takes tasks, works in isolated worktrees and submits them for verification. Use only when the user explicitly asks to join the swarm, work the queue, take swarm tasks or become a worker.
 license: MIT
 compatibility: Requires git and the aiculator binary on PATH, with a server running for this project (aiculator up). Works through MCP tools when present and through shell commands otherwise.
-allowed-tools: mcp__swarm__wait_for_task mcp__swarm__claim mcp__swarm__heartbeat mcp__swarm__progress mcp__swarm__submit mcp__swarm__fail mcp__swarm__release mcp__swarm__review_verdict mcp__swarm__situation Bash(aiculator work:*) Read Write Edit
+allowed-tools: mcp__swarm__join_swarm mcp__swarm__wait_for_task mcp__swarm__claim mcp__swarm__heartbeat mcp__swarm__progress mcp__swarm__submit mcp__swarm__fail mcp__swarm__release mcp__swarm__review_verdict mcp__swarm__situation mcp__swarm__report_usage mcp__swarm__report_limit mcp__swarm__estimate_tokens Bash(aiculator work:*) Read Write Edit
 disable-model-invocation: true
-argument-hint: "[tier: 1 standard, 2 advanced, 3 ultra]"
+argument-hint: "[tier: 1 standard, 2 advanced, 3 ultra, or auto]"
 when_to_use: The user says join the swarm, work the queue, take tasks, or become a worker.
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   aiculator.kind: worker
   aiculator.channels: mcp shell
-  aiculator.min-version: "0.1.0"
+  aiculator.min-version: "0.8.0"
 ---
 
 # Join the swarm
 
 You become a worker in the project's swarm. The user asked for this explicitly: keep looping until the swarm says exit or the user stops you. Each round trip costs a model turn, so do not add extra status messages between tasks.
 
+## Choose your tier
+
+The tier says what work you take: 1 standard, 2 advanced, 3 ultra.
+
+1. If the user gave a tier with this command, such as `2` or `ultra`, use it.
+2. Otherwise ask once: "Which tier should this session join as: 1 standard, 2 advanced, 3 ultra? Press Enter for auto." Take the answer as given. An empty answer, Enter, or "auto" means auto.
+3. Auto picks the tier from your model and how hard it is thinking. Give it both: your model id, such as `claude-sonnet-5-5`, and your current effort or variant, such as `low`, `high`, `max` or `ultrathink`, if you know it. Leave out what you do not know; the swarm looks in your environment.
+
 ## Choose your route
 
-- **MCP:** if you have tools named `wait_for_task`, `submit` and so on (possibly prefixed `swarm`), use them. Do not pass `hold_seconds`.
-- **Shell:** otherwise run the `aiculator work` commands below. This needs no restart, so it works in a session that was already open.
-
-For the shell route, first register once, using the tier the user gave, or 1 if none:
+- **MCP:** if you have tools named `wait_for_task`, `submit` and so on (possibly prefixed `swarm`), use them. If you also have `join_swarm`, call it first with the tier (`"auto"` for auto) and, for auto, `model` and `effort`.
+- **Shell:** otherwise run the `aiculator work` commands below. This needs no restart, so it works in a session that was already open. Register once:
 
 ```sh
-aiculator work join --tier TIER
+aiculator work join --tier TIER                          # 1, 2 or 3
+aiculator work join --tier auto --model MODEL --effort EFFORT
 ```
+
+It prints your agent name, and for auto, on stderr, the tier chosen and why. Pass the name as `--agent NAME` on every later command. Run only `aiculator work` commands here, because they are what your session is cleared to use.
 
 If either route says no server is running in this folder, tell the user, and with their agreement run `aiculator join`. It only starts what this project lacks. Then carry on, with no restart.
 
-It prints your agent name. Pass it as `--agent NAME` on every later command. Run only `aiculator work` commands here, because they are what your session is cleared to use.
-
 ## The loop
 
-Call `wait_for_task` or `aiculator work wait --agent NAME`. The answer has an `action`:
+Call `wait_for_task` or `aiculator work wait --agent NAME`. Do not pass `hold_seconds` or `--hold`: the swarm learns how long your harness lets a call run and holds that long, so an idle wait costs as few turns as possible. The answer has an `action`:
 
 | Action | Meaning | What to do |
 |---|---|---|
 | `task` | You now hold a lease on `task`. No separate claim is needed. | Do the job below. |
 | `wait` | Nothing yet. `reason` says why: `planning`, `planner_lost`, `deps`, `tier_busy` or `idle`. | Call wait again straight away, with no message to the user. `planning` also shows what is coming. |
-| `exit` | No more work can reach your tier. | Stop and give the user a short summary. |
+| `exit` | Stop. `reason` says why: no more work for your tier, `stopped_by_operator`, or `usage_limit` with when it resets. | Stop and give the user a short summary, including the reason. |
 
 ## Doing a task (`job` is `work`)
 
 1. Work only in the returned `workdir`, using absolute paths under it. Never edit the main checkout.
-2. Follow `task.spec`, and make the commands in `task.checks` pass.
+2. Follow `task.spec`, and make the commands in `task.checks` pass. `estimate_tokens` or `aiculator work estimate --task ID` says what tasks like it took, to pace yourself.
 3. After each meaningful change, save with `progress` or `aiculator work progress --agent NAME --task ID --lease L --note "..."`. The swarm commits and hashes your files itself. If files stop changing for too long, you lose the lease even if you keep calling this.
 4. For long stretches without file changes, such as a slow test run, call `heartbeat`, and save again soon after.
 5. Finish with `submit` (`aiculator work submit ...`), or `fail` with a useful note if you cannot finish. Your saved work and note go to the next attempt.
@@ -55,6 +62,14 @@ Call `wait_for_task` or `aiculator work wait --agent NAME`. The answer has an `a
 Do not run `git commit` in the worktree. `submit` only requests verification: the swarm runs the checks itself and merges to `swarm/integration`.
 
 Then go back to the loop.
+
+## Report usage
+
+Budgets, dashboards and estimates rely on what you report. Whenever your harness tells you what a turn cost, pass `tokens` and `cost` (micro-dollars) on `progress`, `heartbeat`, `submit` or `fail`, or call `report_usage` (`aiculator work usage --agent NAME --tokens N [--task ID --lease L]`). Report only what was spent since your last report.
+
+## If you run out
+
+If your plan's usage, credit or rate limit runs out, call `report_limit` with the reason and, if your harness said, when it resets (`aiculator work limit --agent NAME --reason usage_limit --until 2026-01-01T15:00:00Z`). What you hold goes back with no penalty, and wait answers exit until then. Stop, and tell the user when you can continue.
 
 ## Reviewing (`job` is `review`)
 

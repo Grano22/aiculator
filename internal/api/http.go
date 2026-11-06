@@ -3,6 +3,7 @@ package api
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -261,7 +262,8 @@ func (r LimitReq) until(now time.Time) time.Time {
 	return time.Time{}
 }
 
-// WaitReq is the body of the wait call.
+// WaitReq is the body of the wait call. HoldMs below zero holds as long as the server has
+// learned this session's calls may run.
 type WaitReq struct {
 	HoldMs int64 `json:"hold_ms"`
 }
@@ -301,7 +303,14 @@ func (s *Server) Routes() *http.ServeMux {
 		if !ok {
 			return
 		}
-		g, err := s.S.Wait(r.Context(), agentOf(c), time.Duration(q.HoldMs)*time.Millisecond)
+		hold := time.Duration(q.HoldMs) * time.Millisecond
+		switch {
+		case q.HoldMs < 0:
+			hold = swarm.AutoHold // Held as long as this session has shown its calls may run.
+		case hold > MaxToolHold*3:
+			hold = MaxToolHold * 3
+		}
+		g, err := s.S.Wait(r.Context(), agentOf(c), hold)
 		reply(w, g, err)
 	}))
 	m.HandleFunc("POST /v1/agent/hello", s.authed(isAgent, func(w http.ResponseWriter, r *http.Request, c auth.Claims) {
@@ -449,6 +458,18 @@ func (s *Server) Routes() *http.ServeMux {
 		t, err := s.S.Engine.Get(r.Context(), r.PathValue("id"))
 		reply(w, t, err)
 	}))
+	m.HandleFunc("GET /v1/tasks/{id}/estimate", s.authed(anyone, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		est, err := s.S.Engine.Estimate(r.Context(), r.PathValue("id"))
+		reply(w, est, err)
+	}))
+	m.HandleFunc("POST /v1/estimate", s.authed(isPlanner, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
+		q, ok := decode[engine.TaskSpec](w, r)
+		if !ok {
+			return
+		}
+		est, err := s.S.Engine.EstimateSpec(r.Context(), q)
+		reply(w, est, err)
+	}))
 	m.HandleFunc("GET /v1/tasks/{id}/priority", s.authed(isAdmin, func(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
 		p, err := s.S.Engine.Priority(r.Context(), r.PathValue("id"))
 		reply(w, p, err)
@@ -529,31 +550,63 @@ func (s *Server) Routes() *http.ServeMux {
 
 // streamEvents sends each committed task revision as JSON lines, for as long as the
 // client stays connected. Any program can follow the swarm this way.
+// Event is one line of the event stream: a committed task revision and its place in the log.
+type Event struct {
+	core.Task
+	Seq uint64 `json:"seq"`
+}
+
+// streamEvents sends each committed change as a line of JSON. Every line has its sequence,
+// and ?since=SEQ, or a Last-Event-ID header, resumes after it, so a client that reconnects
+// with the last one it handled misses nothing. If what it asked for is no longer kept, the
+// first line says {"gap": true, "first": N}.
 func (s *Server) streamEvents(w http.ResponseWriter, r *http.Request, _ auth.Claims) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		writeJSON(w, http.StatusInternalServerError, Error{"streaming is not supported"})
 		return
 	}
+	var since uint64
+	if v := cmp.Or(r.URL.Query().Get("since"), r.Header.Get("Last-Event-ID")); v != "" {
+		n, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, Error{"since must be an event sequence number"})
+			return
+		}
+		since = n
+	}
 	w.Header().Set("Content-Type", "application/x-ndjson")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
-	lines := make(chan core.Task, 256)
+	type line struct {
+		seq uint64
+		t   core.Task
+	}
+	lines := make(chan line, 256)
 	done := make(chan error, 1)
 	go func() {
-		done <- s.S.Store.TailEvents(r.Context(), func(t core.Task) {
+		_, err := s.S.Store.TailEventsFrom(r.Context(), since, func(seq uint64, t core.Task) {
 			select {
-			case lines <- t:
+			case lines <- line{seq, t}:
 			case <-r.Context().Done():
 			}
 		})
+		done <- err
 	}()
 	enc := json.NewEncoder(w)
+	if since > 0 {
+		// Say at once whether anything asked for is gone, before the first event.
+		info, err := s.S.Store.EventLogInfo(r.Context())
+		if err == nil && since+1 < info.First {
+			_ = enc.Encode(map[string]any{"gap": true, "first": info.First})
+			flusher.Flush()
+		}
+	}
 	for {
 		select {
-		case t := <-lines:
-			if enc.Encode(t) != nil {
+		case l := <-lines:
+			if enc.Encode(Event{Task: l.t, Seq: l.seq}) != nil {
 				return
 			}
 			flusher.Flush()

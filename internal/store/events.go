@@ -263,3 +263,59 @@ func (s *Store) ReadEvents(ctx context.Context, fn func(t core.Task, at time.Tim
 	cc.Stop()
 	return nil
 }
+
+// TailEventsFrom calls fn for each event after since, in order, with its sequence number, then
+// keeps following until ctx ends. since 0 means from now on. A client that remembers the last
+// sequence it handled and asks from there again after a disconnect misses nothing, which makes
+// delivery at least once. first is the oldest event still kept: when since is older than that,
+// the events in between are gone and the caller should say so.
+func (s *Store) TailEventsFrom(ctx context.Context, since uint64, fn func(seq uint64, t core.Task)) (first uint64, err error) {
+	info, err := s.stream.Info(ctx)
+	if err != nil {
+		return 0, err
+	}
+	first = info.State.FirstSeq
+	cfg := jetstream.OrderedConsumerConfig{DeliverPolicy: jetstream.DeliverNewPolicy}
+	if since > 0 {
+		start := max(since+1, first)
+		if start > info.State.LastSeq {
+			cfg = jetstream.OrderedConsumerConfig{DeliverPolicy: jetstream.DeliverNewPolicy}
+		} else {
+			cfg = jetstream.OrderedConsumerConfig{DeliverPolicy: jetstream.DeliverByStartSequencePolicy, OptStartSeq: start}
+		}
+	}
+	cons, err := s.stream.OrderedConsumer(ctx, cfg)
+	if err != nil {
+		return first, err
+	}
+	cc, err := cons.Consume(func(m jetstream.Msg) {
+		meta, err := m.Metadata()
+		if err != nil {
+			return
+		}
+		var t core.Task
+		if json.Unmarshal(m.Data(), &t) == nil {
+			fn(meta.Sequence.Stream, t)
+		}
+	})
+	if err != nil {
+		return first, err
+	}
+	<-ctx.Done()
+	cc.Stop()
+	return first, nil
+}
+
+// EventLogState is where the event log starts and ends.
+type EventLogState struct {
+	First, Last uint64
+}
+
+// EventLogInfo says which events the log still holds.
+func (s *Store) EventLogInfo(ctx context.Context) (EventLogState, error) {
+	info, err := s.stream.Info(ctx)
+	if err != nil {
+		return EventLogState{}, err
+	}
+	return EventLogState{First: info.State.FirstSeq, Last: info.State.LastSeq}, nil
+}

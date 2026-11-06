@@ -25,6 +25,7 @@ import (
 
 	"github.com/Grano22/aiculator/internal/api"
 	"github.com/Grano22/aiculator/internal/client"
+	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/engine"
 	"github.com/Grano22/aiculator/internal/harness"
 	"github.com/Grano22/aiculator/internal/procinfo"
@@ -988,6 +989,35 @@ func (b *bridge) call(ctx context.Context, p *mcp.CallToolParams) (*mcp.CallTool
 
 // mcpCmd bridges stdio to the server, for harnesses that launch MCP servers as
 // subprocesses. --auto gets its own token locally, so harness config holds no secret.
+var tierNames = map[int]string{1: "standard", 2: "advanced", 3: "ultra"}
+
+// resolveTier reads a tier given by a person, choosing one from the model and effort when
+// it is auto. Values not given are looked for in the harness's environment.
+func resolveTier(arg, model, effort string) (int, string, error) {
+	tier, err := harness.ParseTier(arg)
+	if err != nil {
+		return 0, "", err
+	}
+	if tier > 0 {
+		return tier, "as asked", nil
+	}
+	envModel, envEffort := harness.ModelFromEnv()
+	if model == "" {
+		model = envModel
+	}
+	if effort == "" {
+		effort = envEffort
+	}
+	tier, why := harness.AutoTier(model, effort)
+	return tier, "auto: " + why, nil
+}
+
+type joinSwarmInput struct {
+	Tier   string `json:"tier,omitempty" jsonschema:"1 standard, 2 advanced, 3 ultra, or auto; auto when empty"`
+	Model  string `json:"model,omitempty" jsonschema:"for auto: the model you run as, such as claude-sonnet-5-5"`
+	Effort string `json:"effort,omitempty" jsonschema:"for auto: the effort or variant you run at, such as low, high or max"`
+}
+
 // noSwarmHere is what a tool answers in a folder that has not joined a swarm. It says what
 // to do, because the model reading it can pass that on.
 const noSwarmHere = "This folder has no swarm server running. To start one, run: aiculator join. Then call this tool again; the session does not need a restart."
@@ -1022,12 +1052,13 @@ func serveAutoBridge(ctx context.Context, q api.TokenReq, harnessID string, swit
 	held := ""
 	b := &bridge{harness: harnessID}
 	b.issue = func(ctx context.Context) (string, string, error) {
+		heldMu.Lock()
 		if !dataDirFlagSet {
-			heldMu.Lock()
 			dataDir = findDataDirFrom(from)
-			heldMu.Unlock()
 		}
-		return issueLocal(ctx, q)
+		req := q // join_swarm may change the tier; read it under the same lock.
+		heldMu.Unlock()
+		return issueLocal(ctx, req)
 	}
 	srv := mcp.NewServer(&mcp.Implementation{Name: "swarm", Version: version}, &mcp.ServerOptions{Instructions: instructions})
 	for _, t := range tools {
@@ -1045,6 +1076,21 @@ func serveAutoBridge(ctx context.Context, q api.TokenReq, harnessID string, swit
 			return res, err
 		})
 	}
+	mcp.AddTool(srv, &mcp.Tool{Name: "join_swarm", Description: "Choose the tier this session works at: 1 standard, 2 advanced, 3 ultra, or auto to choose from your model and effort. Call it once before wait_for_task when the user named a tier or wants auto. Refused while you hold a task."},
+		func(ctx context.Context, _ *mcp.CallToolRequest, in joinSwarmInput) (*mcp.CallToolResult, any, error) {
+			heldMu.Lock()
+			defer heldMu.Unlock()
+			if held != "" {
+				return nil, nil, fmt.Errorf("you hold task %s: submit, fail or release it before changing tier", held)
+			}
+			tier, why, err := resolveTier(in.Tier, in.Model, in.Effort)
+			if err != nil {
+				return nil, nil, err
+			}
+			q.Tier = tier
+			b.reset() // The next call gets a token at the new tier.
+			return nil, map[string]any{"agent": q.Agent, "tier": tier, "tier_name": tierNames[tier], "why": why}, nil
+		})
 	if switching {
 		mcp.AddTool(srv, &mcp.Tool{Name: "realm_list", Description: "List the projects on this machine that use the swarm, with which ones are running and which one this session is in."},
 			func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
@@ -1113,7 +1159,8 @@ func mcpCmd() *cobra.Command {
 		url, harnessID, agent string
 		auto, planner         bool
 		realmSwitch           bool
-		tier                  int
+		tierArg, model        string
+		effort                string
 	)
 	cmd := &cobra.Command{
 		Use:   "mcp",
@@ -1121,6 +1168,11 @@ func mcpCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 			if auto {
+				tier, why, err := resolveTier(tierArg, model, effort)
+				if err != nil {
+					return err
+				}
+				fmt.Fprintf(os.Stderr, "aiculator mcp: joining at tier %d: %s\n", tier, why) // stdout is the MCP channel.
 				return serveAutoBridge(ctx, api.TokenReq{Agent: agent, Tier: tier, Planner: planner}, harnessID, realmSwitch)
 			}
 			token := os.Getenv("SWARM_TOKEN")
@@ -1151,7 +1203,9 @@ func mcpCmd() *cobra.Command {
 	f.BoolVar(&auto, "auto", false, "find the local server and get a token by itself")
 	f.StringVar(&harnessID, "harness", "", "harness id, used in the agent's name")
 	f.StringVar(&agent, "agent", "", "agent name; generated if empty")
-	f.IntVar(&tier, "tier", 1, "tier, with --auto")
+	f.StringVar(&tierArg, "tier", "auto", "with --auto: 1 standard, 2 advanced, 3 ultra, or auto to choose from the model and effort")
+	f.StringVar(&model, "model", "", "with --tier auto: the model the harness runs; found from its environment if empty")
+	f.StringVar(&effort, "effort", "", "with --tier auto: the effort or variant, such as low, high or max")
 	f.BoolVar(&planner, "planner", false, "allow planning, with --auto")
 	f.BoolVar(&realmSwitch, "realm-switch", false, "with --auto: let the session list other realms and move between them")
 	cmd.AddCommand(mcpAddCmd(), mcpPrintCmd(), mcpRemoveCmd())
@@ -1165,8 +1219,7 @@ func workCmd() *cobra.Command {
 		Use:   "work",
 		Short: "Work the queue from a shell: the route for any harness, no restart needed",
 	}
-	var harnessID string
-	var tier int
+	var harnessID, tierArg, joinModel, joinEffort string
 	var plannerFlag bool
 	var agentName string
 	join := &cobra.Command{
@@ -1181,13 +1234,26 @@ func workCmd() *cobra.Command {
 				}
 				name = prefix + "-" + randomSuffix()
 			}
+			tier, why, err := resolveTier(tierArg, joinModel, joinEffort)
+			if err != nil {
+				return err
+			}
 			url, tok, err := issueLocal(cmd.Context(), api.TokenReq{Agent: name, Tier: tier, Planner: plannerFlag})
 			if err != nil {
 				return err
 			}
+			// The name is the only thing on stdout, as scripts and the skill read it from there.
+			// Why a tier was chosen is worth saying only when it was chosen here.
+			if t, _ := harness.ParseTier(tierArg); t == 0 {
+				fmt.Fprintf(os.Stderr, "joined at tier %d (%s): %s\n", tier, tierNames[tier], why)
+			}
 			// What and where this session is, for the dashboards. Only the harness that runs
 			// this shell knows more, and it is this process's parent.
-			_ = client.New(url, tok).Post(cmd.Context(), "/v1/agent/hello", procinfo.Self("shell", harnessID, "aiculator-work", version, false), nil)
+			info := procinfo.Self("shell", harnessID, "aiculator-work", version, false)
+			if joinModel != "" {
+				info.Model = joinModel
+			}
+			_ = client.New(url, tok).Post(cmd.Context(), "/v1/agent/hello", info, nil)
 			dir := filepath.Join(dataDir, "agents")
 			if err := os.MkdirAll(dir, 0o700); err != nil {
 				return err
@@ -1200,7 +1266,9 @@ func workCmd() *cobra.Command {
 		},
 	}
 	join.Flags().StringVar(&harnessID, "harness", "", "harness id, used in the agent's name")
-	join.Flags().IntVar(&tier, "tier", 1, "tier: 1 standard, 2 advanced, 3 ultra")
+	join.Flags().StringVar(&tierArg, "tier", "auto", "tier: 1 standard, 2 advanced, 3 ultra, or auto to choose from the model and effort")
+	join.Flags().StringVar(&joinModel, "model", "", "the model this session runs, for --tier auto; found from the environment if empty")
+	join.Flags().StringVar(&joinEffort, "effort", "", "the effort or variant it runs at, such as low, high or max, for --tier auto")
 	join.Flags().BoolVar(&plannerFlag, "planner", false, "also allow this session to plan")
 	join.Flags().StringVar(&agentName, "agent", "", "agent name; generated if empty")
 
@@ -1224,7 +1292,7 @@ func workCmd() *cobra.Command {
 		return client.New(strings.TrimSpace(string(url)), string(tok)), nil
 	}
 
-	var hold time.Duration
+	var holdArg string
 	wait := &cobra.Command{
 		Use:   "wait",
 		Short: "Get the next task, or be told to wait or exit",
@@ -1233,14 +1301,22 @@ func workCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			q := api.WaitReq{HoldMs: -1} // Learned by the server from how long calls may run.
+			if holdArg != "auto" {
+				d, err := time.ParseDuration(holdArg)
+				if err != nil {
+					return fmt.Errorf("--hold is a duration or auto: %w", err)
+				}
+				q.HoldMs = d.Milliseconds()
+			}
 			var g swarm.Grant
-			if err := c.Post(cmd.Context(), "/v1/agent/wait", api.WaitReq{HoldMs: hold.Milliseconds()}, &g); err != nil {
+			if err := c.Post(cmd.Context(), "/v1/agent/wait", q, &g); err != nil {
 				return err
 			}
 			return printJSON(g)
 		},
 	}
-	wait.Flags().DurationVar(&hold, "hold", api.DefaultHold, "how long to hold if no work is available")
+	wait.Flags().StringVar(&holdArg, "hold", "auto", "how long to hold if no work is available; auto learns how long your harness lets a command run")
 
 	var taskID string
 	claim := &cobra.Command{
@@ -1305,6 +1381,74 @@ func workCmd() *cobra.Command {
 			return printJSON(s)
 		},
 	}
+	usage := &cobra.Command{
+		Use:   "usage",
+		Short: "Report tokens and cost used, for the task you hold (--task, --lease) or for yourself",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			c, err := agentClient()
+			if err != nil {
+				return err
+			}
+			var out any
+			if err := c.Post(cmd.Context(), "/v1/agent/usage", api.UsageReq{TaskID: taskID, Lease: lease, Tokens: tokens, Cost: cost}, &out); err != nil {
+				return err
+			}
+			return printJSON(out)
+		},
+	}
+	usage.Flags().StringVar(&taskID, "task", "", "task id, if the usage was for one you hold")
+	usage.Flags().Uint64Var(&lease, "lease", 0, "lease number, with --task")
+	usage.Flags().Int64Var(&tokens, "tokens", 0, "tokens used since your last report")
+	usage.Flags().Int64Var(&cost, "cost", 0, "cost since your last report, in micro-dollars")
+
+	var reason, until string
+	var retryAfter time.Duration
+	limit := &cobra.Command{
+		Use:   "limit",
+		Short: "Say your harness ran out of usage, credit or rate allowance, and until when",
+		Long: `Say your harness ran out of usage, credit or rate allowance. What you hold goes back
+with no penalty, and wait answers exit until the limit resets, so you stop spending turns.`,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			c, err := agentClient()
+			if err != nil {
+				return err
+			}
+			q := api.LimitReq{Reason: reason, RetryAfterSec: int64(retryAfter.Seconds())}
+			if until != "" {
+				t, err := time.Parse(time.RFC3339, until)
+				if err != nil {
+					return fmt.Errorf("--until is RFC 3339: %w", err)
+				}
+				q.Until = t
+			}
+			var out any
+			if err := c.Post(cmd.Context(), "/v1/agent/limit", q, &out); err != nil {
+				return err
+			}
+			return printJSON(out)
+		},
+	}
+	limit.Flags().StringVar(&reason, "reason", "usage_limit", "what ran out: usage_limit, credit_exhausted, rate_limited")
+	limit.Flags().StringVar(&until, "until", "", "when it resets, in RFC 3339, if your harness said")
+	limit.Flags().DurationVar(&retryAfter, "retry-after", 0, "or how long from now")
+
+	estimate := &cobra.Command{
+		Use:   "estimate",
+		Short: "Predict the tokens a task will take, from finished tasks like it",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			c, err := agentClient()
+			if err != nil {
+				return err
+			}
+			var est core.Estimate
+			if err := c.Get(cmd.Context(), "/v1/tasks/"+taskID+"/estimate", &est); err != nil {
+				return err
+			}
+			return printJSON(est)
+		},
+	}
+	estimate.Flags().StringVar(&taskID, "task", "", "task id")
+
 	cmd.PersistentFlags().StringVar(&agent, "agent", "", "agent name from aiculator work join")
 	cmd.AddCommand(join, wait, claim,
 		leased("heartbeat", "Extend your lease; this does not count as progress", "/v1/agent/heartbeat"),
@@ -1312,6 +1456,6 @@ func workCmd() *cobra.Command {
 		leased("submit", "Submit finished work for verification", "/v1/agent/submit"),
 		leased("fail", "Give up; saved work and note go to the next attempt", "/v1/agent/fail"),
 		leased("release", "Hand back with no penalty, when the harness cannot do it", "/v1/agent/release"),
-		verdict, situation)
+		verdict, situation, usage, limit, estimate)
 	return cmd
 }
