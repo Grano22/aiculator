@@ -228,5 +228,51 @@
         "ns/op": 2.072
       }
     }
+  },
+  {
+    "sha": "c9c8832205de163b7725b8df0033aa369ea6d2bd",
+    "at": "2026-11-06T19:46:25.652906084Z",
+    "medians": {
+      "internal/api.HTTPHeartbeat": {
+        "B/op": 11334.5,
+        "allocs/op": 112,
+        "ns/op": 155438
+      },
+      "internal/auth.Verify": {
+        "B/op": 80,
+        "allocs/op": 1,
+        "ns/op": 69.22999999999999
+      },
+      "internal/engine.AddAndGrant": {
+        "B/op": 18731,
+        "allocs/op": 190,
+        "ns/op": 180460
+      },
+      "internal/engine.GrantCycle": {
+        "B/op": 16960,
+        "allocs/op": 176,
+        "ns/op": 171383.5
+      },
+      "internal/engine.HeartbeatWithWaiters": {
+        "B/op": 869,
+        "allocs/op": 5,
+        "ns/op": 2725
+      },
+      "internal/store.MarshalTaskPointer": {
+        "B/op": 712,
+        "allocs/op": 8,
+        "ns/op": 2939
+      },
+      "internal/store.MarshalTaskValue": {
+        "B/op": 1865,
+        "allocs/op": 10,
+        "ns/op": 3328
+      },
+      "internal/vlog.Disabled": {
+        "B/op": 0,
+        "allocs/op": 0,
+        "ns/op": 3.1319999999999997
+      }
+    }
   }
 ]

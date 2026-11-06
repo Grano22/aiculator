@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/Grano22/aiculator/cmd/aiculator/backupcmd.go (76.6%)</option>
+				<option value="file0">github.com/Grano22/aiculator/cmd/aiculator/backupcmd.go (75.9%)</option>
 				
 				<option value="file1">github.com/Grano22/aiculator/cmd/aiculator/debugcmd.go (83.8%)</option>
 				
@@ -135,7 +135,7 @@
 				
 				<option value="file39">github.com/Grano22/aiculator/internal/core/task.go (95.2%)</option>
 				
-				<option value="file40">github.com/Grano22/aiculator/internal/driver/driver.go (68.4%)</option>
+				<option value="file40">github.com/Grano22/aiculator/internal/driver/driver.go (69.7%)</option>
 				
 				<option value="file41">github.com/Grano22/aiculator/internal/driver/limits.go (100.0%)</option>
 				
@@ -500,7 +500,7 @@ func pickCopies(ids []string, from string, cut time.Time, all bool, current func
                                 <span class="cov0" title="0">return nil, err
 </span>                        }
                         <span class="cov8" title="1">if have &amp;&amp; backup.Same(e.Task, now) </span>{
-                                <span class="cov8" title="1">continue</span>
+                                <span class="cov0" title="0">continue</span>
                         }
                         <span class="cov8" title="1">out, found = append(out, e), true</span>
                 }
@@ -12628,14 +12628,14 @@ func (d *Driver) session(ctx context.Context, g swarm.Grant) sessionResult {
                         <span class="cov8" title="1">return sessionResult{ok: true, tokens: tokens, text: h.Text()}</span>
                 case &lt;-exited:
                         // The prompt may have finished just before the exit, so prefer its result.
-                        <span class="cov0" title="0">select </span>{
+                        <span class="cov8" title="1">select </span>{
                         case out := &lt;-done:
-                                <span class="cov0" title="0">if out.err == nil &amp;&amp; out.resp.StopReason == acp.StopReasonEndTurn </span>{
+                                <span class="cov8" title="1">if out.err == nil &amp;&amp; out.resp.StopReason == acp.StopReasonEndTurn </span>{
                                         <span class="cov0" title="0">return sessionResult{ok: true, text: h.Text()}
 </span>                                }
                         case &lt;-time.After(200 * time.Millisecond):<span class="cov0" title="0"></span>
                         }
-                        <span class="cov0" title="0">r := sessionResult{note: "agent_crashed", text: h.Text()}
+                        <span class="cov8" title="1">r := sessionResult{note: "agent_crashed", text: h.Text()}
                         r.limit, r.limitUntil = limitOf(tail(stderrTail(), 2000), tail(r.text, 2000), time.Now())
                         return r</span>
                 case &lt;-tick.C:
