@@ -6,6 +6,8 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-06
+
 ### Added
 
 - **Sessions:** each agent says how it connects (acp, mcp, mcp-http or shell), its harness and model, and its host, process, parent and folder. They show in `aiculator sessions`, `top` and the web dashboard. Gone sessions leave after five minutes, or at once with `sessions forget` or a button.
