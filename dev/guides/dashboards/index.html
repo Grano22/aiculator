@@ -1018,6 +1018,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#sessions-and-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sessions and controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#flow-analytics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1717,6 +1728,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#sessions-and-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sessions and controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#flow-analytics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1925,11 +1947,15 @@
 <tbody>
 <tr>
 <td><code>1</code> to <code>5</code>, or <code>tab</code></td>
-<td>Switch between overview, tasks, agents, flow and usage</td>
+<td>Switch between overview, tasks, sessions, flow and usage</td>
 </tr>
 <tr>
 <td><code>↑</code> <code>↓</code>, or <code>j</code> <code>k</code></td>
 <td>Scroll</td>
+</tr>
+<tr>
+<td><code>r</code></td>
+<td>Live mode on or off: redraws four times a second, so a change shows as it happens. <code>--live</code> starts in it</td>
 </tr>
 <tr>
 <td><code>p</code></td>
@@ -1941,6 +1967,8 @@
 </tr>
 </tbody>
 </table>
+<p>The overview has a table per tier: ready, working, in review, parked, failed and done, with the agents at that tier and how many are waiting. A tier with ready work and no agent is marked <code>!</code>, because nothing will pick that work up. The tasks view shows each lease and progress deadline next to their lengths (<code>lease ttl 2m00s, progress ttl 10m00s</code>). The sessions view shows each connected agent: how it connects, its harness, its state, any usage limit, its wait hold, and the host, process, parent and folder it runs in.</p>
+<p>Golden files in <code>internal/tui/testdata/golden</code> hold every screen after each step of a scripted swarm on a fake clock. A change to any screen shows in the test; <code>go test ./internal/tui -run Golden -update</code> accepts it.</p>
 <p>Without a terminal, it prints one frame and exits, so it works in scripts:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>aiculator<span class="w"> </span>top<span class="w"> </span>--once<span class="w"> </span>--view<span class="w"> </span>usage
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>aiculator<span class="w"> </span>top<span class="w"> </span>--json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.usage.tokens'</span>
@@ -1954,6 +1982,15 @@
 <p><img alt="The web dashboard in dark mode." src="../../assets/screens/web-dark.png#only-dark" />
 <img alt="The web dashboard in light mode." src="../../assets/screens/web-light.png#only-light" /></p>
 <p>It follows your system's light or dark setting, works at phone width, and pauses while its tab is hidden.</p>
+<h3 id="sessions-and-controls">Sessions and controls<a class="headerlink" href="#sessions-and-controls" title="Permanent link">&para;</a></h3>
+<p>A table lists the connected sessions, the same as <code>aiculator sessions</code>: kind (<code>acp</code> for <code>aiculator drive</code>, <code>mcp</code> for the stdio bridge, <code>mcp-http</code> for a harness talking MCP directly, <code>shell</code> for <code>aiculator work</code>), harness and model, state, task, when it was last seen, how long it has been connected, its wait hold, and where it runs. A session that goes quiet shows as gone, and leaves the list after five minutes.</p>
+<p><code>aiculator web --control</code> opens a link whose page also has three buttons:</p>
+<ul>
+<li><strong>Remove disconnected</strong> clears the gone sessions now.</li>
+<li><strong>Stop all agents</strong> tells every agent to exit. Each gets exit from its next wait, or from the wait it is in, and what it holds goes back to the queue with no penalty.</li>
+<li><strong>Kill agent processes</strong> also ends the processes aiculator started for agents on the server's machine, such as <code>aiculator drive</code> and the harness it runs. It checks that each process id still runs aiculator first. A harness you started yourself is only told to exit.</li>
+</ul>
+<p>A control link can do these and read the dashboard, and nothing else. The same is on the command line: <code>aiculator sessions forget</code>, <code>aiculator agents stop --all</code>, <code>aiculator agents kill --all</code>, with <code>--realms</code> for every project.</p>
 <h3 id="flow-analytics">Flow analytics<a class="headerlink" href="#flow-analytics" title="Permanent link">&para;</a></h3>
 <p>Below the live numbers, four charts show how work has flowed. Filter them by time window (the last hour up to everything kept), by tier and by label. On <code>aiculator web --all</code>, a realm filter picks the project.</p>
 <p><img alt="Flow analytics: the state Sankey, failure reasons, the retry funnel and the cumulative flow." src="../../assets/screens/web-flow-dark.png#only-dark" />
@@ -2094,6 +2131,16 @@
 <td><code>GET /v1/observe</code></td>
 <td>Viewer</td>
 <td>The full snapshot as JSON</td>
+</tr>
+<tr>
+<td><code>GET /v1/sessions</code></td>
+<td>Viewer</td>
+<td>Connected sessions as JSON</td>
+</tr>
+<tr>
+<td><code>GET /v1/events</code></td>
+<td>Viewer</td>
+<td>Every change as JSON lines, each with a <code>seq</code>. <code>?since=SEQ</code> or <code>Last-Event-ID</code> resumes after it, so delivery is at least once; a <code>{"gap": true}</code> line says older events are gone</td>
 </tr>
 <tr>
 <td><code>GET /v1/analytics</code></td>

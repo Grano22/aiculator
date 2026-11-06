@@ -679,6 +679,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#choose-a-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choose a tier
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-a-joined-session-can-do" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -697,6 +708,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="What the answers mean">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#waits-that-cost-fewer-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Waits that cost fewer tokens
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage and limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1627,6 +1666,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#choose-a-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Choose a tier
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#what-a-joined-session-can-do" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1645,6 +1695,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="What the answers mean">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#waits-that-cost-fewer-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Waits that cost fewer tokens
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage and limits
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1759,9 +1837,20 @@
 </tbody>
 </table>
 <p>The line to paste into a session that is already open:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Read .agents/skills/swarm-join/SKILL.md and follow it. Join as tier 1.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Read .agents/skills/swarm-join/SKILL.md and follow it.
 </code></pre></div>
 <p>The skill checks whether the session has the swarm's tools. If it does not, it uses <code>aiculator work</code> commands instead. Pi and goose always use this route.</p>
+<h2 id="choose-a-tier">Choose a tier<a class="headerlink" href="#choose-a-tier" title="Permanent link">&para;</a></h2>
+<p>The tier says what work a session takes: 1 standard, 2 advanced, 3 ultra.</p>
+<ul>
+<li><strong>Manual:</strong> give it with the skill, such as <code>/swarm-join 2</code>, or in the line you paste ("Join as tier 2").</li>
+<li><strong>Asked:</strong> with no tier given, the skill asks which one. Press Enter for auto.</li>
+<li><strong>Auto:</strong> the swarm picks from the model and the effort or variant it runs at. The model's family sets the tier: Haiku, mini and flash models are 1; Sonnet, GPT-5, o3, GLM and Qwen Coder are 2; Opus, Fable, the pro models and Gemini Pro are 3. High, max or ultrathink effort moves it up one, and low or minimal moves it down one. So does a thinking budget of 16,000 tokens or more, or under 2,000. An unknown model gets tier 1, since taking easy work costs less than failing hard work.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>aiculator<span class="w"> </span>work<span class="w"> </span>join<span class="w"> </span>--tier<span class="w"> </span>auto<span class="w"> </span>--model<span class="w"> </span>claude-sonnet-5-5<span class="w"> </span>--effort<span class="w"> </span>high
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># joined at tier 3 (ultra): auto: claude-sonnet-5-5 is a tier 2 model, high effort moves it to 3</span>
+</code></pre></div>
+<p>The skill passes the model and effort it knows it runs as. What it leaves out comes from the harness's environment: <code>AICULATOR_MODEL</code>, <code>ANTHROPIC_MODEL</code>, <code>OPENAI_MODEL</code> and the like, and <code>AICULATOR_EFFORT</code>, <code>CLAUDE_CODE_EFFORT_LEVEL</code>, <code>OPENAI_REASONING_EFFORT</code> or <code>MAX_THINKING_TOKENS</code>. On the MCP route the skill calls <code>join_swarm</code> with the same choices; it is refused while the session holds a task.</p>
 <h2 id="what-a-joined-session-can-do">What a joined session can do<a class="headerlink" href="#what-a-joined-session-can-do" title="Permanent link">&para;</a></h2>
 <p>Both routes offer the same operations:</p>
 <table>
@@ -1818,6 +1907,26 @@
 <td><code>situation</code></td>
 <td><code>aiculator work situation</code></td>
 </tr>
+<tr>
+<td>Report usage</td>
+<td><code>report_usage</code>, or <code>tokens</code> and <code>cost</code> on most calls</td>
+<td><code>aiculator work usage</code>, or <code>--tokens</code> and <code>--cost</code></td>
+</tr>
+<tr>
+<td>Say the harness ran out</td>
+<td><code>report_limit</code></td>
+<td><code>aiculator work limit</code></td>
+</tr>
+<tr>
+<td>Estimate a task's tokens</td>
+<td><code>estimate_tokens</code></td>
+<td><code>aiculator work estimate</code></td>
+</tr>
+<tr>
+<td>Choose the tier</td>
+<td><code>join_swarm</code></td>
+<td><code>aiculator work join --tier</code></td>
+</tr>
 </tbody>
 </table>
 <p>A session joined with <code>--planner</code> also gets <code>plan_begin</code>, <code>plan_update</code>, <code>plan_add</code> and <code>plan_commit</code>. See <a href="../planning/">Plan work</a>.</p>
@@ -1826,8 +1935,12 @@
 <ul>
 <li><strong><code>task</code>:</strong> you hold a lease on that task, and <code>workdir</code> is where to do it.</li>
 <li><strong><code>wait</code>:</strong> nothing yet, and <code>reason</code> says why: <code>planning</code>, <code>planner_lost</code>, <code>deps</code>, <code>tier_busy</code> or <code>idle</code>.</li>
-<li><strong><code>exit</code>:</strong> no more work can reach this tier.</li>
+<li><strong><code>exit</code>:</strong> stop. No more work can reach this tier, an operator stopped the session (<code>stopped_by_operator</code>), or it reported a usage limit (<code>usage_limit</code>, with when it resets).</li>
 </ul>
+<h3 id="waits-that-cost-fewer-tokens">Waits that cost fewer tokens<a class="headerlink" href="#waits-that-cost-fewer-tokens" title="Permanent link">&para;</a></h3>
+<p>Each wait is a model turn, so a wait should be held as long as the harness lets a call run. Harnesses rarely document that limit, so the swarm learns it per session. A wait that ran to the end makes the next one 5 seconds longer, up to 40. A caller that hung up early marks where its limit is, and later waits stay 3 seconds under it. So leave <code>hold_seconds</code> and <code>--hold</code> unset. <code>next_hold_seconds</code> in each answer, and the HOLD column in <code>aiculator sessions</code>, show where a session has got to.</p>
+<h3 id="usage-and-limits">Usage and limits<a class="headerlink" href="#usage-and-limits" title="Permanent link">&para;</a></h3>
+<p>Report tokens and cost whenever the harness says what a turn cost, so budgets, the dashboards and estimates stay right. If the plan's usage, credit or rate limit runs out, report it with when it resets. What the session holds goes back with no penalty, and its waits answer exit until then, so it stops spending turns.</p>
 <div class="admonition warning">
 <p class="admonition-title">A joined session is not sandboxed</p>
 <p>It runs under your harness's own permissions. In one test, a model started its own server in a temp directory on its own initiative. The acceptance checks still run in the sandbox, but for work you do not fully trust, use <a href="../workers/">sandboxed workers</a>.</p>
@@ -1837,7 +1950,7 @@
 <p>A running OpenCode background service does not pick up new project config, and <code>opencode mcp list</code> shows the service's view. Use <code>opencode run --standalone</code> or restart the service. The shell route works either way.</p>
 </div>
 <h2 id="undo">Undo<a class="headerlink" href="#undo" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>aiculator<span class="w"> </span>unjoin
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>aiculator<span class="w"> </span>unjoin
 </code></pre></div>
 <p>This removes the swarm's MCP entries and skill links, and nothing else. Add <code>--purge</code> to delete the swarm's skills from <code>.agents/skills</code> too.</p>
 

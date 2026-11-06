@@ -1763,6 +1763,14 @@
 <td><code>--heartbeat 15s</code></td>
 <td>How often to save work and renew the lease.</td>
 </tr>
+<tr>
+<td><code>--url</code></td>
+<td>The server. By default the project's own, found from <code>.swarm</code>: the driver waits for it if it is not running yet, and finds it again after a restart, a standby taking over, or a move to a new port.</td>
+</tr>
+<tr>
+<td><code>--on-limit wait</code></td>
+<td>What to do when the harness runs out of usage: <code>wait</code> for the reset it reported, or <code>exit</code>.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="a-custom-harness">A custom harness<a class="headerlink" href="#a-custom-harness" title="Permanent link">&para;</a></h2>
@@ -1775,6 +1783,7 @@
 </code></pre></div>
 <h2 id="when-a-harness-cannot-work">When a harness cannot work<a class="headerlink" href="#when-a-harness-cannot-work" title="Permanent link">&para;</a></h2>
 <p>A missing login or a failed launch hands the task back with no penalty and stops that driver. It does not use up the task's attempts or move it to a pricier tier.</p>
+<p>Running out of plan usage, credit or rate allowance is handled the same way, and the swarm is told. The driver reads it from the harness's errors and stderr: "usage limit reached", "credit balance is too low", <code>insufficient_quota</code>, a 429, and the like. It also reads when the limit resets, if the harness said: a Unix time, an RFC 3339 time, or "try again in 2h 30m". It hands the task back, reports the limit, and by default sleeps until the reset, then carries on. Meanwhile the swarm answers that agent's waits with exit, and <code>aiculator sessions</code> shows it as limited, with when. The agent's own text is held to a stricter test, so that a task about rate limiting or billing doesn't read as the harness running out.</p>
 <h2 id="which-harnesses-have-been-run">Which harnesses have been run<a class="headerlink" href="#which-harnesses-have-been-run" title="Permanent link">&para;</a></h2>
 <p>Claude Code and OpenCode have run this way for real. The others are configured from their documentation or the ACP registry and are untested. To test one:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./scripts/gate3_real.sh<span class="w"> </span>gemini<span class="w"> </span><span class="m">3</span>
