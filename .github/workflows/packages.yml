@@ -221,32 +221,39 @@ jobs:
           if ($LASTEXITCODE -eq 0) { Write-Output "already published"; exit 0 }
           $open = gh pr list --repo microsoft/winget-pkgs --state open --search "Grano22.Aiculator version $env:VERSION" --json number --jq length
           if ($open -ne "0") { Write-Output "a pull request is already open"; exit 0 }
-          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
-          # wingetcreate branches from the newest commit of microsoft/winget-pkgs, which must
-          # already be in the fork. Upstream gets new commits every few minutes, so the fork
-          # is synced right before each try, and a try that loses that race is repeated. This
-          # runs as the fork's owner, with the token wingetcreate uses. A fork that does not
-          # exist yet is made fresh by wingetcreate, so there is nothing to sync.
+          # The pull request is made with git rather than wingetcreate submit. That command
+          # creates its branch in the fork from upstream's newest commit, which GitHub kept
+          # refusing even with the fork in sync. Here the branch starts from the fork's own
+          # master, synced first, so there is nothing to refuse. The clone is shallow and
+          # sparse: a few kilobytes of a very large repository.
           $env:GH_TOKEN = $env:WINGET_CREATE_GITHUB_TOKEN
           $owner = gh api user --jq .login
           gh api "repos/$owner/winget-pkgs" --silent 2>$null
-          $fork = $LASTEXITCODE -eq 0
-          for ($try = 1; $try -le 4; $try++) {
-            if ($try -gt 1) {
-              # A try that opened the pull request and then failed must not open a second one.
-              $open = gh pr list --repo microsoft/winget-pkgs --state open --search "Grano22.Aiculator version $env:VERSION" --json number --jq length
-              if ($open -ne "0") { Write-Output "the pull request is open"; exit 0 }
-            }
-            if ($fork) {
-              gh api -X POST "repos/$owner/winget-pkgs/merge-upstream" -f branch=master --jq .message
-              if ($LASTEXITCODE -ne 0) { Write-Output "::warning::could not sync $owner/winget-pkgs with upstream" }
-            }
-            .\wingetcreate.exe submit --no-open --prtitle "New version: Grano22.Aiculator version $env:VERSION" packaging\winget
-            if ($LASTEXITCODE -eq 0) { exit 0 }
-            Write-Output "try $try did not go through; syncing again"
-            Start-Sleep -Seconds (10 * $try)
+          if ($LASTEXITCODE -ne 0) {
+            gh repo fork microsoft/winget-pkgs --clone=false
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+            Start-Sleep -Seconds 30 # A new fork takes a moment to be ready.
           }
-          exit 1
+          gh api -X POST "repos/$owner/winget-pkgs/merge-upstream" -f branch=master --jq .message
+          if ($LASTEXITCODE -ne 0) { Write-Output "::warning::could not sync $owner/winget-pkgs with upstream; branching from the fork as it is" }
+          gh auth setup-git
+          git clone --quiet --depth 1 --filter=blob:none --sparse --branch master "https://github.com/$owner/winget-pkgs.git" wp
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          Set-Location wp
+          $dir = "manifests/g/Grano22/Aiculator/$env:VERSION"
+          git sparse-checkout set "manifests/g/Grano22/Aiculator"
+          $branch = "Grano22.Aiculator-$env:VERSION-$env:GITHUB_RUN_ID"
+          git switch --quiet -c $branch
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item ..\packaging\winget\*.yaml $dir
+          git -c user.name="$owner" -c user.email="$owner@users.noreply.github.com" add $dir
+          git -c user.name="$owner" -c user.email="$owner@users.noreply.github.com" commit --quiet -m "New version: Grano22.Aiculator version $env:VERSION"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          git push --quiet origin $branch
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $body = "Automated submission from the release of https://github.com/Grano22/aiculator/releases/tag/v$env:VERSION. The manifest was checked with winget validate."
+          gh pr create --repo microsoft/winget-pkgs --base master --head "${owner}:$branch" --title "New version: Grano22.Aiculator version $env:VERSION" --body $body
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
   aur:
     name: Arch User Repository

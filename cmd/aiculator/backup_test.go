@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -94,5 +98,88 @@ func TestWorkJoinAutoTier(t *testing.T) {
 	}
 	if _, _, err := p.runSplit("work", "join", "--tier", "4"); err == nil {
 		t.Error("tier 4 was accepted")
+	}
+}
+
+// The operator commands from end to end: usage and limits from a worker, estimates,
+// sessions, stopping and killing agents, and stopping every realm.
+func TestOperatorCommands(t *testing.T) {
+	p := newProject(t)
+	p.run("up")
+	p.run("task", "add", "--id", "op1", "--title", "first job", "--allow-empty")
+	p.run("task", "add", "--id", "op2", "--title", "second job", "--allow-empty")
+	name := strings.TrimSpace(p.run("work", "join", "--tier", "1", "--harness", "claude"))
+	out := p.run("work", "wait", "--agent", name, "--hold", "0s")
+	var g struct {
+		Task  struct{ ID string } `json:"task"`
+		Lease uint64              `json:"lease"`
+	}
+	if err := json.Unmarshal([]byte(out), &g); err != nil || g.Task.ID == "" {
+		t.Fatalf("wait: %v %s", err, out)
+	}
+	lease := fmt.Sprint(g.Lease)
+	p.run("work", "usage", "--agent", name, "--task", g.Task.ID, "--lease", lease, "--tokens", "1500", "--cost", "20")
+	p.run("work", "usage", "--agent", name, "--tokens", "100")
+	if out := p.run("work", "estimate", "--agent", name, "--task", g.Task.ID); !strings.Contains(out, `"method": "none"`) {
+		t.Errorf("work estimate: %s", out)
+	}
+	if out := p.run("task", "estimate", g.Task.ID); !strings.Contains(out, "nothing to go on") {
+		t.Errorf("task estimate: %s", out)
+	}
+	if out := p.run("task", "estimate", "--title", "a new job", "--json"); !strings.Contains(out, `"method"`) {
+		t.Errorf("estimate of a new task: %s", out)
+	}
+	if _, err := p.tryIn(p.root, "task", "estimate"); err == nil {
+		t.Error("estimate with nothing to estimate worked")
+	}
+	if out := p.run("work", "limit", "--agent", name, "--reason", "credit_exhausted", "--retry-after", "1h"); !strings.Contains(out, g.Task.ID) {
+		t.Errorf("limit did not hand back the task: %s", out)
+	}
+	if out := p.run("sessions"); !strings.Contains(out, "limited (credit_exhausted until") || !strings.Contains(out, "claude") {
+		t.Errorf("sessions: %s", out)
+	}
+	if out := p.run("sessions", "--json"); !strings.Contains(out, `"kind": "shell"`) {
+		t.Errorf("sessions json: %s", out)
+	}
+	if out := p.run("agents", "stop", "--all"); !strings.Contains(out, "stopped 1") {
+		t.Errorf("stop: %s", out)
+	}
+	if out := p.run("agents", "kill", "--all"); !strings.Contains(out, "killed 0") {
+		t.Errorf("kill: %s", out)
+	}
+	if out := p.run("agents", "stop", "--all", "--realms"); !strings.Contains(out, "stopped") {
+		t.Errorf("stop across realms: %s", out)
+	}
+	if _, err := p.tryIn(p.root, "agents", "stop"); err == nil {
+		t.Error("stop with no agents named worked")
+	}
+	if out := p.run("sessions", "forget", name); !strings.Contains(out, "removed 1") {
+		t.Errorf("forget: %s", out)
+	}
+	if out := p.run("sessions", "forget"); !strings.Contains(out, "removed 0") {
+		t.Errorf("forget gone: %s", out)
+	}
+	// Events from the start of the log: the stream runs until it is stopped, so give it a
+	// moment and then end it.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	ev := exec.CommandContext(ctx, p.bin, "events", "--since", "1")
+	ev.Dir = p.root
+	ev.Env = append(os.Environ(), "HOME="+p.home, "AICULATOR_REALMS="+filepath.Join(p.home, "realms"))
+	evOut, _ := ev.Output()
+	if !strings.Contains(string(evOut), `"seq":2`) {
+		t.Errorf("events --since 1: %.300s", evOut)
+	}
+	if _, err := p.tryIn(p.root, "realm", "stop"); err == nil {
+		t.Error("realm stop with nothing named worked")
+	}
+	if _, err := p.tryIn(p.root, "realm", "stop", "no-such-realm"); err == nil {
+		t.Error("stopping a realm that does not exist worked")
+	}
+	if out := p.run("down", "--all"); !strings.Contains(out, "stopped") {
+		t.Errorf("down --all: %s", out)
+	}
+	if out := p.run("down", "--all"); !strings.Contains(out, "not running") {
+		t.Errorf("down --all again: %s", out)
 	}
 }
