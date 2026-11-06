@@ -1,0 +1,50 @@
+aiculator  test  up 42s  READY  realm: demo
+ 1 overview   2 tasks   3 sessions   4 flow  [5 usage]
+
+Usage
+tokens 0   spent $0.00   budgeted $3.00
+
+By tier
+TIER            TASKS    TOKENS     SPENT    BUDGET
+1 standard          3         0     $0.00     $2.00
+2 advanced          1         0     $0.00     $0.00
+3 ultra             1         0     $0.00     $1.00
+
+Tightest budgets
+no budgeted task has spent anything yet
+
+By agent, since the server started
+AGENT                       TOKENS      COST   DONE   FAIL
+claude-opus                      0     $0.00      0      0
+claude-sonnet                    0     $0.00      0      0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+q quit  tab next  r live  p pause  ↑↓ scroll

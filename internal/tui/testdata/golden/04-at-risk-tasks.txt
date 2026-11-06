@@ -1,0 +1,50 @@
+aiculator  test  up 42s  READY  realm: demo
+ 1 overview  [2 tasks]  3 sessions   4 flow   5 usage 
+
+Tasks with work in progress or problems: 2   lease ttl 2m00s, progress ttl 10m00s
+HEALTH  STATE    TIER ID              OWNER           LEASE   PROG  TITLE                                             
+at risk running  1    auth-tokens     claude-sonnet     20s  8m20s  Validate session tokens                           
+ok      running  3    storage         claude-opus     2m00s  8m20s  Redesign the storage layer                        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+q quit  tab next  r live  p pause  ↑↓ scroll

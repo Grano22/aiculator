@@ -1128,7 +1128,8 @@ aiculator token [flags]
 Live terminal dashboard: flow, throughput, latency, jitter, probes, liveness and usage
 
 A live view of the swarm. Keys: 1-5 or tab switch views, arrows or j and k scroll,
-p pauses, q quits.
+r turns live mode on and off, p pauses, q quits. Live mode redraws four times a second, so
+a change shows as it happens; --live starts in it.
 
 Without a terminal, such as in a pipe, it prints one frame and exits.
 Rates reset when the server restarts. Task states and usage totals do not.
@@ -1144,9 +1145,10 @@ aiculator top [flags]
       --color               with --once: keep color even in a pipe
       --interval duration   how often to refresh (default 1s)
       --json                print the raw snapshot as JSON and exit
+      --live                start in live mode, redrawing four times a second; r toggles it
       --no-color            no color; NO_COLOR also works
       --once                print one frame and exit
-      --view string         with --once: overview, tasks, agents, flow or usage (default "overview")
+      --view string         with --once: overview, tasks, sessions, flow or usage (default "overview")
       --width int           with --once: width in columns
 ```
 

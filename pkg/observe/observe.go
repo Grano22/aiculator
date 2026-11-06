@@ -292,8 +292,10 @@ func (c *Collector) Read(now time.Time) Measures {
 		}
 		return &series{}
 	}
-	// Over a young server, a full-minute rate would read too low.
-	span := min(int64(now.Sub(c.started).Seconds())+1, 60)
+	// Over a young server, a full-minute rate would read too low, so a shorter span is scaled
+	// up. Never below 30 seconds, though: two grants in the first second are not 120 a
+	// minute, and showing that was more confusing than reading low for half a minute.
+	span := min(max(int64(now.Sub(c.started).Seconds())+1, 30), 60)
 	perMin := func(name string) float64 {
 		return float64(get(name).sum(sec, span)) * 60 / float64(span)
 	}
@@ -374,6 +376,28 @@ type AgentLive struct {
 	Failed    int64  `json:"failed"`
 }
 
+// TierLive is one tier's queue and the agents that can take it.
+type TierLive struct {
+	Tier    int `json:"tier"`
+	Ready   int `json:"ready"`
+	Working int `json:"working"` // Claimed or running.
+	Review  int `json:"review"`  // In review or merging.
+	Parked  int `json:"parked"`
+	Failed  int `json:"failed"`
+	Done    int `json:"done"`
+	// Agents at this tier that are connected, and how many of them are waiting.
+	Agents  int `json:"agents"`
+	Waiting int `json:"waiting"`
+}
+
+// Timeouts are the server's settings, so a dashboard can show a lease left against its length.
+type Timeouts struct {
+	LeaseMs        int64 `json:"lease_ms"`
+	ProgressMs     int64 `json:"progress_ms"`
+	PresenceMs     int64 `json:"presence_ms"`
+	RestartGraceMs int64 `json:"restart_grace_ms"`
+}
+
 // TierUsage is usage summed over one tier's tasks.
 type TierUsage struct {
 	Tier   int   `json:"tier"`
@@ -436,6 +460,8 @@ type Snapshot struct {
 	Truncated  int              `json:"tasks_not_shown"`
 	Agents     []AgentLive      `json:"agents"`
 	Sessions   []SessionLive    `json:"sessions"`
+	Tiers      []TierLive       `json:"tiers"`
+	Timeouts   Timeouts         `json:"timeouts"`
 	Usage      Usage            `json:"usage"`
 	Planning   Planning         `json:"planning"`
 	Probes     []Probe          `json:"probes"`

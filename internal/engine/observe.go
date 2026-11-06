@@ -83,6 +83,15 @@ func (e *Engine) Observe(ctx context.Context) (observe.Snapshot, error) {
 			Planning: observe.Planning{Epoch: e.planning.Epoch, Active: e.planning.Active, Phase: e.planning.Phase,
 				Lost: !e.planning.LostAt.IsZero() && now.Sub(e.planning.LostAt) < e.cfg.PlanLostGrace},
 		}
+		s.Timeouts = observe.Timeouts{LeaseMs: e.cfg.LeaseTTL.Milliseconds(), ProgressMs: e.cfg.ProgressTTL.Milliseconds(),
+			PresenceMs: e.cfg.PresenceTTL.Milliseconds(), RestartGraceMs: e.cfg.RestartGrace.Milliseconds()}
+		byTier := map[int]*observe.TierLive{}
+		tierOf := func(n int) *observe.TierLive {
+			if byTier[n] == nil {
+				byTier[n] = &observe.TierLive{Tier: n}
+			}
+			return byTier[n]
+		}
 		tiers := map[int]*observe.TierUsage{}
 		var live []observe.TaskLive
 		var tight []observe.BudgetLine
@@ -90,6 +99,21 @@ func (e *Engine) Observe(ctx context.Context) (observe.Snapshot, error) {
 		for _, ent := range e.tasks {
 			t := ent.task
 			s.States[string(t.State)]++
+			tl := tierOf(t.Tier)
+			switch t.State {
+			case core.Ready:
+				tl.Ready++
+			case core.Claimed, core.Running:
+				tl.Working++
+			case core.Review, core.Merging:
+				tl.Review++
+			case core.Parked:
+				tl.Parked++
+			case core.Failed:
+				tl.Failed++
+			case core.Done:
+				tl.Done++
+			}
 			tu := tiers[t.Tier]
 			if tu == nil {
 				tu = &observe.TierUsage{Tier: t.Tier}
@@ -143,6 +167,7 @@ func (e *Engine) Observe(ctx context.Context) (observe.Snapshot, error) {
 			for _, w := range ws {
 				waiting[w.agent.ID] = true
 				s.Waiting++
+				tierOf(w.agent.Tier).Waiting++
 			}
 		}
 		for id, a := range m.Agents {
@@ -160,12 +185,19 @@ func (e *Engine) Observe(ctx context.Context) (observe.Snapshot, error) {
 			case ago > e.cfg.PresenceTTL:
 				state = "gone"
 			}
+			if state != "gone" && a.Tier > 0 {
+				tierOf(a.Tier).Agents++
+			}
 			s.Agents = append(s.Agents, observe.AgentLive{
 				ID: id, Tier: a.Tier, State: state, Task: working[id], SeenAgoMs: ago.Milliseconds(),
 				Tokens: a.Tokens, Cost: a.Cost, Done: a.Done, Failed: a.Failed,
 			})
 		}
 		slices.SortFunc(s.Agents, func(a, b observe.AgentLive) int { return strings.Compare(a.ID, b.ID) })
+		for _, tl := range byTier {
+			s.Tiers = append(s.Tiers, *tl)
+		}
+		slices.SortFunc(s.Tiers, func(a, b observe.TierLive) int { return cmp.Compare(a.Tier, b.Tier) })
 		return s, nil
 	})
 }

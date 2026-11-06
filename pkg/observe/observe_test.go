@@ -32,6 +32,15 @@ func TestRatesAndHistory(t *testing.T) {
 	}
 }
 
+// A server a second old must not turn two events into a rate of 120 a minute.
+func TestRatesOfAYoungServerAreNotBlownUp(t *testing.T) {
+	c := New(t0)
+	c.Count(SeriesGrants, t0, 2)
+	if got := c.Read(t0.Add(time.Second)).Throughput.GrantsPerMin; got != 4 {
+		t.Fatalf("rate after one second: %v, want 4 (2 over 30 seconds)", got)
+	}
+}
+
 func TestRingDoesNotConfuseOldBucketsWithNew(t *testing.T) {
 	c := New(t0)
 	c.Count(SeriesDone, t0, 5)

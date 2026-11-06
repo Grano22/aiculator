@@ -1,0 +1,50 @@
+aiculator  test  up 42s  READY  realm: demo
+ 1 overview   2 tasks   3 sessions  [4 flow]  5 usage 
+
+Tasks by state
+draft 0 → ready 0 → claimed 0 → running 0 → review 0 → merging 0 → done 0
+failed 0  parked 0  canceled 0  agents waiting 0
+
+Moves between states, since the server started
+none yet
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+q quit  tab next  r live  p pause  ↑↓ scroll

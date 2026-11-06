@@ -1,0 +1,20 @@
+aiculator  test  up 42s  READY  realm: demo  PAUSED
+ 1 overview  [2 tasks]  3 sessions   4 flow   5 usage 
+
+Tasks with work in progress or problems: 1   lease ttl 2m00s, progress ttl 10m00s
+HEALTH  STATE    TIER ID              OWNER           LEASE   PROG  TITLE                         
+-       parked   3    storage                             -      -  Redesign the storage layer [… 
+
+
+
+
+
+
+
+
+
+
+
+
+
+q quit  tab next  r live  p pause  ↑↓ scroll

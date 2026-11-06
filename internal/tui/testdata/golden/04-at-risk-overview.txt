@@ -1,0 +1,50 @@
+aiculator  test  up 42s  READY  realm: demo
+[1 overview]  2 tasks   3 sessions   4 flow   5 usage 
+
+Flow
+draft 0 → ready 3 → claimed 0 → running 2 → review 0 → merging 0 → done 0
+failed 0  parked 0  canceled 0  agents waiting 0
+
+Tiers
+TIER           READY  WORKING  REVIEW  PARKED  FAILED   DONE  AGENTS  WAITING
+1 standard         2        1       0       0       0      0       1        0
+!2 advanced        1        0       0       0       0      0       0        0  no agent at this tier
+3 ultra            0        1       0       0       0      0       1        0
+
+Throughput
+done 0.0/min   grants 0.0/min   failed 0.0/min   commits 0.0/s   api 0.0/s
+since start: 0 done, 2 grants, 0 failures, 0 zombies caught
+commits 
+done    
+
+Latency
+               count       p50       p90       p99       max    jitter
+queue wait         -
+commit             -
+api call           -
+task cycle         -
+
+Probes
+writer ok 0µs   store ok 0µs   event_log ok 0µs
+
+Usage
+tokens 69.0k   spent $2.35   budgeted $3.00   1 over budget
+
+Tasks with work in progress or problems: 2   lease ttl 2m00s, progress ttl 10m00s
+HEALTH  STATE    TIER ID              OWNER           LEASE   PROG  TITLE                                             
+at risk running  1    auth-tokens     claude-sonnet     20s  8m20s  Validate session tokens                           
+ok      running  3    storage         claude-opus     2m00s  8m20s  Redesign the storage layer                        
+
+
+
+
+
+
+
+
+
+
+
+
+
+q quit  tab next  r live  p pause  ↑↓ scroll

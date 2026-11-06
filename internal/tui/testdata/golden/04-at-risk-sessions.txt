@@ -1,0 +1,50 @@
+aiculator  test  up 42s  READY  realm: demo
+ 1 overview   2 tasks  [3 sessions]  4 flow   5 usage 
+
+Sessions: 3 connected
+AGENT             TIER KIND     HARNESS      STATE    TASK             SEEN     UP  HOLD  WHERE                       
+claude-opus       3    mcp      claude-code  working  storage            1s  1m00s   25s  box, pid 4102, in claude, … 
+claude-sonnet     1    acp      claude-code  working  auth-tokens        1s  1m00s   25s  box, pid 4101, in aiculato… 
+codex             1    mcp-http codex-mcp-c… idle                        1s  1m00s   25s                              
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+q quit  tab next  r live  p pause  ↑↓ scroll

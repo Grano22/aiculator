@@ -1,0 +1,50 @@
+[1maiculator[0m  test  up 42s  [32mREADY[0m  [36mrealm: demo[0m
+[1m[1 overview][0m [2m 2 tasks [0m [2m 3 sessions [0m [2m 4 flow [0m [2m 5 usage [0m
+
+[1mFlow[0m
+draft 0 → ready 4 → claimed 0 → running 0 → review 0 → merging 0 → done 0
+[33mfailed 0  parked 1  canceled 0  agents waiting 0[0m
+
+[1mTiers[0m
+[2mTIER           READY  WORKING  REVIEW  PARKED  FAILED   DONE  AGENTS  WAITING[0m
+1 standard         3        0       0       0       0      0       2        0
+[33m!2 advanced        1        0       0       0       0      0       0        0  no agent at this tier[0m
+3 ultra            0        0       0       1       0      0       1        0
+
+[1mThroughput[0m
+done 0.0/min   grants 0.0/min   failed 0.0/min   commits 0.0/s   api 0.0/s
+since start: 0 done, 3 grants, 1 failures, 0 zombies caught
+commits 
+done    
+
+[1mLatency[0m
+[2m               count       p50       p90       p99       max    jitter[0m
+queue wait         -
+commit             -
+api call           -
+task cycle         -
+
+[1mProbes[0m
+writer [32mok[0m 0µs   store [32mok[0m 0µs   event_log [32mok[0m 0µs
+
+[1mUsage[0m
+tokens 69.0k   spent $2.35   budgeted $3.00   [31m1 over budget[0m
+
+[1mTasks with work in progress or problems: 1[2m   lease ttl 2m00s, progress ttl 10m00s[0m[0m
+[2mHEALTH  STATE    TIER ID              OWNER           LEASE   PROG  TITLE                                             [0m
+[2m-      [0m parked   3    storage                             -      -  Redesign the storage layer [budget_exhausted]     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[2mq quit  tab next  r live  p pause  ↑↓ scroll[0m

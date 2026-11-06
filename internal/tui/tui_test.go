@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Grano22/aiculator/pkg/observe"
 )
@@ -263,5 +264,19 @@ func TestFleetTextCannotControlTheTerminal(t *testing.T) {
 func TestFleetWithNoRealms(t *testing.T) {
 	if got := RenderFleet(nil, Options{Plain: true}); !strings.Contains(got, "aiculator join") {
 		t.Errorf("%s", got)
+	}
+}
+
+func TestLiveKeyTogglesAndUnpauses(t *testing.T) {
+	o := Options{Paused: true}
+	if handleKey("r", &o) || !o.Live || o.Paused {
+		t.Fatalf("after r: %+v", o)
+	}
+	handleKey("r", &o)
+	if o.Live {
+		t.Fatalf("r again: %+v", o)
+	}
+	if rate(true, 2*time.Second) != LiveInterval || rate(false, 2*time.Second) != 2*time.Second {
+		t.Error("live mode does not change the refresh")
 	}
 }

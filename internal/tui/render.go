@@ -23,7 +23,20 @@ const (
 	Usage
 )
 
-var viewNames = []string{"1 overview", "2 tasks", "3 agents", "4 flow", "5 usage"}
+var viewNames = []string{"1 overview", "2 tasks", "3 sessions", "4 flow", "5 usage"}
+
+// TierName is what each tier is for, as aiculator join describes them.
+func TierName(t int) string {
+	switch t {
+	case 1:
+		return "standard"
+	case 2:
+		return "advanced"
+	case 3:
+		return "ultra"
+	}
+	return fmt.Sprintf("tier %d", t)
+}
 
 // Options controls one frame.
 type Options struct {
@@ -32,8 +45,10 @@ type Options struct {
 	Scroll        int
 	Color         bool
 	Paused        bool
-	Stale         string // Set when the server stopped answering.
-	Plain         bool   // A one-off print: no padding to the screen, no key help.
+	// Live redraws as soon as anything changes, instead of at the usual interval.
+	Live  bool
+	Stale string // Set when the server stopped answering.
+	Plain bool   // A one-off print: no padding to the screen, no key help.
 }
 
 const (
@@ -86,9 +101,14 @@ func cut(s string, w int) string {
 	return string(r[:w-1]) + "…"
 }
 
-// col pads or cuts to an exact width.
+// col pads or cuts to an exact width. A value that has to be cut keeps a space after it,
+// so it never runs into the next column.
 func col(s string, w int) string {
-	s = cut(Clean(s), w)
+	s = Clean(s)
+	if len([]rune(s)) > w && w > 1 {
+		s = cut(s, w-1) + " "
+	}
+	s = cut(s, w)
 	if n := w - len([]rune(s)); n > 0 {
 		s += strings.Repeat(" ", n)
 	}
@@ -201,6 +221,11 @@ func Render(s observe.Snapshot, o Options) string {
 	default:
 		f.overview(s)
 	}
+	// Every line is cut to the width here, not only when drawn, so that a frame printed with
+	// --once does not wrap in a narrow terminal either.
+	for i, l := range f.lines {
+		f.lines[i] = fitLine(l, o.Width)
+	}
 	if o.Plain {
 		return strings.TrimRight(strings.Join(f.lines, "\n"), "\n")
 	}
@@ -211,7 +236,7 @@ func Render(s observe.Snapshot, o Options) string {
 	for len(body) < o.Height-1 {
 		body = append(body, "")
 	}
-	help := "q quit  tab next  p pause  ↑↓ scroll"
+	help := "q quit  tab next  r live  p pause  ↑↓ scroll"
 	return strings.Join(append(body, f.paint(dim, cut(help, o.Width))), "\n")
 }
 
@@ -230,8 +255,11 @@ func (f *frame) header(s observe.Snapshot) {
 	case s.Planning.Lost:
 		parts = append(parts, f.paint(red, "planner lost"))
 	}
-	if f.o.Paused {
+	switch {
+	case f.o.Paused:
 		parts = append(parts, f.paint(yellow, "PAUSED"))
+	case f.o.Live:
+		parts = append(parts, f.paint(green, "LIVE"))
 	}
 	if f.o.Stale != "" {
 		parts = append(parts, f.paint(red, "STALE: "+cut(Clean(f.o.Stale), 40)))
@@ -274,6 +302,8 @@ func (f *frame) overview(s observe.Snapshot) {
 	f.section("Flow")
 	f.stateLine(s)
 	f.add("")
+	f.tiers(s)
+	f.add("")
 	f.throughput(s)
 	f.add("")
 	f.latency(s)
@@ -285,6 +315,29 @@ func (f *frame) overview(s observe.Snapshot) {
 	left := f.o.Height - len(f.lines) - 2
 	if left > 2 {
 		f.tasks(s, left, 0)
+	}
+}
+
+// tiers shows each tier's queue next to the agents that can take it, so that work nobody
+// can pick up stands out.
+func (f *frame) tiers(s observe.Snapshot) {
+	f.section("Tiers")
+	if len(s.Tiers) == 0 {
+		f.add(f.paint(dim, "no tasks yet"))
+		return
+	}
+	f.add(f.paint(dim, col("TIER", 13)+right("READY", 7)+right("WORKING", 9)+right("REVIEW", 8)+right("PARKED", 8)+right("FAILED", 8)+right("DONE", 7)+right("AGENTS", 8)+right("WAITING", 9)))
+	for _, t := range s.Tiers {
+		name := fmt.Sprintf("%d %s", t.Tier, TierName(t.Tier))
+		if t.Ready > 0 && t.Agents == 0 {
+			name = "!" + name // Still seen when the note at the end is cut off.
+		}
+		line := col(name, 13) + right(fmt.Sprint(t.Ready), 7) + right(fmt.Sprint(t.Working), 9) + right(fmt.Sprint(t.Review), 8) +
+			right(fmt.Sprint(t.Parked), 8) + right(fmt.Sprint(t.Failed), 8) + right(fmt.Sprint(t.Done), 7) + right(fmt.Sprint(t.Agents), 8) + right(fmt.Sprint(t.Waiting), 9)
+		if t.Ready > 0 && t.Agents == 0 {
+			line = f.paint(yellow, line+"  no agent at this tier")
+		}
+		f.add(line)
 	}
 }
 
@@ -369,9 +422,13 @@ func (f *frame) healthWord(h string) string {
 }
 
 func (f *frame) tasks(s observe.Snapshot, room, scroll int) {
-	f.section(fmt.Sprintf("Tasks with work in progress or problems: %d", len(s.Tasks)+s.Truncated))
-	title := max(f.o.Width-68, 8)
-	f.add(f.paint(dim, col("HEALTH", 8)+col("STATE", 9)+col("T", 2)+col("ID", 16)+col("OWNER", 14)+right("LEASE", 7)+right("PROG", 7)+"  "+col("TITLE", title)))
+	head := fmt.Sprintf("Tasks with work in progress or problems: %d", len(s.Tasks)+s.Truncated)
+	if s.Timeouts.LeaseMs > 0 {
+		head += f.paint(dim, fmt.Sprintf("   lease ttl %s, progress ttl %s", Millis(s.Timeouts.LeaseMs), Millis(s.Timeouts.ProgressMs)))
+	}
+	f.section(head)
+	title := max(f.o.Width-70, 8)
+	f.add(f.paint(dim, col("HEALTH", 8)+col("STATE", 9)+col("TIER", 5)+col("ID", 16)+col("OWNER", 14)+right("LEASE", 7)+right("PROG", 7)+"  "+col("TITLE", title)))
 	if len(s.Tasks) == 0 {
 		f.add(f.paint(dim, "none"))
 		return
@@ -383,7 +440,7 @@ func (f *frame) tasks(s observe.Snapshot, room, scroll int) {
 			f.add(f.paint(dim, fmt.Sprintf("… %d more", len(rows)-i+s.Truncated)))
 			return
 		}
-		f.add(f.healthWord(t.Health) + " " + col(t.State, 9) + col(fmt.Sprint(t.Tier), 2) + col(t.ID, 16) + col(t.Owner, 14) + right(opt(t.LeaseRemainingMs), 7) + right(opt(t.ProgressRemaining), 7) + "  " + col(rowTitle(t), title))
+		f.add(f.healthWord(t.Health) + " " + col(t.State, 9) + col(fmt.Sprint(t.Tier), 5) + col(t.ID, 16) + col(t.Owner, 14) + right(opt(t.LeaseRemainingMs), 7) + right(opt(t.ProgressRemaining), 7) + "  " + col(rowTitle(t), title))
 	}
 	if s.Truncated > 0 {
 		f.add(f.paint(dim, fmt.Sprintf("… %d more not sent by the server", s.Truncated)))
@@ -398,12 +455,79 @@ func rowTitle(t observe.TaskLive) string {
 }
 
 func (f *frame) agents(s observe.Snapshot, room, scroll int) {
-	f.section(fmt.Sprintf("Agents: %d", len(s.Agents)))
-	f.add(f.paint(dim, col("AGENT", 20)+col("T", 2)+col("STATE", 9)+col("TASK", 16)+right("SEEN", 8)+right("TOKENS", 8)+right("COST", 9)+right("DONE", 6)+right("FAIL", 6)))
-	if len(s.Agents) == 0 {
+	if len(s.Sessions) == 0 && len(s.Agents) > 0 {
+		f.agentRows(s, room, scroll) // An older server, without sessions.
+		return
+	}
+	gone := 0
+	for _, x := range s.Sessions {
+		if x.State == "gone" {
+			gone++
+		}
+	}
+	head := fmt.Sprintf("Sessions: %d connected", len(s.Sessions)-gone)
+	if gone > 0 {
+		head += fmt.Sprintf(", %d gone", gone)
+	}
+	f.section(head)
+	where := max(f.o.Width-92, 10)
+	f.add(f.paint(dim, col("AGENT", 18)+col("TIER", 5)+col("KIND", 9)+col("HARNESS", 13)+col("STATE", 9)+col("TASK", 14)+right("SEEN", 7)+right("UP", 7)+right("HOLD", 6)+"  "+col("WHERE", where)))
+	if len(s.Sessions) == 0 {
 		f.add(f.paint(dim, "none yet. Join with: aiculator work join, or see aiculator join"))
 		return
 	}
+	rows := s.Sessions[min(max(scroll, 0), len(s.Sessions)-1):]
+	room -= 2
+	for i, x := range rows {
+		if i >= room-1 && len(rows) > room {
+			f.add(f.paint(dim, fmt.Sprintf("… %d more", len(rows)-i)))
+			return
+		}
+		state := col(x.State, 9)
+		switch x.State {
+		case "working":
+			state = f.paint(green, state)
+		case "limited", "stopping":
+			state = f.paint(yellow, state)
+		case "gone":
+			state = f.paint(dim, state)
+		}
+		place := []string{}
+		if x.Host != "" {
+			place = append(place, x.Host)
+		}
+		if x.PID > 0 {
+			place = append(place, fmt.Sprintf("pid %d", x.PID))
+		}
+		if x.Parent != "" {
+			place = append(place, "in "+x.Parent)
+		}
+		if x.CWD != "" {
+			place = append(place, x.CWD)
+		}
+		if x.Limit != "" {
+			lim := x.Limit
+			if !x.LimitUntil.IsZero() {
+				lim += " until " + x.LimitUntil.Local().Format("15:04")
+			}
+			place = append([]string{lim}, place...)
+		}
+		hold := "-"
+		if x.HoldMs > 0 {
+			hold = Millis(x.HoldMs)
+		}
+		harness := x.Harness
+		if harness == "" {
+			harness = x.Client
+		}
+		f.add(col(x.Agent, 18) + col(fmt.Sprint(x.Tier), 5) + col(x.Kind, 9) + col(harness, 13) + state + col(x.Task, 14) +
+			right(Millis(x.SeenAgoMs), 7) + right(Millis(x.ConnectedMs), 7) + right(hold, 6) + "  " + col(strings.Join(place, ", "), where))
+	}
+}
+
+func (f *frame) agentRows(s observe.Snapshot, room, scroll int) {
+	f.section(fmt.Sprintf("Agents: %d", len(s.Agents)))
+	f.add(f.paint(dim, col("AGENT", 20)+col("TIER", 5)+col("STATE", 9)+col("TASK", 16)+right("SEEN", 8)+right("TOKENS", 8)+right("COST", 9)+right("DONE", 6)+right("FAIL", 6)))
 	rows := s.Agents[min(max(scroll, 0), len(s.Agents)-1):]
 	room -= 2
 	for i, a := range rows {
@@ -411,14 +535,7 @@ func (f *frame) agents(s observe.Snapshot, room, scroll int) {
 			f.add(f.paint(dim, fmt.Sprintf("… %d more", len(rows)-i)))
 			return
 		}
-		state := col(a.State, 9)
-		switch a.State {
-		case "working":
-			state = f.paint(green, state)
-		case "gone":
-			state = f.paint(dim, state)
-		}
-		f.add(col(a.ID, 20) + col(fmt.Sprint(a.Tier), 2) + state + col(a.Task, 16) + right(Millis(a.SeenAgoMs), 8) + right(Count(a.Tokens), 8) + right(Money(a.Cost), 9) + right(Count(a.Done), 6) + right(Count(a.Failed), 6))
+		f.add(col(a.ID, 20) + col(fmt.Sprint(a.Tier), 5) + col(a.State, 9) + col(a.Task, 16) + right(Millis(a.SeenAgoMs), 8) + right(Count(a.Tokens), 8) + right(Money(a.Cost), 9) + right(Count(a.Done), 6) + right(Count(a.Failed), 6))
 	}
 }
 
@@ -446,9 +563,9 @@ func (f *frame) usage(s observe.Snapshot) {
 	f.usageLine(s)
 	f.add("")
 	f.section("By tier")
-	f.add(f.paint(dim, col("TIER", 6)+right("TASKS", 8)+right("TOKENS", 10)+right("SPENT", 10)+right("BUDGET", 10)))
+	f.add(f.paint(dim, col("TIER", 13)+right("TASKS", 8)+right("TOKENS", 10)+right("SPENT", 10)+right("BUDGET", 10)))
 	for _, t := range s.Usage.ByTier {
-		f.add(col(fmt.Sprint(t.Tier), 6) + right(Count(int64(t.Tasks)), 8) + right(Count(t.Tokens), 10) + right(Money(t.Spent), 10) + right(Money(t.Budget), 10))
+		f.add(col(fmt.Sprintf("%d %s", t.Tier, TierName(t.Tier)), 13) + right(Count(int64(t.Tasks)), 8) + right(Count(t.Tokens), 10) + right(Money(t.Spent), 10) + right(Money(t.Budget), 10))
 	}
 	f.add("")
 	f.section("Tightest budgets")

@@ -19,6 +19,18 @@ type Fetch func(ctx context.Context) (observe.Snapshot, error)
 
 var ansiSeq = regexp.MustCompile("\x1b\\[[0-9;]*m")
 
+// fitLine is fit for Render: a line already short enough comes back unchanged, so a frame
+// without color stays plain text.
+func fitLine(line string, width int) string {
+	if len([]rune(ansiSeq.ReplaceAllString(line, ""))) <= width {
+		return line
+	}
+	if !strings.Contains(line, "\x1b[") {
+		return string([]rune(line)[:width])
+	}
+	return fit(line, width)
+}
+
 // fit cuts a painted line to the terminal width, counting only visible characters, so a
 // long line cannot wrap and throw off the whole screen.
 func fit(line string, width int) string {
@@ -59,9 +71,9 @@ func draw(out io.Writer, text string, width int) {
 }
 
 // Run shows the dashboard until the user quits or ctx ends. It needs a real terminal.
-func Run(ctx context.Context, fetch Fetch, interval time.Duration, color bool) error {
+func Run(ctx context.Context, fetch Fetch, interval time.Duration, color, live bool) error {
 	var snap observe.Snapshot
-	return loop(ctx, interval, color, func(c context.Context) error {
+	return loop(ctx, interval, color, live, func(c context.Context) error {
 		got, err := fetch(c)
 		if err == nil {
 			snap = got
@@ -73,7 +85,7 @@ func Run(ctx context.Context, fetch Fetch, interval time.Duration, color bool) e
 // RunFleet shows every realm until the user quits or ctx ends.
 func RunFleet(ctx context.Context, fetch FleetFetch, interval time.Duration, color bool) error {
 	var rows []FleetRow
-	return loop(ctx, interval, color, func(c context.Context) error {
+	return loop(ctx, interval, color, false, func(c context.Context) error {
 		got, err := fetch(c)
 		if err == nil {
 			rows = got
@@ -82,7 +94,7 @@ func RunFleet(ctx context.Context, fetch FleetFetch, interval time.Duration, col
 	}, func(o Options) string { return RenderFleet(rows, o) })
 }
 
-func loop(ctx context.Context, interval time.Duration, color bool, fetch func(context.Context) error, render func(Options) string) error {
+func loop(ctx context.Context, interval time.Duration, color, live bool, fetch func(context.Context) error, render func(Options) string) error {
 	fd := int(os.Stdin.Fd())
 	old, err := term.MakeRaw(fd)
 	if err != nil {
@@ -97,7 +109,7 @@ func loop(ctx context.Context, interval time.Duration, color bool, fetch func(co
 	keys := make(chan string, 16)
 	go readKeys(os.Stdin, keys)
 
-	o := Options{Color: color}
+	o := Options{Color: color, Live: live}
 	refresh := func() {
 		c, cancel := context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
@@ -113,7 +125,7 @@ func loop(ctx context.Context, interval time.Duration, color bool, fetch func(co
 	}
 	refresh()
 	paint()
-	tick := time.NewTicker(interval)
+	tick := time.NewTicker(rate(o.Live, interval))
 	defer tick.Stop()
 	for {
 		select {
@@ -128,12 +140,30 @@ func loop(ctx context.Context, interval time.Duration, color bool, fetch func(co
 			if !ok {
 				return nil
 			}
+			wasLive := o.Live
 			if handleKey(k, &o) {
 				return nil
+			}
+			if o.Live != wasLive {
+				tick.Reset(rate(o.Live, interval))
+				if o.Live {
+					refresh()
+				}
 			}
 			paint()
 		}
 	}
+}
+
+// LiveInterval is how often live mode redraws: soon enough to look instant, rarely enough
+// not to load the server.
+const LiveInterval = 250 * time.Millisecond
+
+func rate(live bool, normal time.Duration) time.Duration {
+	if live {
+		return LiveInterval
+	}
+	return normal
 }
 
 // ScreenSize falls back to a usable size. Some terminals report 0x0 with no error, which
@@ -163,6 +193,12 @@ func handleKey(k string, o *Options) (quit bool) {
 		o.Scroll = max(o.Scroll-1, 0)
 	case "p", " ":
 		o.Paused = !o.Paused
+	case "r", "R":
+		// One key for live mode: redraws four times a second, and unpauses.
+		o.Live = !o.Live
+		if o.Live {
+			o.Paused = false
+		}
 	}
 	return false
 }

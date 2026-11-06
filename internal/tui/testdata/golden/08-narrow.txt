@@ -1,0 +1,30 @@
+aiculator  test  up 42s  READY  realm: demo
+[1 overview]  2 tasks   3 sessions   4 flow   5 usage 
+
+Flow
+draft 0 → ready 4 → claimed 0 → running 0 → review 0 → mergi
+failed 0  parked 1  canceled 0  agents waiting 0
+
+Tiers
+TIER           READY  WORKING  REVIEW  PARKED  FAILED   DONE
+1 standard         3        0       0       0       0      0
+!2 advanced        1        0       0       0       0      0
+3 ultra            0        0       0       1       0      0
+
+Throughput
+done 0.0/min   grants 0.0/min   failed 0.0/min   commits 0.0
+since start: 0 done, 3 grants, 1 failures, 0 zombies caught
+commits 
+done    
+
+Latency
+               count       p50       p90       p99       max
+queue wait         -
+commit             -
+api call           -
+task cycle         -
+
+Probes
+writer ok 0µs   store ok 0µs   event_log ok 0µs
+
+q quit  tab next  r live  p pause  ↑↓ scroll

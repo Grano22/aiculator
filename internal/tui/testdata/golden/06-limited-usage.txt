@@ -1,0 +1,50 @@
+aiculator  test  up 42s  READY  realm: demo
+ 1 overview   2 tasks   3 sessions   4 flow  [5 usage]
+
+Usage
+tokens 69.0k   spent $2.35   budgeted $3.00   1 over budget
+
+By tier
+TIER            TASKS    TOKENS     SPENT    BUDGET
+1 standard          3     48.0k     $1.25     $2.00
+2 advanced          1         0     $0.00     $0.00
+3 ultra             1     21.0k     $1.10     $1.00
+
+Tightest budgets
+storage         ████████████████████     $1.10 of $1.00  parked
+
+By agent, since the server started
+AGENT                       TOKENS      COST   DONE   FAIL
+claude-opus                  21.0k     $1.10      0      1
+claude-sonnet                48.0k     $1.25      0      0
+codex                            0     $0.00      0      0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+q quit  tab next  r live  p pause  ↑↓ scroll

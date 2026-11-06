@@ -28,14 +28,15 @@ func topCmd() *cobra.Command {
 		forceColor   bool
 		width        int
 		viewName     string
-		all          bool
+		all, live    bool
 	)
 	cmd := &cobra.Command{
 		Use:     "top",
 		Aliases: []string{"dash", "dashboard"},
 		Short:   "Live terminal dashboard: flow, throughput, latency, jitter, probes, liveness and usage",
 		Long: `A live view of the swarm. Keys: 1-5 or tab switch views, arrows or j and k scroll,
-p pauses, q quits.
+r turns live mode on and off, p pauses, q quits. Live mode redraws four times a second, so
+a change shows as it happens; --live starts in it.
 
 Without a terminal, such as in a pipe, it prints one frame and exits.
 Rates reset when the server restarts. Task states and usage totals do not.`,
@@ -52,10 +53,10 @@ Rates reset when the server restarts. Task states and usage totals do not.`,
 				err := c.Get(ctx, "/v1/observe", &s)
 				return s, err
 			}
-			views := map[string]tui.View{"overview": tui.Overview, "tasks": tui.Tasks, "agents": tui.Agents, "flow": tui.Flow, "usage": tui.Usage}
+			views := map[string]tui.View{"overview": tui.Overview, "tasks": tui.Tasks, "sessions": tui.Agents, "agents": tui.Agents, "flow": tui.Flow, "usage": tui.Usage}
 			view, ok := views[viewName]
 			if !ok {
-				return fmt.Errorf("unknown view %q: use overview, tasks, agents, flow or usage", viewName)
+				return fmt.Errorf("unknown view %q: use overview, tasks, sessions, flow or usage", viewName)
 			}
 			if asJSON {
 				s, err := fetch(cmd.Context())
@@ -84,7 +85,7 @@ Rates reset when the server restarts. Task states and usage totals do not.`,
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
-			return tui.Run(ctx, fetch, interval, color)
+			return tui.Run(ctx, fetch, interval, color, live)
 		},
 	}
 	f := cmd.Flags()
@@ -95,7 +96,8 @@ Rates reset when the server restarts. Task states and usage totals do not.`,
 	f.BoolVar(&noColor, "no-color", false, "no color; NO_COLOR also works")
 	f.BoolVar(&forceColor, "color", false, "with --once: keep color even in a pipe")
 	f.IntVar(&width, "width", 0, "with --once: width in columns")
-	f.StringVar(&viewName, "view", "overview", "with --once: overview, tasks, agents, flow or usage")
+	f.StringVar(&viewName, "view", "overview", "with --once: overview, tasks, sessions, flow or usage")
+	f.BoolVar(&live, "live", false, "start in live mode, redrawing four times a second; r toggles it")
 	return cmd
 }
 
