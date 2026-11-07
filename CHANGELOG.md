@@ -6,6 +6,8 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-07
+
 ### Added
 
 - **`aiculator work next` and the `swarm-work` skill (skills v2):** the waiting moves from the model to a helper process, so the model runs one command per task instead of a wait call every half minute.
