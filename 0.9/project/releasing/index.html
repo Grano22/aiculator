@@ -1933,8 +1933,8 @@
 <tbody>
 <tr>
 <td>Binary</td>
-<td>30 MiB</td>
-<td>24.6 to 27.7 MiB</td>
+<td>32 MiB</td>
+<td>26.3 to 30.1 MiB</td>
 </tr>
 <tr>
 <td>Archive</td>
@@ -1943,7 +1943,7 @@
 </tr>
 </tbody>
 </table>
-<p>The template engine accounts for about 5.4 MiB of the binary, because real Jinja2 brings text-handling and JSON libraries with it. To raise a limit, change it in the script on purpose and say why in the commit.</p>
+<p>The template engine accounts for about 5.4 MiB of the binary, because real Jinja2 brings text-handling and JSON libraries with it. To raise a limit, change it in the script on purpose and say why in the commit. The binary limit went from 30 to 32 MiB in 0.9.1, when shared memory and the work helper took the Windows binary to 30.1 MiB.</p>
 <h2 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
