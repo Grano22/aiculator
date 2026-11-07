@@ -4,6 +4,7 @@
 # They are measured on Linux, where CI runs. internal/sandbox covers different code on each
 # system, seatbelt on macOS and bubblewrap on Linux, so it reads higher on a Mac.
 cmd/aiculator                76
+internal/agentd              79
 internal/api                 81
 internal/auth                72
 internal/client              79

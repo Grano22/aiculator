@@ -1415,8 +1415,8 @@ func exists(p string) bool {
 
 func TestInitScopedAsksAndDoesOnlyWhatWasChosen(t *testing.T) {
 	p := newProject(t)
-	// Harness, tier and start come from flags. Answers: skills yes, MCP yes.
-	out, err := p.init("y\ny\n", "--scoped", "--no-start", "--harness", "claude", "--tier", "2")
+	// Harness, tier and start come from flags. Answers: skills yes, MCP yes, command timeout no.
+	out, err := p.init("y\ny\nn\n", "--scoped", "--no-start", "--harness", "claude", "--tier", "2")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
@@ -1425,6 +1425,9 @@ func TestInitScopedAsksAndDoesOnlyWhatWasChosen(t *testing.T) {
 	}
 	if exists(filepath.Join(p.root, "opencode.json")) {
 		t.Errorf("a harness that was not chosen was set up:\n%s", out)
+	}
+	if exists(filepath.Join(p.root, ".claude/settings.local.json")) {
+		t.Errorf("the command timeout was raised after saying no:\n%s", out)
 	}
 	cfg := readFileT(t, filepath.Join(p.root, ".mcp.json"))
 	if !strings.Contains(cfg, `"2"`) {
@@ -1437,12 +1440,12 @@ func TestInitScopedAsksAndDoesOnlyWhatWasChosen(t *testing.T) {
 
 func TestInitScopedDecliningMCPAndSkills(t *testing.T) {
 	p := newProject(t)
-	// Harness from a flag. Answers: skills no, MCP no, start no.
-	out, err := p.init("n\nn\nn\n", "--scoped", "--harness", "claude")
+	// Harness from a flag. Answers: skills no, MCP no, command timeout no, start no.
+	out, err := p.init("n\nn\nn\nn\n", "--scoped", "--harness", "claude")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
-	for _, q := range []string{"skills", "MCP config", "Start the server"} {
+	for _, q := range []string{"skills", "MCP config", "run a command for up to", "Start the server"} {
 		if !strings.Contains(out, q) {
 			t.Errorf("it did not ask about %s:\n%s", q, out)
 		}
@@ -1452,8 +1455,8 @@ func TestInitScopedDecliningMCPAndSkills(t *testing.T) {
 			t.Errorf("%s was created after saying no:\n%s", f, out)
 		}
 	}
-	// Skills yes, MCP no, start no.
-	if out, err = p.init("y\nn\nn\n", "--scoped", "--harness", "claude"); err != nil {
+	// Skills yes, MCP no, command timeout no, start no.
+	if out, err = p.init("y\nn\nn\nn\n", "--scoped", "--harness", "claude"); err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
 	if !exists(filepath.Join(p.root, ".agents/skills/swarm-join")) || exists(filepath.Join(p.root, ".mcp.json")) {
@@ -1490,6 +1493,10 @@ func TestInitScopedYesTakesDefaultsAndIsSafeToRepeat(t *testing.T) {
 	if cfg := readFileT(t, filepath.Join(p.root, ".mcp.json")); strings.Count(cfg, `"swarm"`) != 1 {
 		t.Errorf("repeating it duplicated config: %s", cfg)
 	}
+	// With Claude Code among them, the default lets its commands run long enough for work next.
+	if s := readFileT(t, filepath.Join(p.root, ".claude/settings.local.json")); !strings.Contains(s, `"BASH_MAX_TIMEOUT_MS": "3600000"`) {
+		t.Errorf("command timeout: %s", s)
+	}
 }
 
 func TestInitScopedDryRunChangesNothing(t *testing.T) {
@@ -1525,7 +1532,7 @@ func TestInitScopedInAFolderWithNoRepository(t *testing.T) {
 	// Asked, and answered yes: repository, skills, MCP config, tier 1, no server.
 	plain2 := t.TempDir()
 	p.root = plain2
-	out, err = p.init("y\ny\ny\n1\nn\n", "--scoped", "--harness", "claude")
+	out, err = p.init("y\ny\ny\n1\nn\nn\n", "--scoped", "--harness", "claude")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}

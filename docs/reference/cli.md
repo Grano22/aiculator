@@ -387,6 +387,7 @@ aiculator init [flags]
       --no-mcp           do not add MCP config
       --no-skills        do not install the skills
       --no-start         do not start the server, with --scoped
+      --no-timeouts      leave Claude Code's command timeout as it is
       --planner          also allow these sessions to plan
       --sandbox string   sandbox for the server: auto, seatbelt, bwrap, docker or none (default "auto")
       --scoped           set up this project only, rather than the whole machine
@@ -1402,6 +1403,21 @@ aiculator work code [QUESTION] [flags]
       --symbol string   a symbol or file to look up
 ```
 
+## `aiculator work done`
+
+Finish the task from work next, with the tokens it took
+
+```text
+aiculator work done submit|fail|release|verdict [flags]
+```
+
+**Flags**
+
+```text
+      --note string   a note for later attempts, or the reasoning of a verdict
+      --pass          with verdict: approve; leave out to reject
+```
+
 ## `aiculator work estimate`
 
 Predict the tokens a task will take, from finished tasks like it
@@ -1452,6 +1468,30 @@ aiculator work heartbeat [flags]
       --tokens int    tokens used since your last report
 ```
 
+## `aiculator work helper`
+
+See or stop the helper that waits for work for an agent
+
+```text
+aiculator work helper
+```
+
+## `aiculator work helper status`
+
+Show what the helper holds, how long it may wait, and the tokens it has seen spent
+
+```text
+aiculator work helper status
+```
+
+## `aiculator work helper stop`
+
+Stop the helper; a task it took but never handed over goes back
+
+```text
+aiculator work helper stop
+```
+
 ## `aiculator work join`
 
 Register this session as a worker and print its agent name
@@ -1488,6 +1528,33 @@ aiculator work limit [flags]
       --reason string          what ran out: usage_limit, credit_exhausted, rate_limited (default "usage_limit")
       --retry-after duration   or how long from now
       --until string           when it resets, in RFC 3339, if your harness said
+```
+
+## `aiculator work next`
+
+Wait for the next task in a helper process, at no cost to the model, and print it
+
+Wait for the next task and print it. The waiting happens in a small helper process that
+keeps the connection to the swarm, so the model spends nothing while it waits: one call per
+task, instead of one call every half minute.
+
+It returns when there is a task (exit 0), when the swarm says to stop (exit 4), or just before
+your harness would cut the command off (exit 3: run it again). How long that is, it learns
+from your harness; --wait sets it instead. If the harness cuts it off anyway, nothing is lost:
+the helper keeps the task, and the next call returns it at once.
+
+While you work, the helper keeps your lease, saves your progress, and reports the tokens your
+harness's own log says the session used. Finish with aiculator work done.
+
+```text
+aiculator work next [flags]
+```
+
+**Flags**
+
+```text
+      --token-budget int   tokens this session may spend; a task expected to cost more than is left is handed back. Set when the helper starts
+      --wait string        longest to wait before returning to run again; auto learns it from your harness (default "auto")
 ```
 
 ## `aiculator work note`

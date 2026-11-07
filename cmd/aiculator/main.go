@@ -99,6 +99,13 @@ func main() {
 		os.Exit(code)
 	}
 	if err := root.Execute(); err != nil {
+		// A command that ends with a code on purpose, such as work next, has said all it had
+		// to; anything else is an error to show.
+		var code exitCode
+		if errors.As(err, &code) {
+			os.Exit(int(code))
+		}
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		os.Exit(1)
 	}
 }
@@ -106,7 +113,7 @@ func main() {
 func rootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use: "aiculator", Short: "Run and control an agent swarm across coding harnesses",
-		Version: version, SilenceUsage: true,
+		Version: version, SilenceUsage: true, SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			dataDirFlagSet = cmd.Flags().Changed("data")
 			if realmFlag != "" {

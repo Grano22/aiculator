@@ -8,6 +8,13 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ### Added
 
+- **`aiculator work next` and the `swarm-work` skill (skills v2):** the waiting moves from the model to a helper process, so the model runs one command per task instead of a wait call every half minute.
+  - **How long a call waits:** it learns the harness's command limit and returns just before it. A command cut off anyway loses nothing: the helper keeps the task and its lease.
+  - **While the model works:** the helper keeps the lease, saves progress, and reads the session's token usage from Claude Code's or Codex's own log. It reports the plan's limits where the log has them, and can keep to a token budget.
+  - **Finishing:** `work done` finishes a task.
+  - **v1 stays:** `swarm-join` remains for sessions with MCP tools alone.
+- **`aiculator init` raises Claude Code's command timeout:** it offers to set `BASH_MAX_TIMEOUT_MS` to an hour, so `work next` can wait longer per call.
+
 - **Shared memory between agents:**
   - **The graph:** the server keeps a code graph of the project. It's built from the integration branch and rebuilt after each merge, by [Graphify](https://github.com/Graphify-Labs/Graphify) when installed and by a built-in indexer otherwise. Agents ask it with `code_query` and `code_symbol` (`aiculator code`, `work code`) and read a few hundred tokens instead of searching files.
   - **Measured:** on this repository, 10 of 10 test questions found their answer, at 8.3× fewer tokens than reading the file that holds it.

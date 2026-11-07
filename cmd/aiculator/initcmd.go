@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -61,6 +62,7 @@ func initCmd() *cobra.Command {
 		noSkills, noMCP, noStart bool
 		allHarnesses             bool
 		scoped, withMCP          bool
+		noTimeouts               bool
 	)
 	cmd := &cobra.Command{
 		Use:   "init",
@@ -81,7 +83,7 @@ For a script, --yes takes every default, and flags answer single questions.`,
 			err := runInit(cmd, initOptions{
 				list: list, sb: sb, tier: tier, yes: yes, dry: dry, planner: planner,
 				noSkills: noSkills, noMCP: noMCP, noStart: noStart, allHarnesses: allHarnesses,
-				scoped: scoped, withMCP: withMCP,
+				scoped: scoped, withMCP: withMCP, noTimeouts: noTimeouts,
 			})
 			switch {
 			case errors.Is(err, prompt.ErrCanceled):
@@ -102,6 +104,7 @@ For a script, --yes takes every default, and flags answer single questions.`,
 	f.BoolVar(&noMCP, "no-mcp", false, "do not add MCP config")
 	f.BoolVar(&withMCP, "mcp", false, "add MCP config without asking")
 	f.BoolVar(&noStart, "no-start", false, "do not start the server, with --scoped")
+	f.BoolVar(&noTimeouts, "no-timeouts", false, "leave Claude Code's command timeout as it is")
 	f.IntVar(&tier, "tier", 1, "tier for MCP sessions: 1 standard, 2 advanced, 3 ultra")
 	f.BoolVar(&planner, "planner", false, "also allow these sessions to plan")
 	f.BoolVar(&dry, "dry-run", false, "say what would be done, and do nothing")
@@ -116,6 +119,7 @@ type initOptions struct {
 	noSkills, noMCP, noStart bool
 	allHarnesses             bool
 	scoped, withMCP          bool
+	noTimeouts               bool
 }
 
 // runInit collects every answer first, and acts only afterwards. That is the promise that
@@ -209,6 +213,15 @@ func runInit(cmd *cobra.Command, o initOptions) error {
 		}
 		tier = i + 1
 	}
+	// Claude Code stops a command after two minutes unless told otherwise, which caps how
+	// long aiculator work next can wait for a task on the model's behalf.
+	timeouts := false
+	if slices.ContainsFunc(hs, func(h harness.Harness) bool { return h.ID == "claude" }) && !o.noTimeouts {
+		if timeouts, err = ask(fmt.Sprintf("Let Claude Code run a command for up to %v, so aiculator work next can wait for tasks without spending turns? Sets BASH_MAX_TIMEOUT_MS in %s.",
+			commandTimeout, claudeSettingsFile(!o.scoped, root)), true); err != nil {
+			return err
+		}
+	}
 	start := o.scoped && !o.noStart
 	if start {
 		if start, err = ask("Start the server now?", true); err != nil {
@@ -216,12 +229,12 @@ func runInit(cmd *cobra.Command, o initOptions) error {
 		}
 	}
 
-	plan := setupPlan{harnesses: hs, skills: skills, mcp: mcp, start: start, tier: tier, planner: o.planner, sandbox: o.sb, global: !o.scoped}
+	plan := setupPlan{harnesses: hs, skills: skills, mcp: mcp, start: start, tier: tier, planner: o.planner, sandbox: o.sb, global: !o.scoped, timeouts: timeouts}
 	if o.dry {
 		printPlan(plan, needsInit && makeGit, needsCommit && makeGit)
 		return nil
 	}
-	if !skills && !mcp && !start && !makeGit {
+	if !skills && !mcp && !start && !makeGit && !timeouts {
 		p.Say("Nothing to do.")
 		return nil
 	}
@@ -307,6 +320,9 @@ func printPlan(s setupPlan, gitInit, gitCommit bool) {
 				fmt.Printf("- Add MCP config for %s to %s, at tier %d\n", h.ID, file, s.tier)
 			}
 		}
+	}
+	if s.timeouts {
+		fmt.Printf("- Let Claude Code run a command for up to %v, in %s\n", commandTimeout, claudeSettingsFile(s.global, projectRoot()))
 	}
 	if s.start {
 		fmt.Println("- Start the server")

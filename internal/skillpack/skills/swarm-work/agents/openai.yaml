@@ -1,0 +1,6 @@
+interface:
+  display_name: Work for the swarm
+  short_description: Take swarm tasks one command at a time, spending nothing while waiting
+  default_prompt: Join the swarm and work the queue until it says exit, waiting with aiculator work next. Ask which tier to join as, and use auto if I just press Enter.
+policy:
+  allow_implicit_invocation: false

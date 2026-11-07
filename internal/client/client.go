@@ -20,6 +20,8 @@ type Client struct {
 	URL   string
 	Token string
 	HTTP  *http.Client
+	// Header is added to every request, such as the secret a local helper asks for.
+	Header map[string]string
 }
 
 // New returns a client with no overall timeout, because wait calls hold open.
@@ -51,6 +53,9 @@ func (c *Client) Do(ctx context.Context, method, path string, in, out any) error
 	}
 	if c.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+	for k, v := range c.Header {
+		req.Header.Set(k, v)
 	}
 	if in != nil {
 		req.Header.Set("Content-Type", "application/json")

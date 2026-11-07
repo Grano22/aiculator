@@ -430,12 +430,14 @@ type setupPlan struct {
 	global bool
 	// reuse leaves alone what a harness can already find, at either level.
 	reuse bool
+	// timeouts raises Claude Code's command timeout, so work next can wait longer per call.
+	timeouts bool
 }
 
 const swarmSkills = "swarm-*"
 
 // bundledSwarmSkills lists the skills a project needs a harness to find.
-var bundledSwarmSkills = []string{"swarm-join", "swarm-operate", "swarm-plan"}
+var bundledSwarmSkills = []string{"swarm-join", "swarm-work", "swarm-operate", "swarm-plan"}
 
 // globalBackups is where config is copied before a user-level file is changed.
 func globalBackups() string { return harness.ExpandHome("~/.aiculator/backups") }
@@ -543,6 +545,19 @@ func runSetup(p setupPlan) error {
 		}
 	}
 	root := projectRoot()
+	if p.timeouts {
+		file := claudeSettingsFile(p.global, root)
+		backups := filepath.Join(dataDir, "backups")
+		if p.global {
+			backups = globalBackups()
+		}
+		switch changed, err := raiseCommandTimeout(file, backups); {
+		case err != nil:
+			fmt.Println("Command timeout not changed:", err)
+		case changed:
+			fmt.Printf("Claude Code may now run a command for up to %v (%s), so aiculator work next waits longer per call.\n", commandTimeout, file)
+		}
+	}
 	levels := map[string]string{}
 	if p.skills {
 		var err error
@@ -1525,5 +1540,6 @@ with no penalty, and wait answers exit until the limit resets, so you stop spend
 		leased("fail", "Give up; saved work and note go to the next attempt", "/v1/agent/fail"),
 		leased("release", "Hand back with no penalty, when the harness cannot do it", "/v1/agent/release"),
 		verdict, situation, usage, limit, estimate, recallCmd, noteCmd, codeQ)
+	cmd.AddCommand(nextCmds(&agent)...)
 	return cmd
 }

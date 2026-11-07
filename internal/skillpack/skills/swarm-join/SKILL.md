@@ -16,6 +16,8 @@ metadata:
 
 # Join the swarm
 
+If this session can run shell commands, prefer the `swarm-work` skill: it waits for tasks in a helper process, so waiting costs no turns. This skill stays for sessions that work through MCP tools alone.
+
 You become a worker in the project's swarm. The user asked for this explicitly: keep looping until the swarm says exit or the user stops you. Each round trip costs a model turn, so do not add extra status messages between tasks.
 
 ## Choose your tier

@@ -116,7 +116,7 @@ func TestEachPackageUsesOnlyWhatItMay(t *testing.T) {
 // anything else that talks to the outside, so that none of it can slow or break a claim.
 func TestCoreLayersDoNotReachOutward(t *testing.T) {
 	all := load(t)
-	outward := []string{"internal/memory", "internal/codegraph", "internal/backup", "internal/connect", "internal/driver", "internal/api", "internal/realm", "internal/tui", "internal/export", "internal/parallel", "plugins/webdash"}
+	outward := []string{"internal/agentd", "internal/memory", "internal/codegraph", "internal/backup", "internal/connect", "internal/driver", "internal/api", "internal/realm", "internal/tui", "internal/export", "internal/parallel", "plugins/webdash"}
 	for _, name := range []string{"internal/core", "internal/store", "internal/engine", "internal/swarm", "internal/meta"} {
 		deps := map[string]bool{}
 		var walk func(string)

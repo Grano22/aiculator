@@ -97,6 +97,7 @@ nav:
       - Quickstart: getting-started/quickstart.md
   - Guides:
       - Join from an open harness: guides/join.md
+      - Waiting without spending tokens: guides/work-next.md
       - Run sandboxed workers: guides/workers.md
       - Plan work: guides/planning.md
       - Labels, priority and attachments: guides/task-data.md
