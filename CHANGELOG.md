@@ -6,6 +6,8 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-07
+
 ### Fixed
 
 - **The 0.9 release:** 0.9.0 was tagged, but its Windows binary came to 30.1 MiB, over the 30 MiB size budget, so nothing was published. This release raises the binary budget to 32 MiB and publishes 0.9. Everything new in 0.9 is listed under 0.9.0 below.
