@@ -157,7 +157,7 @@
 				
 				<option value="file50">github.com/Grano22/aiculator/internal/driver/proc_unix.go (66.7%)</option>
 				
-				<option value="file51">github.com/Grano22/aiculator/internal/engine/dispatch.go (89.2%)</option>
+				<option value="file51">github.com/Grano22/aiculator/internal/engine/dispatch.go (89.5%)</option>
 				
 				<option value="file52">github.com/Grano22/aiculator/internal/engine/engine.go (91.5%)</option>
 				
@@ -205,7 +205,7 @@
 				
 				<option value="file74">github.com/Grano22/aiculator/internal/store/links.go (84.2%)</option>
 				
-				<option value="file75">github.com/Grano22/aiculator/internal/store/meta.go (80.5%)</option>
+				<option value="file75">github.com/Grano22/aiculator/internal/store/meta.go (79.9%)</option>
 				
 				<option value="file76">github.com/Grano22/aiculator/internal/store/store.go (79.0%)</option>
 				
@@ -217,7 +217,7 @@
 				
 				<option value="file80">github.com/Grano22/aiculator/internal/swarm/meta.go (86.5%)</option>
 				
-				<option value="file81">github.com/Grano22/aiculator/internal/swarm/service.go (83.3%)</option>
+				<option value="file81">github.com/Grano22/aiculator/internal/swarm/service.go (83.9%)</option>
 				
 				<option value="file82">github.com/Grano22/aiculator/internal/swarm/sessions.go (90.6%)</option>
 				
@@ -235,7 +235,7 @@
 				
 				<option value="file89">github.com/Grano22/aiculator/internal/vlog/vlog.go (94.8%)</option>
 				
-				<option value="file90">github.com/Grano22/aiculator/internal/work/work.go (84.8%)</option>
+				<option value="file90">github.com/Grano22/aiculator/internal/work/work.go (85.2%)</option>
 				
 				<option value="file91">github.com/Grano22/aiculator/pkg/observe/analytics.go (97.0%)</option>
 				
@@ -13592,7 +13592,7 @@ func (w *worker) dispatch(ctx context.Context, sem chan struct{}, wg *sync.WaitG
                 <span class="cov8" title="1">select </span>{
                 case sem &lt;- struct{}{}:<span class="cov8" title="1"></span>
                 case &lt;-ctx.Done():
-                        <span class="cov8" title="1">return</span>
+                        <span class="cov0" title="0">return</span>
                 }
                 <span class="cov8" title="1">w.mu.Lock()
                 p := w.pending[id]
@@ -13645,8 +13645,8 @@ func (w *worker) pushOne(ctx context.Context, id string, state core.State, seq u
                 <span class="cov8" title="1">delete(w.pending, id)
                 return
 </span>        }
-        <span class="cov0" title="0">select </span>{ // A newer state arrived during the call, so there is more to do.
-        case w.wake &lt;- struct{}{}:<span class="cov0" title="0"></span>
+        <span class="cov8" title="1">select </span>{ // A newer state arrived during the call, so there is more to do.
+        case w.wake &lt;- struct{}{}:<span class="cov8" title="1"></span>
         default:<span class="cov0" title="0"></span>
         }
 }
@@ -16065,7 +16065,7 @@ func (e *Engine) Wait(ctx context.Context, a Agent, hold time.Duration) (WaitRes
                 }
                 // An exit answer is immediate; there is nothing to hold the agent for.
                 <span class="cov8" title="1">if r := e.idleResponse(a.Tier, since); r.Action == ActionExit </span>{
-                        <span class="cov0" title="0">return out{resp: r}, nil
+                        <span class="cov8" title="1">return out{resp: r}, nil
 </span>                }
                 <span class="cov8" title="1">w := &amp;waiter{agent: a, since: since, ch: make(chan WaitResponse, 1), deadline: e.now().Add(hold)}
                 e.waiters[a.Tier] = append(e.waiters[a.Tier], w)
@@ -23171,10 +23171,10 @@ func (s *Store) WaitProjected(ctx context.Context) error {
                 <span class="cov8" title="1">if info.AckFloor.Stream &gt;= last.Sequence </span>{
                         <span class="cov8" title="1">return nil
 </span>                }
-                <span class="cov0" title="0">select </span>{
+                <span class="cov8" title="1">select </span>{
                 case &lt;-ctx.Done():
                         <span class="cov0" title="0">return ctx.Err()</span>
-                case &lt;-time.After(5 * time.Millisecond):<span class="cov0" title="0"></span>
+                case &lt;-time.After(5 * time.Millisecond):<span class="cov8" title="1"></span>
                 }
         }
 }
@@ -23241,7 +23241,7 @@ func (s *Store) FollowTasks(ctx context.Context, durable string, filter []byte, 
 func (s *Store) ReadEvents(ctx context.Context, fn func(t core.Task, at time.Time), caughtUp func()) error {
         <span class="cov8" title="1">info, err := s.stream.Info(ctx)
         if err != nil </span>{
-                <span class="cov8" title="1">return err
+                <span class="cov0" title="0">return err
 </span>        }
         <span class="cov8" title="1">last := info.State.LastSeq
         cons, err := s.stream.OrderedConsumer(ctx, jetstream.OrderedConsumerConfig{})
@@ -23653,7 +23653,7 @@ func (s *Store) PatchMeta(id string, p meta.Patch, now time.Time) (meta.Meta, er
                 if err == nil </span>{
                         <span class="cov8" title="1">return next, nil
 </span>                }
-                <span class="cov8" title="1">if !errors.Is(mapErr(err), ErrConflict) </span>{
+                <span class="cov0" title="0">if !errors.Is(mapErr(err), ErrConflict) </span>{
                         <span class="cov0" title="0">return meta.Meta{}, err
 </span>                }
         }
@@ -24899,7 +24899,7 @@ func (s *Service) snapshot(ctx context.Context, a engine.Agent, id string, lease
 func (s *Service) Progress(ctx context.Context, a engine.Agent, id string, lease uint64, evidence, note string, u core.Usage) (core.Task, error) {
         <span class="cov8" title="1">ev, ref, err := s.snapshot(ctx, a, id, lease, note)
         if err != nil </span>{
-                <span class="cov0" title="0">return core.Task{}, err
+                <span class="cov8" title="1">return core.Task{}, err
 </span>        }
         <span class="cov8" title="1">if s.Work != nil </span>{
                 <span class="cov8" title="1">evidence = ev
@@ -28006,7 +28006,7 @@ func (m *Manager) Snapshot(ctx context.Context, t core.Task, note string) (tree,
         defer os.Remove(idxPath)
         env := []string{"GIT_INDEX_FILE=" + idxPath}
         if _, err := m.gitEnv(ctx, dir, env, "add", "-A"); err != nil </span>{
-                <span class="cov0" title="0">return "", "", err
+                <span class="cov8" title="1">return "", "", err
 </span>        }
         <span class="cov8" title="1">if tree, err = m.gitEnv(ctx, dir, env, "write-tree"); err != nil </span>{
                 <span class="cov0" title="0">return "", "", err
