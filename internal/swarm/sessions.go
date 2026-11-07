@@ -30,8 +30,11 @@ type session struct {
 	limitUntil time.Time
 	// Stopping makes the agent's waits answer exit, and cancels any wait in progress.
 	stopping bool
-	waits    map[*waitSlot]struct{}
-	hold     holdLearner
+	// hidden is a session removed from the list while still stopping: a force disconnect.
+	// It stays, unlisted, so that the agent keeps getting exit if its process carries on.
+	hidden bool
+	waits  map[*waitSlot]struct{}
+	hold   holdLearner
 }
 
 type waitSlot struct{ cancel context.CancelFunc }
@@ -67,7 +70,7 @@ func (s *Service) Hello(a engine.Agent, info observe.SessionInfo) {
 	s.sess.mu.Lock()
 	defer s.sess.mu.Unlock()
 	x := s.sess.get(a.ID)
-	x.info, x.tier, x.started, x.stopping = info, a.Tier, time.Now(), false
+	x.info, x.tier, x.started, x.stopping, x.hidden = info, a.Tier, time.Now(), false, false
 }
 
 // noteClient records a session the first time an agent calls a tool over MCP without having
@@ -192,7 +195,15 @@ func (s *Service) Forget(ids []string) []string {
 				continue
 			}
 		}
-		delete(s.sess.byID, id)
+		x := s.sess.byID[id]
+		if x.hidden {
+			continue
+		}
+		if x.stopping {
+			x.hidden = true // Off the list, but its waits still answer exit.
+		} else {
+			delete(s.sess.byID, id)
+		}
 		c.Forget(id)
 		out = append(out, id)
 	}
@@ -309,6 +320,10 @@ func (s *Service) sessionsLive(snap *observe.Snapshot) {
 	s.sess.mu.Lock()
 	defer s.sess.mu.Unlock()
 	for id, x := range s.sess.byID {
+		if x.hidden {
+			delete(agents, id)
+			continue
+		}
 		l := observe.SessionLive{Agent: id, Tier: x.tier, SessionInfo: x.info, ConnectedMs: now.Sub(x.started).Milliseconds(),
 			Limit: x.limit, LimitUntil: x.limitUntil, HoldMs: x.hold.current().Milliseconds()}
 		a, ok := agents[id]

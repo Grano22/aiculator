@@ -231,3 +231,37 @@ func TestMCPClientIsNotedOnce(t *testing.T) {
 		t.Errorf("hello was overwritten: %+v", x)
 	}
 }
+
+// A force disconnect, stop then forget, takes the session off the list, but an agent whose
+// process carries on still gets exit rather than new work.
+func TestForceDisconnectKeepsTheAgentOut(t *testing.T) {
+	s := service(t)
+	a := engine.Agent{ID: "rogue", Tier: 1}
+	s.Hello(a, observe.SessionInfo{Kind: "mcp"})
+	if _, _, err := s.Stop(bg, []string{"rogue"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.Forget([]string{"rogue"}); len(got) != 1 {
+		t.Fatalf("forgot %v", got)
+	}
+	snap, _ := s.Snapshot(bg, "")
+	for _, x := range snap.Sessions {
+		if x.Agent == "rogue" {
+			t.Errorf("a disconnected session is still listed: %+v", x)
+		}
+	}
+	if g, _ := s.Wait(bg, a, 0); g.Action != engine.ActionExit {
+		t.Errorf("a disconnected agent got %+v", g)
+	}
+	snap, _ = s.Snapshot(bg, "")
+	for _, x := range snap.Sessions {
+		if x.Agent == "rogue" {
+			t.Errorf("its wait brought it back to the list: %+v", x)
+		}
+	}
+	// A new process that says hello is let back in.
+	s.Hello(a, observe.SessionInfo{Kind: "mcp"})
+	if g, _ := s.Wait(bg, a, 0); g.Action != engine.ActionTask {
+		t.Errorf("after hello: %+v", g)
+	}
+}

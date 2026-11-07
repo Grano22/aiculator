@@ -185,8 +185,10 @@ function render(s) {
     st.appendChild(el("span", x.state, "pill " + cls));
     if (x.limit) st.appendChild(el("span", " " + x.limit + (x.limit_until ? " until " + new Date(x.limit_until).toLocaleTimeString() : ""), "muted small"));
     const place = [x.host, x.pid ? "pid " + x.pid : "", x.parent ? "in " + x.parent : ""].filter(Boolean).join(", ");
-    row(sessions, [x.agent, num(x.tier), x.kind || "-", [(x.harness || "-") + (x.model ? " · " + x.model : ""), ""], st, x.task || "-",
-      num(span(x.seen_ago_ms)), num(span(x.connected_ms)), num(x.hold_ms ? span(x.hold_ms) : "-"), place || "-", [x.cwd || "-", "title"]]);
+    const cells = [x.agent, num(x.tier), x.kind || "-", [(x.harness || "-") + (x.model ? " · " + x.model : ""), ""], st, x.task || "-",
+      num(span(x.seen_ago_ms)), num(span(x.connected_ms)), num(x.hold_ms ? span(x.hold_ms) : "-"), place || "-", [x.cwd || "-", "title"]];
+    if (canControl) cells.push(sessionActions(x));
+    row(sessions, cells);
   }
 
   const tiers = clear($("tiers").tBodies[0]);
@@ -295,7 +297,38 @@ async function follow() {
   }
 }
 
+// Per-session buttons. The agent's name comes from the server and goes only into text and
+// a JSON body, never into markup.
+function sessionActions(x) {
+  const td = el("td", null, "actions");
+  const button = (label, cls, fn) => {
+    const b = el("button", label, cls);
+    b.type = "button";
+    b.addEventListener("click", fn);
+    td.appendChild(b);
+  };
+  if (x.state !== "gone" && x.state !== "stopping") {
+    button("Stop", "", () => control("agents/stop", { agents: [x.agent] },
+      "Tell " + x.agent + " to exit? What it holds goes back to the queue."));
+  }
+  button("Disconnect", "", () => disconnect(x.agent));
+  if (x.killable && x.state !== "gone") {
+    button("Kill", "danger", () => control("agents/stop", { agents: [x.agent], kill: true },
+      "Stop " + x.agent + " and end its process (pid " + x.pid + ")?"));
+  }
+  return td;
+}
+
+// Force disconnect: stop the agent, hand back its work, and drop its session at once, so it
+// leaves the list now rather than after it goes quiet.
+async function disconnect(agent) {
+  if (!window.confirm("Disconnect " + agent + "? It is told to exit, its work goes back to the queue, and its session is removed.")) return;
+  await control("agents/stop", { agents: [agent] }, "");
+  await control("sessions/forget", { agents: [agent] }, "");
+}
+
 // The buttons appear only for a link made with aiculator web --control, which may use them.
+let canControl = false;
 async function control(path, body, ask) {
   if (ask && !window.confirm(ask)) return;
   const note = $("control-note");
@@ -322,6 +355,8 @@ async function setupControls() {
     const me = await r.json();
     if (!me.control) return;
   } catch (_) { return; }
+  canControl = true;
+  $("session-actions").hidden = false;
   $("controls").hidden = false;
   $("forget-gone").addEventListener("click", () => control("sessions/forget", {}, ""));
   $("stop-all").addEventListener("click", () => control("agents/stop", {}, "Tell every agent to exit? What they hold goes back to the queue."));

@@ -132,3 +132,5 @@ select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; }
 button.danger { border-color: var(--bad); color: var(--bad); }
 button.danger:hover { background: var(--bad-bg); }
+td.actions { display: flex; gap: 4px; white-space: nowrap; }
+td.actions button { min-height: 26px; padding: 2px 8px; font-size: 12px; }
