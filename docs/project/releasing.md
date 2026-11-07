@@ -58,10 +58,10 @@ gh attestation verify aiculator_v1.2.3_linux_amd64.tar.gz --repo OWNER/REPO
 
 | Package | Budget | Current |
 |---|---|---|
-| Binary | 30 MiB | 24.6 to 27.7 MiB |
+| Binary | 32 MiB | 26.3 to 30.1 MiB |
 | Archive | 12 MiB | 9.2 to 11.1 MiB |
 
-The template engine accounts for about 5.4 MiB of the binary, because real Jinja2 brings text-handling and JSON libraries with it. To raise a limit, change it in the script on purpose and say why in the commit.
+The template engine accounts for about 5.4 MiB of the binary, because real Jinja2 brings text-handling and JSON libraries with it. To raise a limit, change it in the script on purpose and say why in the commit. The binary limit went from 30 to 32 MiB in 0.9.1, when shared memory and the work helper took the Windows binary to 30.1 MiB.
 
 ## Docs
 
