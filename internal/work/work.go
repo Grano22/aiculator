@@ -483,3 +483,6 @@ func (m *Manager) SandboxName() string { return m.sb.Name() }
 
 // Branch returns the integration branch name.
 func (m *Manager) Branch() string { return m.branch }
+
+// Repo is the repository the work lands in.
+func (m *Manager) Repo() string { return m.repo }

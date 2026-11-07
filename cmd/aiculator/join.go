@@ -10,6 +10,7 @@ import (
 	"maps"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1449,6 +1450,73 @@ with no penalty, and wait answers exit until the limit resets, so you stop spend
 	}
 	estimate.Flags().StringVar(&taskID, "task", "", "task id")
 
+	var memFiles, memSymbols, memTags []string
+	var memK, memBudget int
+	recallCmd := &cobra.Command{
+		Use:   "recall QUESTION",
+		Short: "Recall what other agents learned that bears on a question, or on files with --file",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c, err := agentClient()
+			if err != nil {
+				return err
+			}
+			q := url.Values{"q": {strings.Join(args, " ")}, "file": memFiles, "k": {strconv.Itoa(memK)}}
+			var out any
+			if err := c.Get(cmd.Context(), "/v1/memory?"+q.Encode(), &out); err != nil {
+				return err
+			}
+			return printJSON(out)
+		},
+	}
+	recallCmd.Flags().StringSliceVar(&memFiles, "file", nil, "files you are working on")
+	recallCmd.Flags().IntVar(&memK, "k", 5, "how many notes")
+	noteCmd := &cobra.Command{
+		Use:   "note TEXT",
+		Short: "Leave a short note for the other agents about something non-obvious you learned",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c, err := agentClient()
+			if err != nil {
+				return err
+			}
+			var out any
+			q := api.NoteReq{Text: strings.Join(args, " "), Files: memFiles, Symbols: memSymbols, Tags: memTags, TaskID: taskID}
+			if err := c.Post(cmd.Context(), "/v1/memory", q, &out); err != nil {
+				return err
+			}
+			return printJSON(out)
+		},
+	}
+	noteCmd.Flags().StringSliceVar(&memFiles, "file", nil, "files it is about")
+	noteCmd.Flags().StringSliceVar(&memSymbols, "symbol", nil, "symbols it is about")
+	noteCmd.Flags().StringSliceVar(&memTags, "tag", nil, "words to group it by")
+	noteCmd.Flags().StringVar(&taskID, "task", "", "the task you learned it on")
+	var symbolName string
+	codeQ := &cobra.Command{
+		Use:   "code [QUESTION]",
+		Short: "Ask the shared code graph, or look up one symbol with --symbol",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c, err := agentClient()
+			if err != nil {
+				return err
+			}
+			path := "/v1/code?" + url.Values{"q": {strings.Join(args, " ")}, "budget": {strconv.Itoa(memBudget)}}.Encode()
+			if symbolName != "" {
+				path = "/v1/code/symbol?" + url.Values{"name": {symbolName}, "budget": {strconv.Itoa(memBudget)}}.Encode()
+			}
+			var a struct {
+				Text string `json:"text"`
+			}
+			if err := c.Get(cmd.Context(), path, &a); err != nil {
+				return err
+			}
+			fmt.Print(a.Text)
+			return nil
+		},
+	}
+	codeQ.Flags().StringVar(&symbolName, "symbol", "", "a symbol or file to look up")
+	codeQ.Flags().IntVar(&memBudget, "budget", 1500, "most tokens the answer may take")
+
 	cmd.PersistentFlags().StringVar(&agent, "agent", "", "agent name from aiculator work join")
 	cmd.AddCommand(join, wait, claim,
 		leased("heartbeat", "Extend your lease; this does not count as progress", "/v1/agent/heartbeat"),
@@ -1456,6 +1524,6 @@ with no penalty, and wait answers exit until the limit resets, so you stop spend
 		leased("submit", "Submit finished work for verification", "/v1/agent/submit"),
 		leased("fail", "Give up; saved work and note go to the next attempt", "/v1/agent/fail"),
 		leased("release", "Hand back with no penalty, when the harness cannot do it", "/v1/agent/release"),
-		verdict, situation, usage, limit, estimate)
+		verdict, situation, usage, limit, estimate, recallCmd, noteCmd, codeQ)
 	return cmd
 }

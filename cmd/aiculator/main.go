@@ -24,6 +24,7 @@ import (
 	"github.com/Grano22/aiculator/internal/client"
 	"github.com/Grano22/aiculator/internal/core"
 	"github.com/Grano22/aiculator/internal/engine"
+	"github.com/Grano22/aiculator/internal/memory"
 	"github.com/Grano22/aiculator/internal/procinfo"
 	"github.com/Grano22/aiculator/internal/realm"
 	"github.com/Grano22/aiculator/internal/sandbox"
@@ -132,7 +133,7 @@ func rootCmd() *cobra.Command {
 	addLoggingFlags(root)
 	// Declared here so that cobra does not claim -v for it, since -v is the verbosity.
 	root.Flags().Bool("version", false, "print the version")
-	root.AddCommand(agentsCmd(), sessionsCmd(), backupCmd(), doctorCmd(), exportCmd(), parallelCmd(), realmCmd(), initCmd(), importCmd(), sourceCmd(), syncCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
+	root.AddCommand(memoryCmd(), codeCmd(), agentsCmd(), sessionsCmd(), backupCmd(), doctorCmd(), exportCmd(), parallelCmd(), realmCmd(), initCmd(), importCmd(), sourceCmd(), syncCmd(), serveCmd(), upCmd(), downCmd(), taskCmd(), tokenCmd(), situationCmd(), planCmd(),
 		mcpCmd(), driveCmd(), joinCmd(), unjoinCmd(), workCmd(), harnessCmd(), skillCmd(), templateCmd(), topCmd(), eventsCmd(), pluginCmd(), debugCmd(), logsCmd(), genDocsCmd())
 	addPluginCommands(root)
 	return root
@@ -148,6 +149,7 @@ func serveCmd() *cobra.Command {
 		agingUnit              time.Duration
 		agingArgs              []string
 		standby                bool
+		codeGraph              string
 	)
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -159,7 +161,7 @@ func serveCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return serve(ctx, serveOpts{addr, repo, branch, sb, syncAlways, leaseTTL, progressTTL, exitGrace, restartGrace, agingUnit, aging, standby})
+			return serve(ctx, serveOpts{addr, repo, branch, sb, syncAlways, leaseTTL, progressTTL, exitGrace, restartGrace, agingUnit, aging, standby, codeGraph})
 		},
 	}
 	f := cmd.Flags()
@@ -175,6 +177,7 @@ func serveCmd() *cobra.Command {
 	f.DurationVar(&agingUnit, "aging-unit", time.Minute, "waiting this long equals one priority point")
 	f.StringSliceVar(&agingArgs, "aging", nil, "raise priority after a wait, as wait=boost, such as 1h=5,4h=20")
 	f.BoolVar(&standby, "standby", false, "if another server holds this data directory, wait and take over when it stops")
+	f.StringVar(&codeGraph, "code-graph", memory.ModeAuto, "shared code graph for agents: auto (Graphify if installed, else built in), graphify, builtin or off")
 	return cmd
 }
 
@@ -187,6 +190,7 @@ type serveOpts struct {
 	agingUnit              time.Duration
 	aging                  []core.AgingStep
 	standby                bool
+	codeGraph              string
 }
 
 func serve(ctx context.Context, o serveOpts) error {
@@ -259,6 +263,11 @@ func serve(ctx context.Context, o serveOpts) error {
 	if b := startBackups(ctx, st, o.repo, log); b != nil {
 		srv.Backup = b
 		defer b.Close()
+	}
+	// Shared memory reads the store and git beside the swarm, so it stops before the store.
+	if mem := startMemory(ctx, st, wm, o.codeGraph, log); mem != nil {
+		srv.Memory = memoryAPI{mem}
+		defer mem.Close()
 	}
 	mux := srv.Routes()
 	mux.Handle("/mcp", srv.MCPHandler())

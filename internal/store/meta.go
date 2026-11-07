@@ -24,7 +24,79 @@ type lazyBuckets struct {
 	meta  jetstream.KeyValue
 	state jetstream.KeyValue
 	quar  jetstream.KeyValue
+	mem   jetstream.KeyValue
 	blobs jetstream.ObjectStore
+}
+
+func (s *Store) memoryKV() (jetstream.KeyValue, error) {
+	s.lazy.mu.Lock()
+	defer s.lazy.mu.Unlock()
+	if s.lazy.mem != nil {
+		return s.lazy.mem, nil
+	}
+	ctx, cancel := opCtx()
+	defer cancel()
+	kv, err := s.js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{Bucket: "memory", History: 1, Storage: jetstream.FileStorage})
+	if err != nil {
+		return nil, fmt.Errorf("memory bucket: %w", err)
+	}
+	s.lazy.mem = kv
+	return kv, nil
+}
+
+// PutMemory stores one shared-memory record under a key, as raw JSON. The memory package owns
+// the format; the store only keeps it durable, in a bucket made the first time it is used.
+func (s *Store) PutMemory(key string, value []byte) error {
+	kv, err := s.memoryKV()
+	if err != nil {
+		return err
+	}
+	ctx, cancel := opCtx()
+	defer cancel()
+	_, err = kv.Put(ctx, key, value)
+	return err
+}
+
+// DeleteMemory removes a record.
+func (s *Store) DeleteMemory(key string) error {
+	kv, err := s.memoryKV()
+	if err != nil {
+		return err
+	}
+	ctx, cancel := opCtx()
+	defer cancel()
+	err = kv.Delete(ctx, key)
+	if errors.Is(err, jetstream.ErrKeyNotFound) {
+		return nil
+	}
+	return err
+}
+
+// ListMemory calls fn with every record.
+func (s *Store) ListMemory(ctx context.Context, fn func(key string, value []byte)) error {
+	kv, err := s.memoryKV()
+	if err != nil {
+		return err
+	}
+	lister, err := kv.ListKeys(ctx)
+	if err != nil {
+		return err
+	}
+	var keys []string
+	for k := range lister.Keys() {
+		keys = append(keys, k)
+	}
+	for _, k := range keys {
+		e, err := kv.Get(ctx, k)
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		fn(k, e.Value())
+	}
+	return nil
 }
 
 func (s *Store) quarantineKV() (jetstream.KeyValue, error) {

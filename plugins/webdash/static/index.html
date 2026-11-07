@@ -40,6 +40,16 @@
 
   <section id="flow-analytics" class="card wide" aria-label="Flow analytics"></section>
 
+  <section class="card wide" id="memory-card" hidden>
+    <h2>Shared memory</h2>
+    <div class="kpis">
+      <div class="kpi"><span class="label">Code graph</span><strong id="m-graph">-</strong><span id="m-graph-note" class="muted small"></span></div>
+      <div class="kpi"><span class="label">Notes</span><strong id="m-notes">-</strong><span id="m-stale" class="muted small"></span></div>
+      <div class="kpi"><span class="label">Code questions answered</span><strong id="m-queries">-</strong><span id="m-recalls" class="muted small"></span></div>
+      <div class="kpi"><span class="label">Tokens read from memory</span><strong id="m-tokens">-</strong><span class="muted small">instead of reading files</span></div>
+    </div>
+  </section>
+
   <div class="columns">
     <section class="card">
       <h2>Latency</h2>

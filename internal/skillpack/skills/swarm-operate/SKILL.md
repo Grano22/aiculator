@@ -7,7 +7,7 @@ allowed-tools: Bash(aiculator:*)
 argument-hint: "[what to do]"
 when_to_use: The user asks about swarm status, adding tasks, launching workers, or parked tasks.
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   aiculator.kind: operator
   aiculator.channels: shell
   aiculator.min-version: "0.8.0"
@@ -26,6 +26,8 @@ metadata:
 | Kill agent processes | `aiculator agents kill --all` also ends the drivers aiculator started; add `--realms` for every project |
 | Watch live | `aiculator top`, then `r` for live mode; `aiculator web --control` adds stop and kill buttons |
 | Size a task | `aiculator task estimate ID`, or `--title "..." --tier N` for one not added yet |
+| See what agents share | `aiculator memory status`, `aiculator memory ls`, `aiculator memory recall "question"` |
+| Ask the code graph | `aiculator code query "where is X"`, `aiculator code symbol NAME` |
 | Follow changes from a script | `aiculator events --since SEQ --follow` resumes after the last event it printed |
 | Add one task | `aiculator task add --title "..." --spec "..." --tier 1 --check "go test ./..."` |
 | See harnesses on this machine | `aiculator harness` |
@@ -43,6 +45,10 @@ SWARM_TOKEN=$(aiculator token --agent worker1 --tier 1) aiculator drive --harnes
 Run it in the background for several workers, with a distinct agent name each. Do not start harnesses the user has not asked for, because they spend the user's money.
 
 A driver can start before the server: it waits for it, and follows it across a restart. If the harness runs out of usage or credit, the driver hands its task back with no penalty, waits for the reset the harness reported, and carries on (`--on-limit exit` stops instead). `aiculator sessions` shows such an agent as limited, with when.
+
+## Shared memory
+
+The server builds a graph of the code from the integration branch, and rebuilds it after each merge. Agents ask it instead of reading files, and leave each other short notes. With Graphify installed (`uv tool install graphifyy`), the graph is Graphify's, built with tree-sitter, and a `graphify-out/graph.json` you built yourself is used as its start. Without it, a built-in indexer stands in. `aiculator serve --code-graph off` turns the graph off.
 
 ## Reading results
 

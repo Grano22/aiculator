@@ -77,6 +77,10 @@ var allowed = map[string][]string{
 	"internal/harness": {}, "internal/vlog": {}, "pkg/observe": {},
 	"internal/store":  {"internal/core", "internal/meta"},
 	"internal/engine": {"internal/core", "internal/store", "internal/vlog", "pkg/observe"},
+	// The code graph knows nothing of the swarm; shared memory reads the store and git beside
+	// it, like backups.
+	"internal/codegraph": {},
+	"internal/memory":    {"internal/codegraph", "internal/core", "internal/store"},
 	// Backups read the store beside the swarm, and are never on its path.
 	"internal/backup": {"internal/core", "internal/meta", "internal/store"},
 	"internal/swarm":  {"internal/core", "internal/engine", "internal/meta", "internal/store", "internal/vlog", "internal/work", "pkg/observe"},
@@ -112,7 +116,7 @@ func TestEachPackageUsesOnlyWhatItMay(t *testing.T) {
 // anything else that talks to the outside, so that none of it can slow or break a claim.
 func TestCoreLayersDoNotReachOutward(t *testing.T) {
 	all := load(t)
-	outward := []string{"internal/backup", "internal/connect", "internal/driver", "internal/api", "internal/realm", "internal/tui", "internal/export", "internal/parallel", "plugins/webdash"}
+	outward := []string{"internal/memory", "internal/codegraph", "internal/backup", "internal/connect", "internal/driver", "internal/api", "internal/realm", "internal/tui", "internal/export", "internal/parallel", "plugins/webdash"}
 	for _, name := range []string{"internal/core", "internal/store", "internal/engine", "internal/swarm", "internal/meta"} {
 		deps := map[string]bool{}
 		var walk func(string)

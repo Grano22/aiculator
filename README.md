@@ -38,6 +38,10 @@ They come from the durable event log, so a restart loses nothing.
   <img src="docs/assets/screens/tui-tasks.png" alt="The tasks screen of aiculator top." width="49%">
 </p>
 
+## Shared memory
+
+Agents in a swarm share what they know about the codebase. The server keeps a code graph, built by [Graphify](https://github.com/Graphify-Labs/Graphify) when installed and by a built-in indexer otherwise. An agent asks it "where are session tokens verified" and reads a few hundred tokens instead of searching and opening files. On this repository's own test questions, answers found what was asked 10 times out of 10, at 8.3× fewer tokens than reading the file that holds the answer. Agents also leave each other short notes, which come with the tasks they bear on. See [Shared memory](https://grano22.github.io/aiculator/latest/guides/memory/).
+
 ## Quick start
 
 ```sh

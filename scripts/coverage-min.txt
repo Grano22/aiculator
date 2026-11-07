@@ -7,12 +7,14 @@ cmd/aiculator                76
 internal/api                 81
 internal/auth                72
 internal/client              79
+internal/codegraph           92
 internal/connect             74
 internal/core                89
 internal/driver              68
 internal/engine              86
 internal/export              90
 internal/harness             84
+internal/memory              87
 internal/meta                85
 internal/parallel            93
 internal/prompt              90

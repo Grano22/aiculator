@@ -118,6 +118,42 @@ aiculator backup versions TASK [flags]
       --json   print JSON
 ```
 
+## `aiculator code`
+
+Ask the shared code graph about the codebase
+
+```text
+aiculator code
+```
+
+## `aiculator code query`
+
+Answer a question from the code graph, in a few hundred tokens
+
+```text
+aiculator code query QUESTION [flags]
+```
+
+**Flags**
+
+```text
+      --budget int   most tokens the answer may take (default 1500)
+```
+
+## `aiculator code symbol`
+
+Show a symbol or file and everything it connects to
+
+```text
+aiculator code symbol NAME [flags]
+```
+
+**Flags**
+
+```text
+      --budget int   most tokens the answer may take (default 1500)
+```
+
 ## `aiculator debug`
 
 Debugging tools: verbosity levels, and changing them on a running server
@@ -511,6 +547,79 @@ aiculator mcp remove [--harness TARGET] [--name NAME] [flags]
       --tier int          tier for the swarm's own server (default 1)
 ```
 
+## `aiculator memory`
+
+What agents share about the codebase: notes, and the code graph's status
+
+What agents share about the codebase, so that what one learns the others need not
+learn again. Agents leave short notes with memory_note and find them with memory_recall; a
+note about a file that changed since is marked stale. The code graph, which agents ask with
+code_query, is built from the integration branch after each merge: by Graphify when it is
+installed (uv tool install graphifyy), and by the built-in indexer otherwise.
+
+```text
+aiculator memory
+```
+
+## `aiculator memory forget`
+
+Remove a note
+
+```text
+aiculator memory forget ID
+```
+
+## `aiculator memory ls`
+
+List the newest notes
+
+```text
+aiculator memory ls [flags]
+```
+
+**Flags**
+
+```text
+      --limit int   how many (default 50)
+```
+
+## `aiculator memory recall`
+
+Find the notes that bear on a question, or on files with --file
+
+```text
+aiculator memory recall QUESTION [flags]
+```
+
+**Flags**
+
+```text
+      --file strings   files the question is about
+      --k int          how many notes (default 5)
+```
+
+## `aiculator memory refresh`
+
+Rebuild the code graph now, if the integration branch moved
+
+```text
+aiculator memory refresh
+```
+
+## `aiculator memory status`
+
+Show the code graph and the notes, and what they have served
+
+```text
+aiculator memory status [flags]
+```
+
+**Flags**
+
+```text
+      --json   print JSON
+```
+
 ## `aiculator parallel`
 
 Work out what subagents can do at the same time in one working tree
@@ -759,6 +868,7 @@ aiculator serve [flags]
       --aging strings            raise priority after a wait, as wait=boost, such as 1h=5,4h=20
       --aging-unit duration      waiting this long equals one priority point (default 1m0s)
       --branch string            branch that receives merged work (default "swarm/integration")
+      --code-graph string        shared code graph for agents: auto (Graphify if installed, else built in), graphify, builtin or off (default "auto")
       --exit-grace duration      quiet time before agents are told to exit (default 30s)
       --lease-ttl duration       lease length (default 2m0s)
       --progress-ttl duration    time without file changes before an agent counts as a zombie (default 10m0s)
@@ -1277,6 +1387,21 @@ aiculator work claim [flags]
       --task string   task id
 ```
 
+## `aiculator work code`
+
+Ask the shared code graph, or look up one symbol with --symbol
+
+```text
+aiculator work code [QUESTION] [flags]
+```
+
+**Flags**
+
+```text
+      --budget int      most tokens the answer may take (default 1500)
+      --symbol string   a symbol or file to look up
+```
+
 ## `aiculator work estimate`
 
 Predict the tokens a task will take, from finished tasks like it
@@ -1365,6 +1490,23 @@ aiculator work limit [flags]
       --until string           when it resets, in RFC 3339, if your harness said
 ```
 
+## `aiculator work note`
+
+Leave a short note for the other agents about something non-obvious you learned
+
+```text
+aiculator work note TEXT [flags]
+```
+
+**Flags**
+
+```text
+      --file strings     files it is about
+      --symbol strings   symbols it is about
+      --tag strings      words to group it by
+      --task string      the task you learned it on
+```
+
 ## `aiculator work progress`
 
 Save your work; only real file changes count
@@ -1381,6 +1523,21 @@ aiculator work progress [flags]
       --note string   note saved for later attempts
       --task string   task id
       --tokens int    tokens used since your last report
+```
+
+## `aiculator work recall`
+
+Recall what other agents learned that bears on a question, or on files with --file
+
+```text
+aiculator work recall QUESTION [flags]
+```
+
+**Flags**
+
+```text
+      --file strings   files you are working on
+      --k int          how many notes (default 5)
 ```
 
 ## `aiculator work release`

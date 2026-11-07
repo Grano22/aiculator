@@ -1,0 +1,13 @@
+{"directed": true, "multigraph": false, "graph": {"schema_version": 3},
+ "nodes": [
+  {"id": "auth_validate", "label": "validate_token", "file_type": "code", "source_file": "auth/tokens.py", "source_location": "L12", "community": 0},
+  {"id": "auth_session", "label": "SessionStore", "file_type": "code", "source_file": "auth/session.py", "source_location": "L3", "community": 0},
+  {"id": "api_login", "label": "login_handler", "file_type": "code", "source_file": "api/login.py", "source_location": 40, "community": 1},
+  {"id": "doc_auth", "label": "Authentication design", "file_type": "document", "source_file": "docs/auth.md", "community": 0}
+ ],
+ "links": [
+  {"source": "api_login", "target": "auth_validate", "relation": "calls", "confidence": "EXTRACTED", "source_file": "api/login.py"},
+  {"source": "auth_validate", "target": "auth_session", "relation": "uses", "confidence": "INFERRED", "source_file": "auth/tokens.py"},
+  {"source": "doc_auth", "target": "auth_validate", "relation": "describes", "confidence": "INFERRED", "source_file": "docs/auth.md"},
+  {"source": "api_login", "target": "missing_node", "relation": "calls", "confidence": "EXTRACTED", "source_file": "api/login.py"}
+ ]}

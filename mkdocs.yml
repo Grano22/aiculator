@@ -104,6 +104,7 @@ nav:
       - "Realms: many projects": guides/realms.md
       - Export: guides/export.md
       - Parallel subagents: guides/parallel.md
+      - Shared memory: guides/memory.md
       - Skills: guides/skills.md
       - Templates: guides/templates.md
       - Template demo: guides/template-demo.md

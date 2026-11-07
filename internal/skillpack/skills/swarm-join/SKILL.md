@@ -3,15 +3,15 @@ name: swarm-join
 description: Joins this already-open coding session to the project's agent swarm as a worker, so it takes tasks, works in isolated worktrees and submits them for verification. Use only when the user explicitly asks to join the swarm, work the queue, take swarm tasks or become a worker.
 license: MIT
 compatibility: Requires git and the aiculator binary on PATH, with a server running for this project (aiculator up). Works through MCP tools when present and through shell commands otherwise.
-allowed-tools: mcp__swarm__join_swarm mcp__swarm__wait_for_task mcp__swarm__claim mcp__swarm__heartbeat mcp__swarm__progress mcp__swarm__submit mcp__swarm__fail mcp__swarm__release mcp__swarm__review_verdict mcp__swarm__situation mcp__swarm__report_usage mcp__swarm__report_limit mcp__swarm__estimate_tokens Bash(aiculator work:*) Read Write Edit
+allowed-tools: mcp__swarm__join_swarm mcp__swarm__wait_for_task mcp__swarm__claim mcp__swarm__heartbeat mcp__swarm__progress mcp__swarm__submit mcp__swarm__fail mcp__swarm__release mcp__swarm__review_verdict mcp__swarm__situation mcp__swarm__report_usage mcp__swarm__report_limit mcp__swarm__estimate_tokens mcp__swarm__code_query mcp__swarm__code_symbol mcp__swarm__memory_recall mcp__swarm__memory_note Bash(aiculator work:*) Read Write Edit
 disable-model-invocation: true
 argument-hint: "[tier: 1 standard, 2 advanced, 3 ultra, or auto]"
 when_to_use: The user says join the swarm, work the queue, take tasks, or become a worker.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   aiculator.kind: worker
   aiculator.channels: mcp shell
-  aiculator.min-version: "0.8.0"
+  aiculator.min-version: "0.9.0"
 ---
 
 # Join the swarm
@@ -50,10 +50,18 @@ Call `wait_for_task` or `aiculator work wait --agent NAME`. Do not pass `hold_se
 | `wait` | Nothing yet. `reason` says why: `planning`, `planner_lost`, `deps`, `tier_busy` or `idle`. | Call wait again straight away, with no message to the user. `planning` also shows what is coming. |
 | `exit` | Stop. `reason` says why: no more work for your tier, `stopped_by_operator`, or `usage_limit` with when it resets. | Stop and give the user a short summary, including the reason. |
 
+## Ask the shared memory first
+
+The swarm keeps what its agents know about the codebase, so you need not rediscover it. Reading files costs tokens on every task; asking costs a few hundred.
+
+- **Before exploring code,** ask the code graph: `code_query` with your question in words or names, such as "where are session tokens verified", or `code_symbol` with a name such as `Authority.Verify` (`aiculator work code --agent NAME "question"`, or `--symbol NAME`). It answers with the symbols, files, lines and connections that matter, with a one-line description of each match. Open only the files it points to.
+- **Recall what others learned:** `memory_recall` with your question and the files you will touch (`aiculator work recall --agent NAME --file PATH "question"`). A task can also come with `memory`: notes other agents left about it. Read them; a note marked `stale` is about a file that changed since, so check it.
+- **Leave what others will need:** when you learn something non-obvious, such as where a thing really lives, why it is done that way, or a trap you fell into, call `memory_note` with one to three sentences and the files and symbols it is about (`aiculator work note --agent NAME --file PATH --symbol NAME "text"`). Do not note progress, the obvious, or anything secret. A repeat of an existing note updates it.
+
 ## Doing a task (`job` is `work`)
 
 1. Work only in the returned `workdir`, using absolute paths under it. Never edit the main checkout.
-2. Follow `task.spec`, and make the commands in `task.checks` pass. `estimate_tokens` or `aiculator work estimate --task ID` says what tasks like it took, to pace yourself.
+2. Read `memory` if the task has any, and ask `code_query` before searching files. Follow `task.spec`, and make the commands in `task.checks` pass. `estimate_tokens` or `aiculator work estimate --task ID` says what tasks like it took, to pace yourself.
 3. After each meaningful change, save with `progress` or `aiculator work progress --agent NAME --task ID --lease L --note "..."`. The swarm commits and hashes your files itself. If files stop changing for too long, you lose the lease even if you keep calling this.
 4. For long stretches without file changes, such as a slow test run, call `heartbeat`, and save again soon after.
 5. Finish with `submit` (`aiculator work submit ...`), or `fail` with a useful note if you cannot finish. Your saved work and note go to the next attempt.

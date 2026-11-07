@@ -42,8 +42,48 @@ type Server struct {
 	// is one; with it unset, agents are only told to stop.
 	Host string
 	Kill func(pid int) error
+	// Memory is what agents share about the codebase: a code graph and notes. Nil when off.
+	Memory MemoryAPI
 	// Backup reports on and takes backups, when configured.
 	Backup BackupAPI
+}
+
+// MemoryAPI is what the routes need from shared memory. It is an interface for the same
+// reason as SyncAPI: memory reads git and runs programs, and the API should not depend on that.
+type MemoryAPI interface {
+	MemoryStatus() any
+	CodeQuery(question string, budget int) (any, error)
+	CodeSymbol(name string, budget int) (any, error)
+	Recall(query string, files []string, k int) any
+	Note(author, task string, q NoteReq) (any, error)
+	Forget(id string) error
+	Notes(limit int) any
+	Refresh(ctx context.Context) (any, error)
+	// TaskHints are the notes worth handing out with a task, or nil.
+	TaskHints(title, spec string, files []string) any
+}
+
+// NoteReq is a note an agent leaves for the others.
+type NoteReq struct {
+	Text    string   `json:"text"`
+	Files   []string `json:"files,omitempty"`
+	Symbols []string `json:"symbols,omitempty"`
+	Tags    []string `json:"tags,omitempty"`
+	TaskID  string   `json:"task_id,omitempty"`
+}
+
+// ErrUnavailable means a service is not ready or not running here.
+var ErrUnavailable = errors.New("unavailable")
+
+// withMemory adds the notes that bear on a granted task.
+func (s *Server) withMemory(g swarm.Grant, err error) (swarm.Grant, error) {
+	if err != nil || s.Memory == nil || g.Action != engine.ActionTask || g.Task == nil {
+		return g, err
+	}
+	if h := s.Memory.TaskHints(g.Task.Title, g.Task.Spec, g.Task.Touches); h != nil {
+		g.Memory = h
+	}
+	return g, nil
 }
 
 // BackupAPI is what the routes need from backups, kept as an interface for the same reason
@@ -82,6 +122,8 @@ func status(err error) int {
 		return http.StatusConflict
 	case errors.Is(err, context.Canceled):
 		return 499
+	case errors.Is(err, ErrUnavailable):
+		return http.StatusServiceUnavailable
 	}
 	return http.StatusInternalServerError
 }
@@ -310,7 +352,7 @@ func (s *Server) Routes() *http.ServeMux {
 		case hold > MaxToolHold*3:
 			hold = MaxToolHold * 3
 		}
-		g, err := s.S.Wait(r.Context(), agentOf(c), hold)
+		g, err := s.withMemory(s.S.Wait(r.Context(), agentOf(c), hold))
 		reply(w, g, err)
 	}))
 	m.HandleFunc("POST /v1/agent/hello", s.authed(isAgent, func(w http.ResponseWriter, r *http.Request, c auth.Claims) {
@@ -340,6 +382,7 @@ func (s *Server) Routes() *http.ServeMux {
 		v, err := s.S.ReportUsage(r.Context(), agentOf(c), q.TaskID, q.Lease, core.Usage{Tokens: q.Tokens, Cost: q.Cost})
 		reply(w, v, err)
 	}))
+	s.memoryRoutes(m)
 	m.HandleFunc("GET /v1/whoami", s.authed(anyone, func(w http.ResponseWriter, _ *http.Request, c auth.Claims) {
 		writeJSON(w, http.StatusOK, map[string]any{"agent": c.Agent, "admin": c.Admin, "viewer": c.Viewer, "control": canControl(c)})
 	}))
@@ -367,7 +410,7 @@ func (s *Server) Routes() *http.ServeMux {
 		if !ok {
 			return
 		}
-		g, err := s.S.Claim(r.Context(), agentOf(c), q.TaskID)
+		g, err := s.withMemory(s.S.Claim(r.Context(), agentOf(c), q.TaskID))
 		reply(w, g, err)
 	}))
 	lease := func(fn func(ctx context.Context, a engine.Agent, q LeaseReq) (core.Task, error)) http.HandlerFunc {

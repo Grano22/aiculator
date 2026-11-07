@@ -297,6 +297,27 @@ async function follow() {
   }
 }
 
+// Shared memory: the code graph agents ask, and the notes they leave each other.
+async function memory() {
+  try {
+    const r = await fetch("../../v1/memory/status", { headers: { Authorization: "Bearer " + token }, cache: "no-store" });
+    if (!r.ok) return; // Off on this server: the card stays hidden.
+    const m = await r.json();
+    $("memory-card").hidden = false;
+    const g = m.graph || {};
+    $("m-graph").textContent = g.nodes ? count(g.nodes) + " nodes" : (g.mode === "off" ? "off" : "building");
+    $("m-graph-note").textContent = g.nodes
+      ? count(g.files) + " files, by " + g.source + ", built " + span(Date.now() - new Date(g.built_at)) + " ago" + (g.error ? " (" + g.error + ")" : "")
+      : (g.error || "");
+    $("m-notes").textContent = count(m.notes);
+    $("m-stale").textContent = m.stale_notes ? m.stale_notes + " stale" : "none stale";
+    const st = m.stats || {};
+    $("m-queries").textContent = count(st.code_queries);
+    $("m-recalls").textContent = count(st.recalls) + " recalls, " + count(st.notes_served) + " notes served";
+    $("m-tokens").textContent = count(st.tokens_read);
+  } catch (_) { /* The next poll tries again. */ }
+}
+
 // Per-session buttons. The agent's name comes from the server and goes only into text and
 // a JSON body, never into markup.
 function sessionActions(x) {
@@ -383,4 +404,6 @@ if (!token) {
   });
   // The analytics change slowly and cost more to work out, so they refresh less often.
   setInterval(() => { if (!paused && !document.hidden) flow.refresh(); }, 15000);
+  memory();
+  setInterval(() => { if (!paused && !document.hidden) memory(); }, 15000);
 }

@@ -6,6 +6,19 @@ Add changes under **Unreleased** as you make them. `scripts/release.sh` moves th
 
 ## [Unreleased]
 
+### Added
+
+- **Shared memory between agents:**
+  - **The graph:** the server keeps a code graph of the project. It's built from the integration branch and rebuilt after each merge, by [Graphify](https://github.com/Graphify-Labs/Graphify) when installed and by a built-in indexer otherwise. Agents ask it with `code_query` and `code_symbol` (`aiculator code`, `work code`) and read a few hundred tokens instead of searching files.
+  - **Measured:** on this repository, 10 of 10 test questions found their answer, at 8.3× fewer tokens than reading the file that holds it.
+  - **Notes:** agents leave short notes with `memory_note` and find them with `memory_recall`. A note about a file that changed is marked stale, and a task comes with the notes that bear on it.
+  - **Where to see it:** `aiculator memory`, and a card on the web dashboard.
+- **Per-agent controls on the web dashboard:** with `aiculator web --control`, each session has Stop, Disconnect and, for processes aiculator started, Kill.
+
+### Fixed
+
+- **Force disconnect:** removing a stopped agent's session no longer lets that agent take work again if its process keeps running.
+
 ## [0.8.0] - 2026-11-06
 
 ### Added
