@@ -1,0 +1,12 @@
+/* Small touches on top of Material. Colors come from its variables, so both themes work. */
+.md-typeset .demo-hero {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: .5rem;
+  padding: 1rem 1.2rem;
+  margin: 1em 0;
+  background: var(--md-code-bg-color);
+}
+.md-typeset .demo-hero p { margin: .3em 0; }
+.md-typeset .grid.cards > ul > li { transition: border-color .15s, box-shadow .15s; }
+.md-typeset .grid.cards > ul > li:hover { border-color: var(--md-accent-fg-color); }
+.md-typeset table:not([class]) th { white-space: nowrap; }
