@@ -143,7 +143,7 @@
 				
 				<option value="file43">github.com/Grano22/aiculator/internal/connect/notion.go (56.6%)</option>
 				
-				<option value="file44">github.com/Grano22/aiculator/internal/connect/sync.go (82.2%)</option>
+				<option value="file44">github.com/Grano22/aiculator/internal/connect/sync.go (81.9%)</option>
 				
 				<option value="file45">github.com/Grano22/aiculator/internal/core/estimate.go (98.8%)</option>
 				
@@ -157,7 +157,7 @@
 				
 				<option value="file50">github.com/Grano22/aiculator/internal/driver/proc_unix.go (66.7%)</option>
 				
-				<option value="file51">github.com/Grano22/aiculator/internal/engine/dispatch.go (89.5%)</option>
+				<option value="file51">github.com/Grano22/aiculator/internal/engine/dispatch.go (89.2%)</option>
 				
 				<option value="file52">github.com/Grano22/aiculator/internal/engine/engine.go (91.5%)</option>
 				
@@ -201,11 +201,11 @@
 				
 				<option value="file72">github.com/Grano22/aiculator/internal/skillpack/skillpack.go (82.4%)</option>
 				
-				<option value="file73">github.com/Grano22/aiculator/internal/store/events.go (78.0%)</option>
+				<option value="file73">github.com/Grano22/aiculator/internal/store/events.go (77.4%)</option>
 				
 				<option value="file74">github.com/Grano22/aiculator/internal/store/links.go (84.2%)</option>
 				
-				<option value="file75">github.com/Grano22/aiculator/internal/store/meta.go (79.9%)</option>
+				<option value="file75">github.com/Grano22/aiculator/internal/store/meta.go (80.5%)</option>
 				
 				<option value="file76">github.com/Grano22/aiculator/internal/store/store.go (79.0%)</option>
 				
@@ -13645,8 +13645,8 @@ func (w *worker) pushOne(ctx context.Context, id string, state core.State, seq u
                 <span class="cov8" title="1">delete(w.pending, id)
                 return
 </span>        }
-        <span class="cov8" title="1">select </span>{ // A newer state arrived during the call, so there is more to do.
-        case w.wake &lt;- struct{}{}:<span class="cov8" title="1"></span>
+        <span class="cov0" title="0">select </span>{ // A newer state arrived during the call, so there is more to do.
+        case w.wake &lt;- struct{}{}:<span class="cov0" title="0"></span>
         default:<span class="cov0" title="0"></span>
         }
 }
@@ -16065,7 +16065,7 @@ func (e *Engine) Wait(ctx context.Context, a Agent, hold time.Duration) (WaitRes
                 }
                 // An exit answer is immediate; there is nothing to hold the agent for.
                 <span class="cov8" title="1">if r := e.idleResponse(a.Tier, since); r.Action == ActionExit </span>{
-                        <span class="cov8" title="1">return out{resp: r}, nil
+                        <span class="cov0" title="0">return out{resp: r}, nil
 </span>                }
                 <span class="cov8" title="1">w := &amp;waiter{agent: a, since: since, ch: make(chan WaitResponse, 1), deadline: e.now().Add(hold)}
                 e.waiters[a.Tier] = append(e.waiters[a.Tier], w)
@@ -23246,7 +23246,7 @@ func (s *Store) ReadEvents(ctx context.Context, fn func(t core.Task, at time.Tim
         <span class="cov8" title="1">last := info.State.LastSeq
         cons, err := s.stream.OrderedConsumer(ctx, jetstream.OrderedConsumerConfig{})
         if err != nil </span>{
-                <span class="cov8" title="1">return err
+                <span class="cov0" title="0">return err
 </span>        }
         <span class="cov8" title="1">var once sync.Once
         if info.State.Msgs == 0 </span>{
@@ -23653,7 +23653,7 @@ func (s *Store) PatchMeta(id string, p meta.Patch, now time.Time) (meta.Meta, er
                 if err == nil </span>{
                         <span class="cov8" title="1">return next, nil
 </span>                }
-                <span class="cov0" title="0">if !errors.Is(mapErr(err), ErrConflict) </span>{
+                <span class="cov8" title="1">if !errors.Is(mapErr(err), ErrConflict) </span>{
                         <span class="cov0" title="0">return meta.Meta{}, err
 </span>                }
         }
